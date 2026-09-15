@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Feed - SocialConnect{% endblock %}
+
+{% block content %}
+<div class="feed-container">
+    {% if posts %}
+        {% for post in posts %}
+        <article class="post-card">
+            <!-- Post Header -->
+            <div class="post-header">
+                <a href="{% url 'profile' username=post.author.username %}" class="post-user-info">
+                    {% if post.author.profile.avatar %}
+                        <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}" class="avatar-img">
+                    {% else %}
+                        <div class="avatar-img" style="display: flex; align-items: center; justify-content: center; background: var(--bg-surface-hover);">
+                            <i class="fa-regular fa-user" style="font-size: 0.8rem;"></i>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <div class="post-username">{{ post.author.username }}</div>
+                        <div class="post-time">{{ post.created_at|timesince }} ago</div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Post Image -->
+            <div class="post-image-container">
+                <a href="{% url 'post_detail' pk=post.pk %}">
+                    <img src="{{ post.image.url }}" alt="Post by {{ post.author.username }}" class="post-image">
+                </a>
+            </div>
+
+            <!-- Post Actions (Like, Comment, Share) -->
+            <div class="post-actions">
+                <form action="{% url 'like_toggle' pk=post.pk %}" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="action-btn {% if post.pk in liked_post_ids %}liked{% endif %}">
+                        {% if post.pk in liked_post_ids %}
+                            <i class="fa-solid fa-heart"></i>
+                        {% else %}
+                            <i class="fa-regular fa-heart"></i>
+                        {% endif %}
+                    </button>
+                </form>
+                <a href="{% url 'post_detail' pk=post.pk %}" class="action-btn">
+                    <i class="fa-regular fa-comment"></i>
+                </a>
+            </div>
+
+            <!-- Post Details (Likes, Caption, Comments link) -->
+            <div class="post-details">
+                <div class="likes-count">{{ post.total_likes }} like{{ post.total_likes|pluralize }}</div>
+                {% if post.caption %}
+                <div class="caption-text">
+                    <a href="{% url 'profile' username=post.author.username %}" class="caption-user">{{ post.author.username }}</a>
+                    {{ post.caption }}
+                </div>
+                {% endif %}
+
+                {% if post.total_comments > 0 %}
+                <a href="{% url 'post_detail' pk=post.pk %}" class="comments-link">
+                    View all {{ post.total_comments }} comment{{ post.total_comments|pluralize }}
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Quick Comment Box -->
+            <form action="{% url 'add_comment' pk=post.pk %}" method="POST" class="quick-comment-form">
+                {% csrf_token %}
+                <input type="text" name="text" placeholder="Add a comment..." required>
+                <button type="submit">Post</button>
+            </form>
+        </article>
+        {% endfor %}
+    {% else %}
+        <div style="text-align: center; padding: 60px 20px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <i class="fa-regular fa-compass" style="font-size: 3rem; color: #e1306c; margin-bottom: 16px; display: block;"></i>
+            <h2>Welcome to SocialConnect!</h2>
+            <p style="color: var(--text-secondary); margin: 12px 0 24px; font-size: 0.95rem;">
+                Your feed is empty because you haven't followed anyone or posted yet.
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <a href="{% url 'explore' %}" class="btn btn-primary">Explore Posts</a>
+                <a href="{% url 'create_post' %}" class="btn btn-secondary">Create Post</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

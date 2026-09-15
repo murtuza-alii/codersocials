@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}@{{ target_user.username }} - Profile{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- Profile Header -->
+    <header class="profile-header">
+        <div>
+            {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="{{ target_user.username }}" class="profile-avatar-large">
+            {% else %}
+                <div class="profile-avatar-large" style="display: flex; align-items: center; justify-content: center; background: var(--bg-surface); font-size: 3rem; color: var(--text-muted);">
+                    <i class="fa-regular fa-user"></i>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="profile-info">
+            <div class="profile-top-row">
+                <h2 class="profile-username">{{ target_user.username }}</h2>
+                
+                {% if request.user == target_user %}
+                    <a href="{% url 'edit_profile' %}" class="btn btn-secondary">Edit Profile</a>
+                {% else %}
+                    <form action="{% url 'follow_toggle' username=target_user.username %}" method="POST" style="display: inline;">
+                        {% csrf_token %}
+                        {% if is_following %}
+                            <button type="submit" class="btn btn-secondary">Following</button>
+                        {% else %}
+                            <button type="submit" class="btn btn-primary">Follow</button>
+                        {% endif %}
+                    </form>
+                {% endif %}
+            </div>
+
+            <div class="profile-stats">
+                <div class="stat-item"><span class="stat-num">{{ posts_count }}</span> posts</div>
+                <div class="stat-item"><span class="stat-num">{{ followers_count }}</span> followers</div>
+                <div class="stat-item"><span class="stat-num">{{ following_count }}</span> following</div>
+            </div>
+
+            <div class="profile-bio">
+                {% if profile.bio %}
+                    {{ profile.bio }}
+                {% else %}
+                    <span style="color: var(--text-muted); font-style: italic;">No bio yet.</span>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Posts Grid -->
+    <section>
+        {% if posts %}
+        <div class="posts-grid">
+            {% for post in posts %}
+            <a href="{% url 'post_detail' pk=post.pk %}" class="grid-item">
+                <img src="{{ post.image.url }}" alt="Post image">
+                <div class="grid-item-overlay">
+                    <span><i class="fa-solid fa-heart"></i> {{ post.total_likes }}</span>
+                    <span><i class="fa-solid fa-comment"></i> {{ post.total_comments }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 60px 0; color: var(--text-muted);">
+            <i class="fa-solid fa-camera" style="font-size: 3rem; margin-bottom: 12px; display: block;"></i>
+            <h3>No Posts Yet</h3>
+            <p style="font-size: 0.9rem; margin-top: 6px;">When photos are shared, they will appear here.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

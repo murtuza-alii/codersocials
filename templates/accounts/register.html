@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up - SocialConnect{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <div style="text-align: center; margin-bottom: 24px;">
+        <h1 style="font-size: 2rem; font-weight: 800; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SocialConnect</h1>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px;">Sign up to share moments with your network.</p>
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_username">Username</label>
+            {{ form.username }}
+            {% if form.username.errors %}
+                <small style="color: #ef4444;">{{ form.username.errors.0 }}</small>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="id_email">Email address</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+                <small style="color: #ef4444;">{{ form.email.errors.0 }}</small>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="id_password">Password</label>
+            {{ form.password }}
+            {% if form.password.errors %}
+                <small style="color: #ef4444;">{{ form.password.errors.0 }}</small>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="id_password_confirm">Confirm Password</label>
+            {{ form.password_confirm }}
+            {% if form.password_confirm.errors %}
+                <small style="color: #ef4444;">{{ form.password_confirm.errors.0 }}</small>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;">Create Account</button>
+    </form>
+
+    <div class="form-footer">
+        Already have an account? <a href="{% url 'login' %}">Log in</a>
+    </div>
+</div>
+{% endblock %}

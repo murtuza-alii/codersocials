@@ -1,0 +1,88 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SocialConnect{% endblock %} - Connect & Share</title>
+    <!-- Modern Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for standard social icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- App Stylesheet -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="app-layout">
+        {% if user.is_authenticated %}
+        <!-- Instagram-style Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <a href="{% url 'feed' %}" class="brand-logo">
+                    <i class="fa-brands fa-instagram brand-icon"></i>
+                    <span class="brand-text">SocialConnect</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{% url 'feed' %}" class="nav-item {% if request.resolver_match.url_name == 'feed' %}active{% endif %}">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Feed</span>
+                </a>
+                <a href="{% url 'explore' %}" class="nav-item {% if request.resolver_match.url_name == 'explore' %}active{% endif %}">
+                    <i class="fa-regular fa-compass"></i>
+                    <span>Explore</span>
+                </a>
+                <a href="{% url 'create_post' %}" class="nav-item {% if request.resolver_match.url_name == 'create_post' %}active{% endif %}">
+                    <i class="fa-regular fa-square-plus"></i>
+                    <span>Create</span>
+                </a>
+                <a href="{% url 'profile' username=user.username %}" class="nav-item {% if request.resolver_match.url_name == 'profile' and request.resolver_match.kwargs.username == user.username %}active{% endif %}">
+                    {% if user.profile.avatar %}
+                        <img src="{{ user.profile.avatar.url }}" alt="avatar" class="nav-avatar">
+                    {% else %}
+                        <i class="fa-regular fa-user"></i>
+                    {% endif %}
+                    <span>Profile</span>
+                </a>
+                <a href="{% url 'logout' %}" class="nav-item nav-logout">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+        {% endif %}
+
+        <!-- Main Content Area -->
+        <main class="main-content {% if not user.is_authenticated %}auth-layout{% endif %}">
+            <!-- Flash Messages -->
+            {% if messages %}
+            <div class="toast-container">
+                {% for message in messages %}
+                <div class="toast-alert toast-{{ message.tags }}">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    {% if user.is_authenticated %}
+    <nav class="mobile-bottom-bar">
+        <a href="{% url 'feed' %}"><i class="fa-solid fa-house"></i></a>
+        <a href="{% url 'explore' %}"><i class="fa-regular fa-compass"></i></a>
+        <a href="{% url 'create_post' %}"><i class="fa-regular fa-square-plus"></i></a>
+        <a href="{% url 'profile' username=user.username %}"><i class="fa-regular fa-user"></i></a>
+    </nav>
+    {% endif %}
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Post by @{{ post.author.username }} - SocialConnect{% endblock %}
+
+{% block content %}
+<div class="post-detail-layout">
+    <!-- Left Column: Big Image -->
+    <div class="post-detail-image-box">
+        <img src="{{ post.image.url }}" alt="Post by {{ post.author.username }}">
+    </div>
+
+    <!-- Right Column: Sidebar with Author, Caption, Comments -->
+    <div class="post-detail-sidebar">
+        <!-- Post Header -->
+        <div class="post-header" style="border-bottom: 1px solid var(--border-color);">
+            <a href="{% url 'profile' username=post.author.username %}" class="post-user-info">
+                {% if post.author.profile.avatar %}
+                    <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}" class="avatar-img">
+                {% else %}
+                    <div class="avatar-img" style="display: flex; align-items: center; justify-content: center; background: var(--bg-surface-hover);">
+                        <i class="fa-regular fa-user" style="font-size: 0.8rem;"></i>
+                    </div>
+                {% endif %}
+                <div>
+                    <div class="post-username">{{ post.author.username }}</div>
+                    <div class="post-time">{{ post.created_at|timesince }} ago</div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Comments & Caption Scroll Area -->
+        <div class="comments-list">
+            {% if post.caption %}
+            <div class="comment-item" style="padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                <a href="{% url 'profile' username=post.author.username %}" class="comment-user">{{ post.author.username }}</a>
+                <span>{{ post.caption }}</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">{{ post.created_at|date:"M d, Y" }}</div>
+            </div>
+            {% endif %}
+
+            {% for comment in comments %}
+            <div class="comment-item">
+                <a href="{% url 'profile' username=comment.author.username %}" class="comment-user">{{ comment.author.username }}</a>
+                <span>{{ comment.text }}</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">{{ comment.created_at|timesince }} ago</div>
+            </div>
+            {% empty %}
+            <div style="text-align: center; color: var(--text-muted); margin-top: 40px;">
+                <p>No comments yet.</p>
+                <small>Start the conversation.</small>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Likes & Actions -->
+        <div style="border-top: 1px solid var(--border-color); padding: 12px 16px;">
+            <div style="display: flex; gap: 16px; margin-bottom: 8px;">
+                <form action="{% url 'like_toggle' pk=post.pk %}" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="action-btn {% if is_liked %}liked{% endif %}">
+                        {% if is_liked %}
+                            <i class="fa-solid fa-heart"></i>
+                        {% else %}
+                            <i class="fa-regular fa-heart"></i>
+                        {% endif %}
+                    </button>
+                </form>
+            </div>
+            <div class="likes-count">{{ post.total_likes }} like{{ post.total_likes|pluralize }}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">{{ post.created_at|date:"F d, Y" }}</div>
+        </div>
+
+        <!-- Add Comment Form -->
+        <form action="{% url 'post_detail' pk=post.pk %}" method="POST" class="quick-comment-form">
+            {% csrf_token %}
+            <input type="text" name="text" placeholder="Add a comment..." required>
+            <button type="submit">Post</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
