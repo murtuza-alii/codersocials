@@ -4,6 +4,23 @@ A modern social networking platform inspired by **Instagram**, designed for user
 
 ---
 
+## 📚 Complete Beginner Step-by-Step Learning Guide
+
+If you are new to Django and want to build this project step-by-step from scratch, read the dedicated chapters in the `docs/` folder:
+
+| Chapter | Topic | What You Will Learn |
+|---|---|---|
+| **[Chapter 0](docs/00_BEGINNER_CHEATSHEET_&_SETUP.md)** | **Mental Model & Setup** | How Django works (the restaurant analogy), virtual environments, essential commands. |
+| **[Chapter 1](docs/01_SYSTEM_ARCHITECTURE.md)** | **Architecture & Design** | MTV pattern, request-response cycle, and modular app structure. |
+| **[Chapter 2](docs/02_DATABASE_MODELS_STEP_BY_STEP.md)** | **Database Models** | Writing `Profile`, `Follow`, `Post`, `Like`, `Comment` models with line-by-line explanations. |
+| **[Chapter 3](docs/03_USER_AUTHENTICATION_&_PROFILES.md)** | **Auth & Profiles** | User registration, password encryption, sign-in sessions, and avatar editing. |
+| **[Chapter 4](docs/04_POSTS_UPLOADS_&_FEED_ALGORITHM.md)** | **Media Uploads & Feed** | Image handling with Pillow, the Explore grid, and the chronological Feed query. |
+| **[Chapter 5](docs/05_SOCIAL_INTERACTIONS_LIKES_&_COMMENTS.md)** | **Follows, Likes & Comments** | Building interactive toggles for following users and liking posts. |
+| **[Chapter 6](docs/06_VIVA_EXAM_&_PRESENTATION_GUIDE.md)** | **Viva Exam & Demo Script** | Top 10 college viva questions, technical justifications, and 5-minute presentation script. |
+
+---
+
+
 ## 1. Is Django Good for this System? (Project Defense & Pitch)
 
 > **Short Answer: YES, Django is arguably the single best framework for this project.**

@@ -68,3 +68,9 @@ The codebase separates concerns into two standalone Django applications:
 | **`accounts`** | User registration, authentication, user profiles, avatars, bios, and the follow/unfollow social graph. |
 | **`posts`** | Photo uploads, captions, like/comment interactions, the explore grid, and the personalized chronological feed. |
 | **`config`** | Global project settings (`settings.py`), routing hub (`urls.py`), and WSGI/ASGI entrypoints. |
+
+---
+
+## 5. Next Step
+Proceed to [Chapter 2: Database Models Step-by-Step](file:///e:/Networking%20Site/docs/02_DATABASE_MODELS_STEP_BY_STEP.md).
+
