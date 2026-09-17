@@ -77,3 +77,8 @@ When demonstrating your project to your teacher or evaluator, follow this flow:
 5. **Step 5 (Admin Panel & Code Architecture - 1 minute)**:
    - Navigate to `/admin/` and show the evaluator the live records in the database (`Users`, `Profiles`, `Posts`, `Likes`, `Comments`).
    - Conclude by highlighting the MTV architecture and `unique_together` constraints.
+
+---
+
+## 3. Next Step
+Proceed to [Chapter 7: UI & UX Design Guide (Assets, Libraries & Styling)](file:///e:/Networking%20Site/docs/07_UI_UX_DESIGN_&_ASSETS_GUIDE.md).

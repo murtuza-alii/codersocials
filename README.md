@@ -17,8 +17,10 @@ If you are new to Django and want to build this project step-by-step from scratc
 | **[Chapter 4](docs/04_POSTS_UPLOADS_&_FEED_ALGORITHM.md)** | **Media Uploads & Feed** | Image handling with Pillow, the Explore grid, and the chronological Feed query. |
 | **[Chapter 5](docs/05_SOCIAL_INTERACTIONS_LIKES_&_COMMENTS.md)** | **Follows, Likes & Comments** | Building interactive toggles for following users and liking posts. |
 | **[Chapter 6](docs/06_VIVA_EXAM_&_PRESENTATION_GUIDE.md)** | **Viva Exam & Demo Script** | Top 10 college viva questions, technical justifications, and 5-minute presentation script. |
+| **[Chapter 7](docs/07_UI_UX_DESIGN_&_ASSETS_GUIDE.md)** | **UI & UX Design Guide** | Dark theme palette, Google Fonts, FontAwesome 6 icons, DiceBear avatars, aspect-ratio tricks, and micro-interactions. |
 
 ---
+
 
 
 ## 1. Is Django Good for this System? (Project Defense & Pitch)
