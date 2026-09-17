@@ -18,8 +18,10 @@ If you are new to Django and want to build this project step-by-step from scratc
 | **[Chapter 5](docs/05_SOCIAL_INTERACTIONS_LIKES_&_COMMENTS.md)** | **Follows, Likes & Comments** | Building interactive toggles for following users and liking posts. |
 | **[Chapter 6](docs/06_VIVA_EXAM_&_PRESENTATION_GUIDE.md)** | **Viva Exam & Demo Script** | Top 10 college viva questions, technical justifications, and 5-minute presentation script. |
 | **[Chapter 7](docs/07_UI_UX_DESIGN_&_ASSETS_GUIDE.md)** | **UI & UX Design Guide** | Dark theme palette, Google Fonts, FontAwesome 6 icons, DiceBear avatars, aspect-ratio tricks, and micro-interactions. |
+| **[Chapter 8](docs/08_NON_CODER_AI_WORKFLOW_&_VIVA_DEFENSE.md)** | **Non-Coder's AI Playbook** | Step-by-step copy-paste AI prompts, the code "Decoder Ring", and how to defend AI-assisted code in your viva. |
 
 ---
+
 
 
 
