@@ -4,9 +4,16 @@
 
 {% block content %}
 <div class="post-detail-layout">
-    <!-- Left Column: Big Image -->
+    <!-- Left Column: Big Media (Image or Video) -->
     <div class="post-detail-image-box">
-        <img src="{{ post.image.url }}" alt="Post by {{ post.author.username }}">
+        {% if post.is_video %}
+            <video controls playsinline preload="metadata" {% if post.thumbnail %}poster="{{ post.thumbnail.url }}"{% endif %} style="max-width: 100%; max-height: 80vh;">
+                <source src="{{ post.media_file.url }}">
+                Your browser does not support HTML5 video.
+            </video>
+        {% else %}
+            <img src="{{ post.media_file.url }}" alt="Post by {{ post.author.username }}">
+        {% endif %}
     </div>
 
     <!-- Right Column: Sidebar with Author, Caption, Comments -->

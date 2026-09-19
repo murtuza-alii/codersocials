@@ -56,7 +56,10 @@
         <div class="posts-grid">
             {% for post in posts %}
             <a href="{% url 'post_detail' pk=post.pk %}" class="grid-item">
-                <img src="{{ post.image.url }}" alt="Post image">
+                <img src="{% if post.thumbnail %}{{ post.thumbnail.url }}{% else %}{{ post.media_file.url }}{% endif %}" alt="Post thumbnail">
+                {% if post.is_video %}
+                    <span style="position: absolute; top: 8px; right: 8px; color: #fff; font-size: 0.9rem; text-shadow: 0 1px 4px rgba(0,0,0,0.7);"><i class="fa-solid fa-video"></i></span>
+                {% endif %}
                 <div class="grid-item-overlay">
                     <span><i class="fa-solid fa-heart"></i> {{ post.total_likes }}</span>
                     <span><i class="fa-solid fa-comment"></i> {{ post.total_comments }}</span>

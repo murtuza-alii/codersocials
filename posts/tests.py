@@ -61,3 +61,38 @@ class MediaProcessingTestCase(TestCase):
         self.assertLessEqual(res_img.width, 1080)
         self.assertLessEqual(res_img.height, 1080)
 
+
+from django.urls import reverse
+
+class PostViewsTestCase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testuser', password='password123')
+        self.client.login(username='testuser', password='password123')
+
+    def test_feed_view_authenticated(self):
+        response = self.client.get(reverse('feed'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_explore_view_authenticated(self):
+        response = self.client.get(reverse('explore'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_create_post_view_image(self):
+        # Post an image
+        image = Image.new('RGB', (800, 800), color='red')
+        img_io = io.BytesIO()
+        image.save(img_io, format='JPEG')
+        img_io.seek(0)
+        uploaded = SimpleUploadedFile('test_feed.jpg', img_io.getvalue(), content_type='image/jpeg')
+
+        response = self.client.post(reverse('create_post'), {
+            'media_file': uploaded,
+            'caption': 'Hello from test',
+        })
+        self.assertRedirects(response, reverse('feed'))
+        self.assertEqual(Post.objects.count(), 1)
+        post = Post.objects.first()
+        self.assertEqual(post.media_type, 'image')
+        self.assertEqual(post.caption, 'Hello from test')
+
+

@@ -24,11 +24,18 @@
                 </a>
             </div>
 
-            <!-- Post Image -->
+            <!-- Post Media (Image or Video) -->
             <div class="post-image-container">
-                <a href="{% url 'post_detail' pk=post.pk %}">
-                    <img src="{{ post.image.url }}" alt="Post by {{ post.author.username }}" class="post-image">
-                </a>
+                {% if post.is_video %}
+                    <video class="post-image" controls playsinline preload="metadata" {% if post.thumbnail %}poster="{{ post.thumbnail.url }}"{% endif %} style="width: 100%; max-height: 600px; background: #000;">
+                        <source src="{{ post.media_file.url }}">
+                        Your browser does not support HTML5 video.
+                    </video>
+                {% else %}
+                    <a href="{% url 'post_detail' pk=post.pk %}">
+                        <img src="{{ post.media_file.url }}" alt="Post by {{ post.author.username }}" class="post-image">
+                    </a>
+                {% endif %}
             </div>
 
             <!-- Post Actions (Like, Comment, Share) -->
