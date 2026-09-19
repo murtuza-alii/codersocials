@@ -31,3 +31,33 @@ class ModelsTestCase(TestCase):
         Comment.objects.create(post=post, author=self.user2, text='Awesome post!')
         self.assertEqual(post.total_likes, 1)
         self.assertEqual(post.total_comments, 1)
+
+
+import io
+from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
+from posts.utils import detect_media_type, compress_image
+
+class MediaProcessingTestCase(TestCase):
+    def test_detect_media_type(self):
+        self.assertEqual(detect_media_type('photo.jpg'), 'image')
+        self.assertEqual(detect_media_type('clip.mp4'), 'video')
+        self.assertEqual(detect_media_type('recording.MOV'), 'video')
+        self.assertEqual(detect_media_type('graphic.png'), 'image')
+
+    def test_compress_image(self):
+        # Create an uncompressed 1500x1500 image in memory
+        image = Image.new('RGB', (1500, 1500), color='blue')
+        img_io = io.BytesIO()
+        image.save(img_io, format='JPEG', quality=100)
+        img_io.seek(0)
+        uploaded = SimpleUploadedFile('test.jpg', img_io.getvalue(), content_type='image/jpeg')
+
+        compressed = compress_image(uploaded, max_size=(1080, 1080), quality=85)
+        self.assertIsNotNone(compressed)
+        
+        # Verify resized dimensions
+        res_img = Image.open(compressed)
+        self.assertLessEqual(res_img.width, 1080)
+        self.assertLessEqual(res_img.height, 1080)
+
