@@ -268,12 +268,26 @@ Follow this order to write the code yourself with complete understanding:
      ```powershell
      .\venv\Scripts\Activate.ps1
      ```
-2. **Apply Migrations**:
+2. **Apply Database Migrations**:
    ```bash
    python manage.py migrate
    ```
-3. **Start the Development Server**:
+3. **Populate Demo Users & Media (Photos & Videos)**:
+   ```bash
+   python manage.py populate_data
+   ```
+   *Demo accounts created:*
+   - `alex_dev` / `password123`
+   - `sarah_creator` / `password123`
+   - `code_ninja` / `password123`
+
+   *To clean up and remove all mock data anytime:*
+   ```bash
+   python manage.py populate_data --clear
+   ```
+4. **Start the Development Server**:
    ```bash
    python manage.py runserver
    ```
-4. Open your browser at `http://127.0.0.1:8000/`.
+5. Open your browser at `http://127.0.0.1:8000/`.
+
