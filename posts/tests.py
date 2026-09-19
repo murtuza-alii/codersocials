@@ -96,3 +96,17 @@ class PostViewsTestCase(TestCase):
         self.assertEqual(post.caption, 'Hello from test')
 
 
+from django.core.management import call_command
+
+class ManagementCommandTestCase(TestCase):
+    def test_populate_and_clear_command(self):
+        call_command('populate_data')
+        self.assertTrue(User.objects.filter(username='alex_dev').exists())
+        self.assertTrue(Post.objects.filter(author__username='alex_dev').exists())
+
+        call_command('populate_data', clear=True)
+        self.assertFalse(User.objects.filter(username='alex_dev').exists())
+        self.assertFalse(Post.objects.filter(author__username='alex_dev').exists())
+
+
+
