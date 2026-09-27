@@ -33,6 +33,35 @@ class ModelsTestCase(TestCase):
         self.assertEqual(post.total_comments, 1)
 
 
+from communities.models import Community
+from posts.models import PostMedia
+
+class PostMediaCarouselTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('bob_test', password='password123')
+        self.comm = Community.objects.create(name='Creators Hub', creator=self.user)
+
+    def test_create_post_with_multiple_media_items(self):
+        post = Post.objects.create(
+            community=self.comm,
+            author=self.user,
+            caption='Check out my project photos and demo clip!'
+        )
+        media1 = PostMedia.objects.create(post=post, media_type='image', order=0)
+        media2 = PostMedia.objects.create(post=post, media_type='video', order=1)
+
+        self.assertEqual(post.media_items.count(), 2)
+        self.assertEqual(post.media_items.first().media_type, 'image')
+        self.assertEqual(post.media_items.last().media_type, 'video')
+        self.assertTrue(post.has_carousel)
+
+    def test_post_sharing_relationship(self):
+        original = Post.objects.create(community=self.comm, author=self.user, caption='Original announcement')
+        shared = Post.objects.create(community=self.comm, author=self.user, caption='Check this out!', shared_from=original)
+        self.assertEqual(shared.shared_from, original)
+        self.assertIn(shared, original.shares.all())
+
+
 import io
 from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
