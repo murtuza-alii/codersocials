@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}New Personal Group Chat{% endblock %}
+
+{% block content %}
+<div style="max-width: 550px; margin: 40px auto; background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 24px;">
+    <h1 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 6px;">Create a Personal Group Chat</h1>
+    <p style="color: var(--sanctuary-text-muted); font-size: 0.85rem; margin-bottom: 20px;">
+        Start an independent group chat with your chosen friends, unassociated with any community space.
+    </p>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div style="margin-bottom: 18px;">
+            <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Group Name *</label>
+            <input type="text" name="title" required placeholder="e.g. Weekend Hackers, Study Squad" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--sanctuary-border); background: var(--sanctuary-surface); color: var(--sanctuary-text); outline: none;">
+        </div>
+
+        <div style="margin-bottom: 24px;">
+            <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 8px;">Select Friends to Add</label>
+            <div style="max-height: 220px; overflow-y: auto; background: var(--sanctuary-surface); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-md); padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+                {% for u in users %}
+                <label style="display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: var(--radius-md); cursor: pointer;" onmouseover="this.style.background='var(--sanctuary-surface-hover)'" onmouseout="this.style.background='transparent'">
+                    <input type="checkbox" name="members" value="{{ u.username }}">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--sanctuary-card); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;">
+                        {{ u.username|slice:":2"|upper }}
+                    </div>
+                    <span style="font-size: 0.9rem; font-weight: 600;">@{{ u.username }}</span>
+                </label>
+                {% empty %}
+                <div style="color: var(--sanctuary-text-muted); font-size: 0.85rem; padding: 10px;">No other registered users found.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <a href="{% url 'chat:inbox' %}" style="padding: 8px 16px; border-radius: var(--radius-md); background: var(--sanctuary-surface); color: var(--sanctuary-text); text-decoration: none; border: 1px solid var(--sanctuary-border); font-size: 0.85rem;">Cancel</a>
+            <button type="submit" style="padding: 8px 20px; border-radius: var(--radius-md); background: var(--sanctuary-accent); color: #fff; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+                Create Group
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

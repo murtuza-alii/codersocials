@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Channel - {{ community.name }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 40px auto; background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 24px;">
+    <h1 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 6px;">Create a Channel in {{ community.name }}</h1>
+    <p style="color: var(--sanctuary-text-muted); font-size: 0.85rem; margin-bottom: 20px;">Channels organize discussions into distinct topics (e.g. #general, #study, #announcements).</p>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div style="margin-bottom: 16px;">
+            <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Channel Name *</label>
+            <input type="text" name="name" required placeholder="e.g. general, exam-resources, memes" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--sanctuary-border); background: var(--sanctuary-surface); color: var(--sanctuary-text); outline: none;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Channel Topic</label>
+            <input type="text" name="topic" placeholder="What is discussed in this channel?" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--sanctuary-border); background: var(--sanctuary-surface); color: var(--sanctuary-text); outline: none;">
+        </div>
+
+        <div style="margin-bottom: 24px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem;">
+                <input type="checkbox" name="is_announcement" value="1">
+                <span>Announcement Channel (Only admins/moderators can post)</span>
+            </label>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <a href="{% url 'communities:detail' slug=community.slug %}" style="padding: 8px 16px; border-radius: var(--radius-md); background: var(--sanctuary-surface); color: var(--sanctuary-text); text-decoration: none; border: 1px solid var(--sanctuary-border); font-size: 0.85rem;">Cancel</a>
+            <button type="submit" style="padding: 8px 20px; border-radius: var(--radius-md); background: var(--sanctuary-accent); color: #fff; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+                Create Channel
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

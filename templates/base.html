@@ -4,62 +4,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SocialConnect{% endblock %} - Connect & Share</title>
+    <title>{% block title %}Sanctuary{% endblock %} - Community Platform</title>
     <!-- Modern Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome for standard social icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- App Stylesheet -->
+    <!-- App & Sanctuary Stylesheets -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sanctuary_layout.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <div class="app-layout">
+    <div class="sanctuary-app">
         {% if user.is_authenticated %}
-        <!-- Instagram-style Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="sidebar-brand">
-                <a href="{% url 'feed' %}" class="brand-logo">
-                    <i class="fa-brands fa-instagram brand-icon"></i>
-                    <span class="brand-text">SocialConnect</span>
-                </a>
-            </div>
-            <nav class="sidebar-nav">
-                <a href="{% url 'feed' %}" class="nav-item {% if request.resolver_match.url_name == 'feed' %}active{% endif %}">
-                    <i class="fa-solid fa-house"></i>
-                    <span>Feed</span>
-                </a>
-                <a href="{% url 'explore' %}" class="nav-item {% if request.resolver_match.url_name == 'explore' %}active{% endif %}">
-                    <i class="fa-regular fa-compass"></i>
-                    <span>Explore</span>
-                </a>
-                <a href="{% url 'create_post' %}" class="nav-item {% if request.resolver_match.url_name == 'create_post' %}active{% endif %}">
-                    <i class="fa-regular fa-square-plus"></i>
-                    <span>Create</span>
-                </a>
-                <a href="{% url 'profile' username=user.username %}" class="nav-item {% if request.resolver_match.url_name == 'profile' and request.resolver_match.kwargs.username == user.username %}active{% endif %}">
-                    {% if user.profile.avatar %}
-                        <img src="{{ user.profile.avatar.url }}" alt="avatar" class="nav-avatar">
+        <!-- 1. Primary Slim Icon Rail -->
+        <aside class="primary-rail">
+            <!-- Home Feed Button -->
+            <a href="{% url 'feed' %}" class="rail-btn {% if request.resolver_match.url_name == 'feed' %}active{% endif %}" title="Home Sanctuary Feed">
+                <i class="fa-solid fa-house"></i>
+            </a>
+
+            <div class="rail-divider"></div>
+
+            <!-- Joined Communities Avatars -->
+            <div class="rail-section">
+                {% for comm in joined_communities %}
+                <a href="{% url 'communities:detail' slug=comm.slug %}" class="rail-btn {% if community and community.id == comm.id %}active{% endif %}" title="{{ comm.name }}">
+                    {% if comm.avatar %}
+                        <img src="{{ comm.avatar.url }}" alt="{{ comm.name }}">
                     {% else %}
-                        <i class="fa-regular fa-user"></i>
+                        <span>{{ comm.name|slice:":2"|upper }}</span>
                     {% endif %}
-                    <span>Profile</span>
                 </a>
-                <a href="{% url 'logout' %}" class="nav-item nav-logout">
-                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                    <span>Logout</span>
-                </a>
-            </nav>
+                {% endfor %}
+            </div>
+
+            <!-- Add / Explore Communities -->
+            <a href="{% url 'communities:create' %}" class="rail-btn" title="Create Community Space">
+                <i class="fa-solid fa-plus"></i>
+            </a>
+            <a href="{% url 'communities:explore' %}" class="rail-btn {% if request.resolver_match.url_name == 'explore' and 'communities' in request.path %}active{% endif %}" title="Discover Communities">
+                <i class="fa-solid fa-compass"></i>
+            </a>
+
+            <div class="rail-divider"></div>
+
+            <!-- Direct Messaging & Personal Groups -->
+            <a href="{% url 'chat:inbox' %}" class="rail-btn {% if 'chat' in request.path and not community %}active{% endif %}" title="Direct Messages & Groups">
+                <i class="fa-solid fa-comments"></i>
+            </a>
+
+            <!-- Create Post Button -->
+            <a href="{% url 'create_post' %}" class="rail-btn {% if request.resolver_match.url_name == 'create_post' %}active{% endif %}" title="New Post">
+                <i class="fa-solid fa-pen-to-square"></i>
+            </a>
+
+            <!-- Spacer -->
+            <div style="flex: 1;"></div>
+
+            <!-- User Profile & Logout -->
+            <a href="{% url 'profile' username=user.username %}" class="rail-btn" title="{{ user.username }}'s Profile">
+                {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar.url }}" alt="avatar">
+                {% else %}
+                    <i class="fa-solid fa-user"></i>
+                {% endif %}
+            </a>
+            <a href="{% url 'logout' %}" class="rail-btn" title="Sign Out">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </a>
+        </aside>
+
+        <!-- 2. Secondary Accordion Drawer (Expands on Hover on Desktop / Tap on Mobile) -->
+        <aside class="secondary-accordion">
+            <div class="accordion-inner">
+                {% if community %}
+                    <!-- Inside Community Context -->
+                    <div class="accordion-header">
+                        <div class="accordion-title">{{ community.name }}</div>
+                        <button type="button" id="pin-accordion-btn" title="Pin / Unpin Sidebar" style="background:none; border:none; color:var(--sanctuary-text-muted); cursor:pointer;">
+                            <i class="fa-solid fa-angles-left"></i>
+                        </button>
+                    </div>
+
+                    <div style="font-size: 0.8rem; color: var(--sanctuary-text-muted); margin-bottom: 12px;">
+                        <span class="community-pill-tag">{{ community.get_privacy_display }} Space</span>
+                        • {{ community.member_count }} Members
+                    </div>
+
+                    <!-- Channels List -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--sanctuary-text-muted); letter-spacing: 0.05em;">CHANNELS</span>
+                        {% if is_admin %}
+                        <a href="{% url 'chat:create_channel' community_slug=community.slug %}" style="color: var(--sanctuary-accent); font-size: 0.85rem;" title="Create Channel">
+                            <i class="fa-solid fa-plus"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+
+                    <nav class="accordion-nav-list">
+                        <a href="{% url 'communities:detail' slug=community.slug %}" class="accordion-nav-item {% if not channel %}active{% endif %}">
+                            <i class="fa-solid fa-newspaper"></i>
+                            <span>Feed & Posts</span>
+                        </a>
+                        {% for ch in community.channels.all %}
+                        <a href="{% url 'chat:channel_chat' community_slug=community.slug channel_slug=ch.slug %}" class="accordion-nav-item {% if channel and channel.id == ch.id %}active{% endif %} {% if ch.is_announcement %}is-announcement{% endif %}">
+                            <i class="fa-solid {% if ch.is_announcement %}fa-bullhorn{% else %}fa-hashtag{% endif %}"></i>
+                            <span>{{ ch.name }}</span>
+                        </a>
+                        {% empty %}
+                        <div style="font-size: 0.8rem; color: var(--sanctuary-text-muted); padding: 4px 8px;">No channels yet</div>
+                        {% endfor %}
+                    </nav>
+
+                    <!-- Rules Charter -->
+                    {% if community.rules %}
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--sanctuary-text-muted); letter-spacing: 0.05em; margin-bottom: 6px;">RULES & VALUES</div>
+                    <div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-md); padding: 10px; font-size: 0.8rem; color: var(--sanctuary-text-muted); white-space: pre-wrap; margin-bottom: 16px;">{{ community.rules }}</div>
+                    {% endif %}
+
+                    <!-- Admin / Member Actions -->
+                    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+                        {% if is_admin %}
+                        <a href="{% url 'communities:manage_members' slug=community.slug %}" class="accordion-nav-item">
+                            <i class="fa-solid fa-user-shield"></i>
+                            <span>Manage Members</span>
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'communities:leave' slug=community.slug %}" class="accordion-nav-item" style="color: var(--sanctuary-rose);">
+                            <i class="fa-solid fa-person-walking-dashed-line-arrow-right"></i>
+                            <span>Leave Space</span>
+                        </a>
+                    </div>
+
+                {% else %}
+                    <!-- Global / Home Context -->
+                    <div class="accordion-header">
+                        <div class="accordion-title">Sanctuary</div>
+                        <button type="button" id="pin-accordion-btn" title="Pin / Unpin Sidebar" style="background:none; border:none; color:var(--sanctuary-text-muted); cursor:pointer;">
+                            <i class="fa-solid fa-angles-left"></i>
+                        </button>
+                    </div>
+
+                    <nav class="accordion-nav-list">
+                        <a href="{% url 'feed' %}" class="accordion-nav-item {% if request.resolver_match.url_name == 'feed' %}active{% endif %}">
+                            <i class="fa-solid fa-house"></i>
+                            <span>My Sanctuary Feed</span>
+                        </a>
+                        <a href="{% url 'communities:explore' %}" class="accordion-nav-item">
+                            <i class="fa-solid fa-compass"></i>
+                            <span>Discover Spaces</span>
+                        </a>
+                        <a href="{% url 'chat:inbox' %}" class="accordion-nav-item {% if 'chat' in request.path %}active{% endif %}">
+                            <i class="fa-solid fa-envelope"></i>
+                            <span>Direct Messages</span>
+                        </a>
+                        <a href="{% url 'chat:create_group' %}" class="accordion-nav-item">
+                            <i class="fa-solid fa-users"></i>
+                            <span>New Personal Group</span>
+                        </a>
+                        <a href="{% url 'create_post' %}" class="accordion-nav-item">
+                            <i class="fa-solid fa-circle-plus"></i>
+                            <span>Create Post</span>
+                        </a>
+                    </nav>
+
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--sanctuary-text-muted); letter-spacing: 0.05em; margin-bottom: 8px;">MY JOINED SPACES</div>
+                    <div style="display: flex; flex-direction: column; gap: 4px; overflow-y: auto;">
+                        {% for comm in joined_communities %}
+                        <a href="{% url 'communities:detail' slug=comm.slug %}" class="accordion-nav-item">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span style="overflow: hidden; text-overflow: ellipsis;">{{ comm.name }}</span>
+                        </a>
+                        {% empty %}
+                        <div style="font-size: 0.8rem; color: var(--sanctuary-text-muted); padding: 8px;">
+                            You haven't joined any spaces yet.<br>
+                            <a href="{% url 'communities:explore' %}" style="color: var(--sanctuary-accent);">Browse directory →</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
         </aside>
         {% endif %}
 
-        <!-- Main Content Area -->
-        <main class="main-content {% if not user.is_authenticated %}auth-layout{% endif %}">
-            <!-- Flash Messages -->
+        <!-- 3. Main Workspace Area -->
+        <main class="sanctuary-main {% if not user.is_authenticated %}auth-layout{% endif %}">
+            <!-- Topbar Header -->
+            <header class="sanctuary-topbar">
+                <div class="topbar-left">
+                    {% if user.is_authenticated %}
+                    <button type="button" class="drawer-toggle-btn" id="drawer-toggle-btn" title="Toggle Navigation">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    {% endif %}
+                    <a href="{% url 'feed' %}" style="font-weight: 800; font-size: 1.15rem; letter-spacing: -0.02em; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-shield-cat" style="color: var(--sanctuary-accent);"></i>
+                        <span>Sanctuary</span>
+                    </a>
+                </div>
+
+                <div class="topbar-right">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'create_post' %}" class="post-action-btn" style="background: var(--sanctuary-accent); color:#fff; padding:6px 14px; border-radius:var(--radius-md); font-weight:600; font-size:0.85rem;">
+                        <i class="fa-solid fa-plus"></i> Post
+                    </a>
+                    {% else %}
+                    <a href="{% url 'login' %}" style="color: var(--sanctuary-text); margin-right: 12px;">Sign In</a>
+                    <a href="{% url 'register' %}" style="background: var(--sanctuary-accent); color: #fff; padding: 6px 14px; border-radius: var(--radius-md);">Register</a>
+                    {% endif %}
+                </div>
+            </header>
+
+            <!-- Alerts / Toast Messages -->
             {% if messages %}
-            <div class="toast-container">
+            <div class="toast-container" style="padding: 16px 24px 0 24px;">
                 {% for message in messages %}
                 <div class="toast-alert toast-{{ message.tags }}">
                     <i class="fa-solid fa-circle-info"></i>
@@ -69,20 +230,16 @@
             </div>
             {% endif %}
 
-            {% block content %}{% endblock %}
+            <!-- Dynamic Body Content -->
+            <div class="sanctuary-content">
+                {% block content %}{% endblock %}
+            </div>
         </main>
     </div>
 
-    <!-- Mobile Bottom Navigation Bar -->
-    {% if user.is_authenticated %}
-    <nav class="mobile-bottom-bar">
-        <a href="{% url 'feed' %}"><i class="fa-solid fa-house"></i></a>
-        <a href="{% url 'explore' %}"><i class="fa-regular fa-compass"></i></a>
-        <a href="{% url 'create_post' %}"><i class="fa-regular fa-square-plus"></i></a>
-        <a href="{% url 'profile' username=user.username %}"><i class="fa-regular fa-user"></i></a>
-    </nav>
-    {% endif %}
-
+    <!-- Scripts -->
+    <script src="{% static 'js/carousel_player.js' %}"></script>
+    <script src="{% static 'js/accordion_sidebar.js' %}"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

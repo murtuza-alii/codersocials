@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if conversation.is_group %}
+        {{ conversation.title }}
+    {% else %}
+        Chat with @{{ other_user.username }}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Header -->
+    <div style="padding: 12px 20px; background: var(--sanctuary-surface); border-bottom: 1px solid var(--sanctuary-border); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--sanctuary-card); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: var(--sanctuary-accent);">
+                {% if conversation.is_group %}
+                    <i class="fa-solid fa-users"></i>
+                {% else %}
+                    <i class="fa-solid fa-user"></i>
+                {% endif %}
+            </div>
+            <div>
+                <div style="font-weight: 800; font-size: 1.05rem;">
+                    {% if conversation.is_group %}
+                        {{ conversation.title }}
+                    {% else %}
+                        @{{ other_user.username }}
+                    {% endif %}
+                </div>
+                <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted);">
+                    {% if conversation.is_group %}
+                        {{ participants.count }} members:
+                        {% for p in participants|slice:":5" %}@{{ p.user.username }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    {% else %}
+                        Direct Message
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <a href="{% url 'chat:inbox' %}" style="font-size: 0.85rem; color: var(--sanctuary-text-muted); text-decoration: none;">
+            <i class="fa-solid fa-arrow-left"></i> All Messages
+        </a>
+    </div>
+
+    <!-- Message Stream -->
+    <div class="chat-messages-flow" id="dm-stream">
+        {% for msg in chat_messages %}
+        <div class="chat-bubble-row" style="{% if msg.sender == user %}flex-direction: row-reverse;{% endif %}">
+            <div style="width: 34px; height: 34px; border-radius: 50%; background: var(--sanctuary-surface); display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                {% if msg.sender.profile.avatar %}
+                <img src="{{ msg.sender.profile.avatar.url }}" alt="{{ msg.sender.username }}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+                {% else %}
+                {{ msg.sender.username|slice:":2"|upper }}
+                {% endif %}
+            </div>
+            <div class="chat-msg-body" style="{% if msg.sender == user %}background: rgba(99, 102, 241, 0.2); border-color: rgba(99, 102, 241, 0.3);{% endif %}">
+                <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px;">
+                    <span style="font-weight: 700; font-size: 0.85rem; color: var(--sanctuary-text);">@{{ msg.sender.username }}</span>
+                    <span style="font-size: 0.7rem; color: var(--sanctuary-text-muted);">{{ msg.created_at|date:"M d, H:i" }}</span>
+                </div>
+                <div style="font-size: 0.9rem; line-height: 1.4; color: var(--sanctuary-text); white-space: pre-wrap;">{{ msg.message }}</div>
+                {% if msg.attachment %}
+                <div style="margin-top: 8px;">
+                    <a href="{{ msg.attachment.url }}" target="_blank" style="font-size: 0.8rem; color: var(--sanctuary-accent);">
+                        <i class="fa-solid fa-paperclip"></i> View Attachment
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; color: var(--sanctuary-text-muted); margin: auto; padding: 40px;">
+            <i class="fa-solid fa-hand-wave" style="font-size: 2.2rem; margin-bottom: 12px; display: block;"></i>
+            <h3>Say hello!</h3>
+            <p style="font-size: 0.85rem; margin-top: 4px;">Send your first direct message in this private thread.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Message Composer -->
+    <form method="POST" enctype="multipart/form-data" class="chat-input-bar">
+        {% csrf_token %}
+        <input type="text" name="message" placeholder="Type a message..." required autocomplete="off" style="flex: 1; padding: 10px 16px; border-radius: var(--radius-md); border: 1px solid var(--sanctuary-border); background: var(--sanctuary-card); color: var(--sanctuary-text); outline: none;">
+        <label style="cursor: pointer; display: flex; align-items: center; padding: 0 12px; color: var(--sanctuary-text-muted);" title="Add file attachment">
+            <i class="fa-solid fa-paperclip"></i>
+            <input type="file" name="attachment" style="display: none;">
+        </label>
+        <button type="submit" style="background: var(--sanctuary-accent); color: #fff; border: none; padding: 10px 18px; border-radius: var(--radius-md); font-weight: 700; cursor: pointer;">
+            <i class="fa-solid fa-paper-plane"></i>
+        </button>
+    </form>
+</div>
+
+<script>
+    const dmStream = document.getElementById('dm-stream');
+    if (dmStream) {
+        dmStream.scrollTop = dmStream.scrollHeight;
+    }
+</script>
+{% endblock %}

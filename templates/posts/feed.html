@@ -1,95 +1,142 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Feed - SocialConnect{% endblock %}
+{% block title %}Sanctuary Feed{% endblock %}
 
 {% block content %}
-<div class="feed-container">
+<div style="max-width: 680px; margin: 0 auto;">
+    <!-- Welcome Header / Community Filter Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h1 style="font-size: 1.6rem; font-weight: 800;">My Sanctuary Feed</h1>
+            <p style="color: var(--sanctuary-text-muted); font-size: 0.85rem;">
+                Private, isolated updates from your approved spaces and friends.
+            </p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <a href="{% url 'communities:explore' %}" style="padding: 8px 14px; border-radius: var(--radius-md); background: var(--sanctuary-surface); border: 1px solid var(--sanctuary-border); color: var(--sanctuary-text); font-size: 0.85rem; text-decoration: none;">
+                <i class="fa-solid fa-compass"></i> Discover Spaces
+            </a>
+            <a href="{% url 'create_post' %}" style="padding: 8px 16px; border-radius: var(--radius-md); background: var(--sanctuary-accent); color: #fff; font-weight: 700; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-plus"></i> New Post
+            </a>
+        </div>
+    </div>
+
     {% if posts %}
         {% for post in posts %}
-        <article class="post-card">
+        <article class="sanctuary-post-card">
             <!-- Post Header -->
-            <div class="post-header">
-                <a href="{% url 'profile' username=post.author.username %}" class="post-user-info">
+            <div class="post-header-sanctuary">
+                <div class="post-author-box">
                     {% if post.author.profile.avatar %}
-                        <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}" class="avatar-img">
+                    <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}" class="post-avatar-img">
                     {% else %}
-                        <div class="avatar-img" style="display: flex; align-items: center; justify-content: center; background: var(--bg-surface-hover);">
-                            <i class="fa-regular fa-user" style="font-size: 0.8rem;"></i>
-                        </div>
+                    <div class="post-avatar-img" style="background: var(--sanctuary-surface); display:flex; align-items:center; justify-content:center; font-weight:700;">
+                        {{ post.author.username|slice:":2"|upper }}
+                    </div>
                     {% endif %}
                     <div>
-                        <div class="post-username">{{ post.author.username }}</div>
-                        <div class="post-time">{{ post.created_at|timesince }} ago</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <a href="{% url 'profile' username=post.author.username %}" style="font-weight: 700; font-size: 0.95rem; text-decoration: none;">
+                                @{{ post.author.username }}
+                            </a>
+                            {% if post.community %}
+                            <a href="{% url 'communities:detail' slug=post.community.slug %}" class="community-pill-tag" style="text-decoration: none;">
+                                <i class="fa-solid {% if post.community.privacy == 'PRIVATE' %}fa-lock{% else %}fa-globe{% endif %}"></i> {{ post.community.name }}
+                            </a>
+                            {% else %}
+                            <span style="font-size: 0.75rem; color: var(--sanctuary-text-muted);">General</span>
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted); margin-top: 2px;">
+                            {{ post.created_at|timesince }} ago
+                            {% if post.tag %}
+                            • <span style="color: var(--sanctuary-accent); font-weight: 600;">{{ post.tag }}</span>
+                            {% endif %}
+                        </div>
                     </div>
-                </a>
-            </div>
-
-            <!-- Post Media (Image or Video) -->
-            <div class="post-image-container">
-                {% if post.is_video %}
-                    <video class="post-image" controls playsinline preload="metadata" {% if post.thumbnail %}poster="{{ post.thumbnail.url }}"{% endif %} style="width: 100%; max-height: 600px; background: #000;">
-                        <source src="{{ post.media_file.url }}">
-                        Your browser does not support HTML5 video.
-                    </video>
-                {% else %}
-                    <a href="{% url 'post_detail' pk=post.pk %}">
-                        <img src="{{ post.media_file.url }}" alt="Post by {{ post.author.username }}" class="post-image">
-                    </a>
-                {% endif %}
-            </div>
-
-            <!-- Post Actions (Like, Comment, Share) -->
-            <div class="post-actions">
-                <form action="{% url 'like_toggle' pk=post.pk %}" method="POST" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="action-btn {% if post.pk in liked_post_ids %}liked{% endif %}">
-                        {% if post.pk in liked_post_ids %}
-                            <i class="fa-solid fa-heart"></i>
-                        {% else %}
-                            <i class="fa-regular fa-heart"></i>
-                        {% endif %}
-                    </button>
-                </form>
-                <a href="{% url 'post_detail' pk=post.pk %}" class="action-btn">
-                    <i class="fa-regular fa-comment"></i>
-                </a>
-            </div>
-
-            <!-- Post Details (Likes, Caption, Comments link) -->
-            <div class="post-details">
-                <div class="likes-count">{{ post.total_likes }} like{{ post.total_likes|pluralize }}</div>
-                {% if post.caption %}
-                <div class="caption-text">
-                    <a href="{% url 'profile' username=post.author.username %}" class="caption-user">{{ post.author.username }}</a>
-                    {{ post.caption }}
                 </div>
-                {% endif %}
 
-                {% if post.total_comments > 0 %}
-                <a href="{% url 'post_detail' pk=post.pk %}" class="comments-link">
-                    View all {{ post.total_comments }} comment{{ post.total_comments|pluralize }}
-                </a>
+                <!-- Post Actions Menu -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    {% if post.author == user or post.community.creator == user %}
+                    <form method="POST" action="{% url 'takedown_post' pk=post.id %}" onsubmit="return confirm('Take down this post?');" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" style="background: rgba(244, 63, 94, 0.1); color: var(--sanctuary-rose); border: 1px solid rgba(244, 63, 94, 0.2); padding: 4px 10px; border-radius: var(--radius-md); font-size: 0.75rem; cursor: pointer;" title="Take down post">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Post Text Content -->
+            {% if post.caption %}
+            <div style="padding: 0 16px 14px 16px; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">{{ post.caption }}</div>
+            {% endif %}
+
+            <!-- Shared From Reference -->
+            {% if post.shared_from %}
+            <div style="margin: 0 16px 14px 16px; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--sanctuary-border); background: var(--sanctuary-surface);">
+                <div style="font-size: 0.8rem; color: var(--sanctuary-text-muted); margin-bottom: 6px;">
+                    <i class="fa-solid fa-retweet"></i> Shared from @{{ post.shared_from.author.username }} in {{ post.shared_from.community.name|default:"General" }}
+                </div>
+                {% if post.shared_from.caption %}
+                <p style="font-size: 0.85rem;">{{ post.shared_from.caption|truncatewords:25 }}</p>
                 {% endif %}
             </div>
+            {% endif %}
+
+            <!-- Multi-Media Carousel (Instagram-Style Player) -->
+            {% if post.media_items.exists or post.media_file %}
+                {% include 'components/carousel.html' with post=post %}
+            {% endif %}
+
+            <!-- Actions Bar -->
+            <div class="post-actions-bar">
+                <a href="{% url 'like_toggle' pk=post.id %}" class="post-action-btn {% if post.id in liked_post_ids %}liked{% endif %}">
+                    <i class="fa-solid fa-heart"></i>
+                    <span>{{ post.total_likes }}</span>
+                </a>
+
+                <a href="{% url 'post_detail' pk=post.id %}" class="post-action-btn">
+                    <i class="fa-solid fa-comment"></i>
+                    <span>{{ post.total_comments }}</span>
+                </a>
+
+                <button type="button" class="post-action-btn" onclick="navigator.clipboard.writeText(window.location.origin + '{% url 'post_detail' pk=post.id %}'); alert('Link copied to clipboard!');" title="Copy Link">
+                    <i class="fa-solid fa-share-nodes"></i>
+                </button>
+            </div>
+
+            <!-- Comments Preview -->
+            {% if post.total_comments > 0 %}
+            <div style="padding: 0 16px 10px 16px;">
+                <a href="{% url 'post_detail' pk=post.id %}" style="font-size: 0.8rem; color: var(--sanctuary-text-muted); text-decoration: none;">
+                    View all {{ post.total_comments }} discussion comment{{ post.total_comments|pluralize }} →
+                </a>
+            </div>
+            {% endif %}
 
             <!-- Quick Comment Box -->
-            <form action="{% url 'add_comment' pk=post.pk %}" method="POST" class="quick-comment-form">
+            <form action="{% url 'add_comment' pk=post.id %}" method="POST" style="display: flex; padding: 10px 16px; border-top: 1px solid var(--sanctuary-border);">
                 {% csrf_token %}
-                <input type="text" name="text" placeholder="Add a comment..." required>
-                <button type="submit">Post</button>
+                <input type="text" name="text" placeholder="Add an organic discussion comment..." required style="flex: 1; background: transparent; border: none; color: var(--sanctuary-text); font-size: 0.85rem; outline: none;">
+                <button type="submit" style="background: none; border: none; color: var(--sanctuary-accent); font-weight: 700; cursor: pointer; font-size: 0.85rem;">Post</button>
             </form>
         </article>
         {% endfor %}
     {% else %}
-        <div style="text-align: center; padding: 60px 20px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
-            <i class="fa-regular fa-compass" style="font-size: 3rem; color: #e1306c; margin-bottom: 16px; display: block;"></i>
-            <h2>Welcome to SocialConnect!</h2>
-            <p style="color: var(--text-secondary); margin: 12px 0 24px; font-size: 0.95rem;">
-                Your feed is empty because you haven't followed anyone or posted yet.
+        <div style="text-align: center; padding: 60px 20px; background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg);">
+            <i class="fa-solid fa-shield-cat" style="font-size: 3rem; color: var(--sanctuary-accent); margin-bottom: 16px; display: block;"></i>
+            <h2 style="font-size: 1.4rem; font-weight: 800;">Welcome to your Sanctuary!</h2>
+            <p style="color: var(--sanctuary-text-muted); margin: 12px 0 24px; font-size: 0.95rem;">
+                Your feed displays posts only from approved community spaces you have joined.
             </p>
-            <div style="display: flex; gap: 12px; justify-content: center;">
-                <a href="{% url 'explore' %}" class="btn btn-primary">Explore Posts</a>
-                <a href="{% url 'create_post' %}" class="btn btn-secondary">Create Post</a>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <a href="{% url 'communities:explore' %}" style="background: var(--sanctuary-accent); color: #fff; padding: 10px 20px; border-radius: var(--radius-md); font-weight: 700; text-decoration: none;">Discover Community Spaces</a>
+                <a href="{% url 'communities:create' %}" style="background: var(--sanctuary-surface); border: 1px solid var(--sanctuary-border); color: var(--sanctuary-text); padding: 10px 20px; border-radius: var(--radius-md); font-weight: 600; text-decoration: none;">Create Your Own Space</a>
             </div>
         </div>
     {% endif %}

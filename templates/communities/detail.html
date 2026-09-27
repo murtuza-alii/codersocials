@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ community.name }}{% endblock %}
+
+{% block content %}
+<!-- Space Header Banner -->
+<div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 24px;">
+    <div style="height: 140px; background: linear-gradient(135deg, #1e1b4b, #312e81); position: relative;">
+        {% if community.banner %}
+        <img src="{{ community.banner.url }}" alt="{{ community.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+        {% endif %}
+    </div>
+
+    <div style="padding: 16px 24px 20px 24px; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 14px; margin-top: -50px; margin-bottom: 12px;">
+            <div style="width: 72px; height: 72px; border-radius: 50%; border: 4px solid var(--sanctuary-card); background: var(--sanctuary-surface); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #fff;">
+                {% if community.avatar %}
+                <img src="{{ community.avatar.url }}" alt="{{ community.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                {{ community.name|slice:":2"|upper }}
+                {% endif %}
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                {% if is_admin %}
+                <a href="{% url 'communities:manage_members' slug=community.slug %}" style="padding: 8px 14px; border-radius: var(--radius-md); background: var(--sanctuary-surface); color: var(--sanctuary-text); border: 1px solid var(--sanctuary-border); font-size: 0.85rem; font-weight: 600; text-decoration: none;">
+                    <i class="fa-solid fa-users-gear"></i> Manage Members
+                </a>
+                <a href="{% url 'chat:create_channel' community_slug=community.slug %}" style="padding: 8px 14px; border-radius: var(--radius-md); background: var(--sanctuary-surface); color: var(--sanctuary-text); border: 1px solid var(--sanctuary-border); font-size: 0.85rem; font-weight: 600; text-decoration: none;">
+                    <i class="fa-solid fa-plus"></i> New Channel
+                </a>
+                {% endif %}
+                <a href="{% url 'create_post' %}?community={{ community.slug }}" style="padding: 8px 18px; border-radius: var(--radius-md); background: var(--sanctuary-accent); color: #fff; font-size: 0.85rem; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-pen-nib"></i> Post in Space
+                </a>
+            </div>
+        </div>
+
+        <h1 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 4px;">{{ community.name }}</h1>
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--sanctuary-text-muted); margin-bottom: 12px;">
+            <span class="community-pill-tag"><i class="fa-solid {% if community.privacy == 'PRIVATE' %}fa-lock{% else %}fa-globe{% endif %}"></i> {{ community.get_privacy_display }}</span>
+            <span>•</span>
+            <span><i class="fa-solid fa-users"></i> {{ community.member_count }} members</span>
+            <span>•</span>
+            <span>Created by @{{ community.creator.username }}</span>
+        </div>
+
+        {% if community.description %}
+        <p style="color: var(--sanctuary-text-muted); font-size: 0.9rem; line-height: 1.5;">{{ community.description }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Channels Tab Bar -->
+    {% if channels %}
+    <div style="display: flex; gap: 8px; padding: 10px 24px; border-top: 1px solid var(--sanctuary-border); background: var(--sanctuary-surface); overflow-x: auto;">
+        <span style="font-size: 0.8rem; font-weight: 700; color: var(--sanctuary-text-muted); align-self: center; margin-right: 6px;">DISCUSSIONS:</span>
+        {% for ch in channels %}
+        <a href="{% url 'chat:channel_chat' community_slug=community.slug channel_slug=ch.slug %}" style="padding: 4px 12px; border-radius: 14px; background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); color: var(--sanctuary-text); font-size: 0.8rem; text-decoration: none; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+            <i class="fa-solid {% if ch.is_announcement %}fa-bullhorn{% else %}fa-hashtag{% endif %}"></i>
+            <span>{{ ch.name }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Community Posts Stream -->
+<div style="max-width: 680px; margin: 0 auto;">
+    {% for post in posts %}
+    <article class="sanctuary-post-card">
+        <!-- Post Header -->
+        <div class="post-header-sanctuary">
+            <div class="post-author-box">
+                {% if post.author.profile.avatar %}
+                <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}" class="post-avatar-img">
+                {% else %}
+                <div class="post-avatar-img" style="background: var(--sanctuary-surface); display:flex; align-items:center; justify-content:center; font-weight:700;">
+                    {{ post.author.username|slice:":2"|upper }}
+                </div>
+                {% endif %}
+                <div>
+                    <a href="{% url 'profile' username=post.author.username %}" style="font-weight: 700; font-size: 0.95rem; text-decoration: none;">
+                        @{{ post.author.username }}
+                    </a>
+                    <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted);">
+                        {{ post.created_at|timesince }} ago
+                        {% if post.tag %}
+                        • <span style="color: var(--sanctuary-accent);">{{ post.tag }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Take-Down / Delete Action -->
+            <div style="display: flex; align-items: center; gap: 10px;">
+                {% if is_admin or post.author == user %}
+                <form method="POST" action="{% url 'takedown_post' pk=post.id %}" onsubmit="return confirm('Take down this post from the community?');" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" style="background: rgba(244, 63, 94, 0.1); color: var(--sanctuary-rose); border: 1px solid rgba(244, 63, 94, 0.2); padding: 4px 10px; border-radius: var(--radius-md); font-size: 0.75rem; cursor: pointer;" title="Take down post">
+                        <i class="fa-solid fa-trash-can"></i> Take Down
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Post Content / Thoughts -->
+        {% if post.caption %}
+        <div style="padding: 0 16px 12px 16px; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">{{ post.caption }}</div>
+        {% endif %}
+
+        <!-- Shared Post Quote (if applicable) -->
+        {% if post.shared_from %}
+        <div style="margin: 0 16px 12px 16px; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--sanctuary-border); background: var(--sanctuary-surface);">
+            <div style="font-size: 0.8rem; color: var(--sanctuary-text-muted); margin-bottom: 6px;">
+                <i class="fa-solid fa-retweet"></i> Shared from @{{ post.shared_from.author.username }} in {{ post.shared_from.community.name|default:"General" }}
+            </div>
+            {% if post.shared_from.caption %}
+            <p style="font-size: 0.85rem;">{{ post.shared_from.caption|truncatewords:25 }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Multi-Media Instagram-Style Carousel -->
+        {% if post.media_items.exists or post.media_file %}
+            {% include 'components/carousel.html' with post=post %}
+        {% endif %}
+
+        <!-- Actions Bar -->
+        <div class="post-actions-bar">
+            <!-- Like Button -->
+            <a href="{% url 'like_toggle' pk=post.id %}" class="post-action-btn {% if user in post.likes.all %}liked{% endif %}">
+                <i class="fa-solid fa-heart"></i>
+                <span>{{ post.total_likes }}</span>
+            </a>
+
+            <!-- Comment Link -->
+            <a href="{% url 'post_detail' pk=post.id %}" class="post-action-btn">
+                <i class="fa-solid fa-comment"></i>
+                <span>{{ post.total_comments }}</span>
+            </a>
+
+            <!-- Share Button Modal Trigger -->
+            <button type="button" class="post-action-btn" onclick="navigator.clipboard.writeText(window.location.origin + '{% url 'post_detail' pk=post.id %}'); alert('Link to post copied!');" title="Copy Link">
+                <i class="fa-solid fa-share-nodes"></i>
+            </button>
+        </div>
+
+        <!-- Inline Quick Comment Form -->
+        <form method="POST" action="{% url 'add_comment' pk=post.id %}" style="display: flex; padding: 10px 16px; border-top: 1px solid var(--sanctuary-border);">
+            {% csrf_token %}
+            <input type="text" name="text" placeholder="Add an organic discussion comment..." required style="flex: 1; background: transparent; border: none; color: var(--sanctuary-text); font-size: 0.85rem; outline: none;">
+            <button type="submit" style="background: none; border: none; color: var(--sanctuary-accent); font-weight: 700; cursor: pointer; font-size: 0.85rem;">Post</button>
+        </form>
+    </article>
+    {% empty %}
+    <div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 40px; text-align: center;">
+        <i class="fa-solid fa-comments" style="font-size: 2.2rem; color: var(--sanctuary-text-muted); margin-bottom: 12px;"></i>
+        <h3>No posts in this space yet</h3>
+        <p style="color: var(--sanctuary-text-muted); font-size: 0.9rem; margin-top: 6px;">Share the first photo, video, or discussion topic!</p>
+        <a href="{% url 'create_post' %}?community={{ community.slug }}" style="margin-top: 16px; display: inline-block; background: var(--sanctuary-accent); color: #fff; padding: 8px 18px; border-radius: var(--radius-md); font-weight: 600; text-decoration: none;">Create Post</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
