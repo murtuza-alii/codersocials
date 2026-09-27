@@ -138,4 +138,28 @@ class ManagementCommandTestCase(TestCase):
         self.assertFalse(Post.objects.filter(author__username='alex_dev').exists())
 
 
+from communities.models import CommunityMembership
+from posts.services import get_isolated_home_feed
+
+class FeedIsolationTestCase(TestCase):
+    def setUp(self):
+        self.user_a = User.objects.create_user('alice_isolation', password='password123')
+        self.user_b = User.objects.create_user('bob_isolation', password='password123')
+
+        self.comm_private = Community.objects.create(name='Private Tech', privacy='PRIVATE', creator=self.user_b)
+        self.comm_public = Community.objects.create(name='Public Art', privacy='PUBLIC', creator=self.user_a)
+
+        self.private_post = Post.objects.create(community=self.comm_private, author=self.user_b, caption='Secret Data')
+        self.public_post = Post.objects.create(community=self.comm_public, author=self.user_a, caption='Public Drawing')
+
+    def test_outsider_cannot_see_private_posts_in_feed(self):
+        feed = get_isolated_home_feed(self.user_a)
+        self.assertNotIn(self.private_post, feed)
+
+    def test_approved_member_sees_community_posts(self):
+        CommunityMembership.objects.create(community=self.comm_private, user=self.user_a, status='APPROVED')
+        feed = get_isolated_home_feed(self.user_a)
+        self.assertIn(self.private_post, feed)
+
+
 
