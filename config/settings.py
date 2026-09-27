@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     # Custom Local Apps
     'accounts.apps.AccountsConfig',
     'posts.apps.PostsConfig',
+    'communities.apps.CommunitiesConfig',
 ]
 
 MIDDLEWARE = [
