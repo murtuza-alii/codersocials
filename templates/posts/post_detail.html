@@ -1,46 +1,46 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Post by @{{ post.author.username }} - Sanctuary{% endblock %}
+{% block title %}Post by @{{ post.author.username }} // Sanctuary{% endblock %}
 
 {% block content %}
-<div class="post-detail-layout" style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); overflow: hidden;">
+<div class="post-detail-layout">
     <!-- Left Column: Carousel Media -->
-    <div class="post-detail-image-box" style="background: #000; display: flex; align-items: center; justify-content: center;">
+    <div class="post-detail-image-box">
         {% if post.media_items.exists or post.media_file %}
             {% include 'components/carousel.html' with post=post %}
         {% else %}
-            <div style="padding: 40px; text-align: center; color: var(--sanctuary-text-muted);">
-                <i class="fa-solid fa-quote-left" style="font-size: 3rem; color: var(--sanctuary-border); margin-bottom: 12px; display: block;"></i>
-                <p style="font-size: 1.1rem; color: var(--sanctuary-text);">{{ post.caption }}</p>
+            <div style="padding: 48px; text-align: center; color: var(--sanctuary-text-muted);">
+                <i class="fa-solid fa-terminal" style="font-size: 2.8rem; color: var(--sanctuary-amber); margin-bottom: 14px; display: block;"></i>
+                <p style="font-size: 1.15rem; color: #ffffff; line-height: 1.6;">{{ post.caption }}</p>
             </div>
         {% endif %}
     </div>
 
-    <!-- Right Column: Sidebar with Author, Caption, Comments -->
-    <div class="post-detail-sidebar" style="background: var(--sanctuary-card); border-left: 1px solid var(--sanctuary-border); display: flex; flex-direction: column;">
+    <!-- Right Column: Cyber Sidebar with Author, Caption, Comments -->
+    <div class="post-detail-sidebar">
         <!-- Post Header -->
-        <div class="post-header" style="border-bottom: 1px solid var(--sanctuary-border); padding: 14px 16px; display: flex; justify-content: space-between; align-items: center;">
-            <a href="{% url 'profile' username=post.author.username %}" class="post-user-info" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+        <div class="post-header" style="border-bottom: 1px solid var(--border-color); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+            <a href="{% url 'profile' username=post.author.username %}" class="post-user-info" style="display: flex; align-items: center; gap: 12px; text-decoration: none;">
                 {% if post.author.profile.avatar %}
-                    <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}" class="avatar-img" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+                    <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}" class="avatar-img" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover;">
                 {% else %}
-                    <div class="avatar-img" style="width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--sanctuary-surface); font-weight: 700;">
+                    <div class="avatar-img" style="width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--sanctuary-surface); font-weight: 700; color: var(--sanctuary-amber); font-family: var(--font-mono);">
                         {{ post.author.username|slice:":2"|upper }}
                     </div>
                 {% endif %}
                 <div>
-                    <div class="post-username" style="font-weight: 700; font-size: 0.95rem;">@{{ post.author.username }}</div>
+                    <div class="post-username" style="font-weight: 700; font-size: 0.95rem; color: #fff;">@{{ post.author.username }}</div>
                     {% if post.community %}
-                    <div style="font-size: 0.75rem; color: var(--sanctuary-accent);">{{ post.community.name }}</div>
+                    <div style="font-size: 0.72rem; color: var(--sanctuary-amber); font-family: var(--font-mono);"># {{ post.community.name }}</div>
                     {% endif %}
                 </div>
             </a>
 
             {% if can_takedown %}
-            <form method="POST" action="{% url 'takedown_post' pk=post.id %}" onsubmit="return confirm('Take down this post?');" style="margin: 0;">
+            <form id="takedown-detail-form" method="POST" action="{% url 'takedown_post' pk=post.id %}" style="margin: 0;">
                 {% csrf_token %}
-                <button type="submit" style="background: rgba(244, 63, 94, 0.1); color: var(--sanctuary-rose); border: 1px solid rgba(244, 63, 94, 0.2); padding: 4px 10px; border-radius: var(--radius-md); font-size: 0.75rem; cursor: pointer;">
+                <button type="button" onclick="window.cyberConfirm('Are you sure you want to take down this post?', 'Takedown Transmission', () => document.getElementById('takedown-detail-form').submit());" class="post-action-btn" style="color: var(--sanctuary-rose);" data-tooltip="Takedown Post">
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
             </form>
@@ -48,49 +48,50 @@
         </div>
 
         <!-- Comments & Caption Scroll Area -->
-        <div class="comments-list" style="flex: 1; overflow-y: auto; padding: 16px;">
+        <div class="comments-list">
             {% if post.caption and post.media_items.exists or post.caption and post.media_file %}
-            <div class="comment-item" style="padding-bottom: 12px; border-bottom: 1px solid var(--sanctuary-border); margin-bottom: 12px;">
-                <a href="{% url 'profile' username=post.author.username %}" class="comment-user" style="font-weight: 700; font-size: 0.85rem; color: var(--sanctuary-text); text-decoration: none;">@{{ post.author.username }}</a>
-                <span style="font-size: 0.9rem; margin-left: 6px;">{{ post.caption }}</span>
-                <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted); margin-top: 4px;">{{ post.created_at|date:"M d, Y" }}</div>
+            <div class="comment-item" style="padding-bottom: 14px; border-bottom: 1px solid var(--border-color); margin-bottom: 14px;">
+                <a href="{% url 'profile' username=post.author.username %}" class="comment-user" style="font-weight: 700; font-size: 0.88rem; color: var(--sanctuary-cyan); text-decoration: none;">@{{ post.author.username }}</a>
+                <span style="font-size: 0.9rem; color: var(--text-primary); margin-left: 6px;">{{ post.caption }}</span>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono);">{{ post.created_at|date:"M d, Y H:i" }}</div>
             </div>
             {% endif %}
 
             {% for comment in comments %}
-            <div class="comment-item" style="margin-bottom: 12px;">
-                <a href="{% url 'profile' username=comment.author.username %}" class="comment-user" style="font-weight: 700; font-size: 0.85rem; color: var(--sanctuary-text); text-decoration: none;">@{{ comment.author.username }}</a>
-                <span style="font-size: 0.9rem; margin-left: 6px;">{{ comment.text }}</span>
-                <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted); margin-top: 2px;">{{ comment.created_at|timesince }} ago</div>
+            <div class="comment-item" style="margin-bottom: 14px; padding: 6px 8px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.02);">
+                <a href="{% url 'profile' username=comment.author.username %}" class="comment-user" style="font-weight: 700; font-size: 0.88rem; color: var(--sanctuary-cyan); text-decoration: none;">@{{ comment.author.username }}</a>
+                <span style="font-size: 0.9rem; color: var(--text-primary); margin-left: 6px;">{{ comment.text }}</span>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono);">{{ comment.created_at|timesince }} ago</div>
             </div>
             {% empty %}
-            <div style="text-align: center; color: var(--sanctuary-text-muted); margin-top: 40px;">
-                <p>No comments yet.</p>
-                <small>Start the conversation.</small>
+            <div style="text-align: center; color: var(--text-muted); margin: auto; padding: 40px 20px;">
+                <i class="fa-solid fa-comments" style="font-size: 2rem; color: var(--sanctuary-border); margin-bottom: 8px; display: block;"></i>
+                <p style="font-size: 0.9rem;">No comments logged yet.</p>
+                <small style="font-family: var(--font-mono); font-size: 0.75rem;">Be the first to open discussions.</small>
             </div>
             {% endfor %}
         </div>
 
         <!-- Post Actions -->
-        <div style="padding: 12px 16px; border-top: 1px solid var(--sanctuary-border); display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; gap: 14px; font-size: 1.15rem;">
-                <a href="{% url 'like_toggle' pk=post.id %}" style="color: {% if is_liked %}var(--sanctuary-rose){% else %}var(--sanctuary-text-muted){% endif %}; text-decoration: none;">
-                    <i class="fa-solid fa-heart"></i> <span style="font-size: 0.85rem;">{{ post.total_likes }}</span>
+        <div style="padding: 12px 18px; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: rgba(0, 0, 0, 0.3);">
+            <div style="display: flex; gap: 16px; font-size: 1.15rem;">
+                <a href="{% url 'like_toggle' pk=post.id %}" class="post-action-btn like-btn {% if is_liked %}liked{% endif %}" data-tooltip="React with Heart">
+                    <i class="fa-solid fa-heart"></i> <span style="font-size: 0.88rem; font-weight: 700;">{{ post.total_likes }}</span>
                 </a>
-                <button type="button" onclick="navigator.clipboard.writeText(window.location.href); alert('Link copied to clipboard!');" style="background: none; border: none; color: var(--sanctuary-text-muted); cursor: pointer; font-size: 1.15rem;">
+                <button type="button" onclick="window.cyberCopyLink(window.location.href, 'Post link copied to clipboard!');" class="post-action-btn" data-tooltip="Copy Share Link">
                     <i class="fa-solid fa-share-nodes"></i>
                 </button>
             </div>
-            <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted);">
+            <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">
                 {{ post.created_at|timesince }} ago
             </div>
         </div>
 
         <!-- Add Comment Form -->
-        <form method="POST" style="display: flex; padding: 12px 16px; border-top: 1px solid var(--sanctuary-border);">
+        <form method="POST" style="display: flex; padding: 12px 18px; border-top: 1px solid var(--border-color); background: rgba(0, 0, 0, 0.4);">
             {% csrf_token %}
-            <input type="text" name="text" placeholder="Add a comment..." required style="flex: 1; background: transparent; border: none; color: var(--sanctuary-text); outline: none; font-size: 0.85rem;">
-            <button type="submit" style="background: none; border: none; color: var(--sanctuary-accent); font-weight: 700; cursor: pointer; font-size: 0.85rem;">Post</button>
+            <input type="text" name="text" placeholder="Transmit a comment..." required style="flex: 1; background: transparent; border: none; color: var(--text-primary); outline: none; font-size: 0.88rem;">
+            <button type="submit" style="background: none; border: none; color: var(--accent-color); font-weight: 700; cursor: pointer; font-size: 0.85rem; font-family: var(--font-mono); letter-spacing: 0.04em;">TRANSMIT</button>
         </form>
     </div>
 </div>

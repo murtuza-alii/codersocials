@@ -1,42 +1,123 @@
 /* ==========================================================================
-   Community Sanctuary Platform - Layout & Component Styles
-   Supports: Primary Icon Rail, Hover/Tap Accordion Drawer, Custom Carousel
+   SANCTUARY CYBERPUNK - DESIGN SYSTEM & LAYOUT
+   Discord-inspired architecture | OLED Pure Black surfaces | Neon Glow Accents
+   GSAP Motion Engineered | Zero Choppy Transitions
    ========================================================================== */
 
 :root {
-    /* Design Tokens - Easily customizable for future color palette updates */
-    --sanctuary-bg: #090d16;
-    --sanctuary-rail: #070a10;
-    --sanctuary-surface: #111827;
-    --sanctuary-surface-hover: #1f2937;
-    --sanctuary-card: #151e2e;
-    --sanctuary-border: #1f293d;
-    --sanctuary-text: #f9fafb;
-    --sanctuary-text-muted: #9ca3af;
-    --sanctuary-accent: #6366f1;
-    --sanctuary-accent-hover: #4f46e5;
-    --sanctuary-emerald: #10b981;
-    --sanctuary-rose: #f43f5e;
-    
-    --rail-width: 68px;
+    /* Warm Charcoal & Muted Surfaces (Easy on the eyes, warm undertones) */
+    --sanctuary-bg: #090a0d;
+    --sanctuary-bg-subtle: #0d0f14;
+    --sanctuary-rail: #07080b;
+    --sanctuary-surface: #101217;
+    --sanctuary-surface-hover: #161920;
+    --sanctuary-card: #12141a;
+    --sanctuary-card-hover: #171a22;
+
+    /* Warm, Low-Intensity Earthy / Editorial Palette (Zero Tacky Neon) */
+    --sanctuary-amber: #d49746;       /* Warm Ochre / Honey Amber */
+    --sanctuary-amber-dim: rgba(212, 151, 70, 0.12);
+
+    --sanctuary-rose: #cf7070;        /* Muted Terracotta / Warm Rose */
+    --sanctuary-rose-dim: rgba(207, 112, 112, 0.12);
+
+    --sanctuary-sage: #759a7f;        /* Soft Warm Sage / Herbal Jade */
+    --sanctuary-sage-dim: rgba(117, 154, 127, 0.12);
+
+    --sanctuary-heather: #9b8ea9;     /* Dusky Warm Lavender / Plum */
+    --sanctuary-heather-dim: rgba(155, 142, 169, 0.12);
+
+    --sanctuary-slate: #6b8fa3;       /* Muted Steel / Warm Slate */
+    --sanctuary-slate-dim: rgba(107, 143, 163, 0.12);
+
+    /* Clean, Non-Tacky Border Tokens */
+    --sanctuary-border: rgba(255, 255, 255, 0.08);
+    --sanctuary-border-hover: rgba(255, 255, 255, 0.16);
+    --sanctuary-border-accent: rgba(212, 151, 70, 0.28);
+    --sanctuary-border-subtle: rgba(255, 255, 255, 0.05);
+
+    /* Text & Legibility */
+    --sanctuary-text: #eceff4;
+    --sanctuary-text-muted: #8892a0;
+    --sanctuary-text-dark: #4b5563;
+
+    /* Semantic Mappings & Legacy Aliases (mapped to warm, gentle counterparts) */
+    --sanctuary-cyan: var(--sanctuary-slate);
+    --sanctuary-cyan-dim: var(--sanctuary-slate-dim);
+    --sanctuary-magenta: var(--sanctuary-rose);
+    --sanctuary-magenta-dim: var(--sanctuary-rose-dim);
+    --sanctuary-violet: var(--sanctuary-heather);
+    --sanctuary-lime: var(--sanctuary-sage);
+    --sanctuary-accent: var(--sanctuary-amber);
+    --sanctuary-accent-hover: #e0a95c;
+    --sanctuary-emerald: var(--sanctuary-sage);
+
+    /* Dimensional Geometry */
+    --rail-width: 72px;
     --accordion-width: 260px;
-    --header-height: 56px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --transition-smooth: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    --header-height: 58px;
+    --radius-xs: 4px;
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-squircle: 16px;
+
+    /* Typography */
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'Space Grotesk', 'JetBrains Mono', monospace;
+    --font-code: 'JetBrains Mono', monospace;
 }
 
-/* Shell Layout */
+/* Base Reset & Cyber Grid Texture */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--sanctuary-bg);
+    color: var(--sanctuary-text);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+}
+
+/* Warm Subtle Editorial Dark Canvas */
 .sanctuary-app {
     display: flex;
     height: 100vh;
     width: 100vw;
     overflow: hidden;
     background-color: var(--sanctuary-bg);
-    color: var(--sanctuary-text);
+    background-image: 
+        radial-gradient(circle at 50% 0%, rgba(212, 151, 70, 0.025) 0%, transparent 65%),
+        linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+    background-size: 100% 100%, 48px 48px, 48px 48px;
 }
 
-/* 1. Primary Slim Rail */
+/* Clean, Minimal Scrollbars */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+/* ==========================================================================
+   1. PRIMARY SLIM RAIL (DISCORD STYLE)
+   ========================================================================== */
 .primary-rail {
     width: var(--rail-width);
     min-width: var(--rail-width);
@@ -45,29 +126,35 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 12px 0;
+    padding: 14px 0;
     gap: 12px;
     z-index: 100;
     user-select: none;
+    position: relative;
 }
 
 .rail-section {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     width: 100%;
 }
 
 .rail-divider {
     width: 32px;
     height: 2px;
-    background-color: var(--sanctuary-border);
-    border-radius: 1px;
+    background: linear-gradient(90deg, transparent, var(--sanctuary-border), transparent);
+    border-radius: 2px;
     margin: 4px 0;
 }
 
+/* Discord Rail Button & Pill Indicator */
 .rail-btn {
+    --btn-accent: var(--sanctuary-amber);
+    --btn-active-bg: rgba(212, 151, 70, 0.14);
+    --btn-pill-color: var(--sanctuary-amber);
+
     width: 48px;
     height: 48px;
     border-radius: 50%;
@@ -76,18 +163,126 @@
     align-items: center;
     justify-content: center;
     color: var(--sanctuary-text-muted);
-    font-size: 1.1rem;
-    transition: var(--transition-smooth);
+    font-size: 1.15rem;
     position: relative;
     text-decoration: none;
     cursor: pointer;
-    border: none;
+    border: 1px solid var(--sanctuary-border-subtle);
+    will-change: transform, border-radius, background-color, border-color;
+    transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.2s ease,
+                color 0.18s ease;
 }
 
-.rail-btn:hover, .rail-btn.active {
-    border-radius: var(--radius-md);
-    background-color: var(--sanctuary-accent);
-    color: #ffffff;
+/* Warm, Muted Chromatic Rail Button Themes */
+.rail-btn.rail-color-amber {
+    --btn-accent: #d49746;
+    --btn-active-bg: rgba(212, 151, 70, 0.14);
+    --btn-pill-color: #d49746;
+}
+
+.rail-btn.rail-color-cyan {
+    --btn-accent: #6b8fa3;
+    --btn-active-bg: rgba(107, 143, 163, 0.14);
+    --btn-pill-color: #6b8fa3;
+}
+
+.rail-btn.rail-color-lime {
+    --btn-accent: #759a7f;
+    --btn-active-bg: rgba(117, 154, 127, 0.14);
+    --btn-pill-color: #759a7f;
+}
+
+.rail-btn.rail-color-magenta {
+    --btn-accent: #cf7070;
+    --btn-active-bg: rgba(207, 112, 112, 0.14);
+    --btn-pill-color: #cf7070;
+}
+
+.rail-btn.rail-color-violet {
+    --btn-accent: #9b8ea9;
+    --btn-active-bg: rgba(155, 142, 169, 0.14);
+    --btn-pill-color: #9b8ea9;
+}
+
+.rail-btn.rail-color-danger,
+.rail-btn[href*="logout"] {
+    --btn-accent: #cf7070;
+    --btn-active-bg: rgba(207, 112, 112, 0.14);
+    --btn-pill-color: #cf7070;
+}
+
+/* Remove tacky neon halos */
+.rail-btn::before,
+.rail-btn::after {
+    display: none;
+}
+
+/* Clean, Crisp Mechanical Left Indicator Pill */
+.rail-pill {
+    position: absolute;
+    left: -12px;
+    top: 0;
+    bottom: 0;
+    margin: auto 0;
+    width: 4px;
+    height: 0px;
+    background-color: var(--btn-pill-color);
+    border-radius: 0 4px 4px 0;
+    box-shadow: none;
+    opacity: 0;
+    pointer-events: none;
+    transition: height 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
+}
+
+/* Hover State - Clean, Sophisticated Surface & Border Shift */
+.rail-btn:hover {
+    border-radius: var(--radius-squircle);
+    background-color: var(--sanctuary-surface-hover);
+    color: var(--btn-accent);
+    border-color: var(--btn-accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.rail-btn:hover .rail-pill {
+    height: 20px;
+    opacity: 1;
+}
+
+/* Active State - Refined Warm Tint & Crisp Accent Border */
+.rail-btn.active {
+    border-radius: var(--radius-squircle);
+    background: var(--btn-active-bg);
+    color: var(--btn-accent);
+    border-color: var(--btn-accent);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+.rail-btn.active .rail-pill {
+    height: 38px;
+    opacity: 1;
+}
+
+/* Internal Glyphs / Icons - Crisp, Sharp, No Blurry Glows */
+.rail-btn i,
+.rail-btn span {
+    position: relative;
+    z-index: 2;
+    transition: color 0.18s ease;
+    filter: none;
+}
+
+.rail-btn:hover i,
+.rail-btn:hover span {
+    color: var(--btn-accent);
+    filter: none;
+}
+
+.rail-btn.active i,
+.rail-btn.active span {
+    color: var(--btn-accent);
+    filter: none;
 }
 
 .rail-btn img {
@@ -95,21 +290,48 @@
     height: 100%;
     object-fit: cover;
     border-radius: inherit;
+    position: relative;
+    z-index: 2;
+    transition: filter 0.2s ease;
 }
 
-.rail-btn .rail-badge {
+.rail-btn:hover img {
+    filter: brightness(1.08);
+}
+
+.rail-btn span {
+    font-weight: 700;
+    font-size: 0.85rem;
+    font-family: var(--font-mono);
+    letter-spacing: -0.01em;
+}
+
+/* Logout / Power Button Hover */
+.rail-btn[href*="logout"]:hover {
+    border-color: var(--sanctuary-rose);
+    color: var(--sanctuary-rose);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.rail-badge {
     position: absolute;
-    bottom: -2px;
-    right: -2px;
-    background: var(--sanctuary-emerald);
+    bottom: -3px;
+    right: -3px;
+    background: var(--sanctuary-lime);
     color: #000;
     font-size: 0.65rem;
-    font-weight: 700;
+    font-weight: 800;
     border-radius: 10px;
-    padding: 1px 4px;
+    padding: 1px 5px;
+    font-family: var(--font-mono);
+    box-shadow:
+        0 0 6px var(--sanctuary-lime),
+        0 0 14px rgba(0, 255, 102, 0.45);
 }
 
-/* 2. Secondary Accordion Drawer */
+/* ==========================================================================
+   2. SECONDARY ACCORDION DRAWER (CHANNELS & CATEGORIES)
+   ========================================================================== */
 .secondary-accordion {
     width: 0;
     min-width: 0;
@@ -117,24 +339,23 @@
     overflow-y: auto;
     background-color: var(--sanctuary-surface);
     border-right: 1px solid var(--sanctuary-border);
-    transition: width var(--transition-smooth);
+    transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
     z-index: 90;
     display: flex;
     flex-direction: column;
     white-space: nowrap;
 }
 
-/* Desktop Hover Expansion */
 @media (hover: hover) {
     .primary-rail:hover + .secondary-accordion,
     .secondary-accordion:hover,
-    .secondary-accordion.is-pinned {
+    .secondary-accordion.is-pinned,
+    .secondary-accordion.is-hover-active {
         width: var(--accordion-width);
         min-width: var(--accordion-width);
     }
 }
 
-/* Mobile & Touch Click Expansion */
 .secondary-accordion.is-open {
     width: var(--accordion-width) !important;
     min-width: var(--accordion-width) !important;
@@ -142,63 +363,483 @@
     top: 0;
     bottom: 0;
     left: var(--rail-width);
-    box-shadow: 10px 0 25px rgba(0, 0, 0, 0.6);
+    box-shadow: 12px 0 35px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 240, 255, 0.15);
 }
 
 .accordion-inner {
     width: var(--accordion-width);
-    padding: 16px;
+    padding: 16px 14px;
     display: flex;
     flex-direction: column;
     height: 100%;
+    opacity: 0;
+    transform: translateX(-14px);
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+}
+
+.primary-rail:hover + .secondary-accordion .accordion-inner,
+.secondary-accordion:hover .accordion-inner,
+.secondary-accordion.is-pinned .accordion-inner,
+.secondary-accordion.is-open .accordion-inner,
+.secondary-accordion.is-hover-active .accordion-inner {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
 }
 
 .accordion-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--sanctuary-border);
+    position: relative;
+}
+
+.accordion-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--sanctuary-cyan), transparent);
+    box-shadow: 0 0 8px var(--sanctuary-cyan);
 }
 
 .accordion-title {
-    font-weight: 700;
-    font-size: 1rem;
+    font-weight: 800;
+    font-size: 1.05rem;
     color: var(--sanctuary-text);
     overflow: hidden;
     text-overflow: ellipsis;
+    letter-spacing: -0.02em;
+}
+
+/* Discord Collapsible Accordion Category Section */
+.accordion-section {
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.accordion-category-header-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.accordion-category-header {
+    background: none;
+    border: none;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--sanctuary-text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: var(--radius-xs);
+    width: 100%;
+    text-align: left;
+    transition: color 0.2s ease, background 0.2s ease;
+    user-select: none;
+}
+
+.accordion-category-header:hover {
+    color: var(--sanctuary-text);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.accordion-chevron {
+    font-size: 0.62rem;
+    color: var(--sanctuary-text-muted);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+    opacity: 0.7;
+}
+
+.accordion-category-header:hover .accordion-chevron {
+    color: var(--sanctuary-text);
+    opacity: 1;
+}
+
+.accordion-section.is-collapsed .accordion-chevron {
+    transform: rotate(-90deg);
+}
+
+/* Modern CSS Grid Smooth Height Collapse */
+.accordion-collapse-wrapper {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.accordion-section.is-collapsed .accordion-collapse-wrapper {
+    grid-template-rows: 0fr;
+}
+
+.accordion-collapse-inner {
+    overflow: hidden;
+    min-height: 0;
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.accordion-section.is-collapsed .accordion-collapse-inner {
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+}
+
+.accordion-action-link {
+    color: var(--sanctuary-text-muted);
+    font-size: 0.75rem;
+    padding: 4px 6px;
+    border-radius: var(--radius-xs);
+    transition: transform 0.2s ease, color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.accordion-action-link:hover {
+    transform: scale(1.08);
+    color: var(--sanctuary-amber);
+    filter: none;
 }
 
 .accordion-nav-list {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin-bottom: 20px;
+    margin-bottom: 6px;
 }
 
+/* ==========================================================================
+   Discord Channel Nav Item & Smooth Option Transitions
+   ========================================================================== */
 .accordion-nav-item {
+    --item-accent: var(--sanctuary-amber);
+    --item-bloom: rgba(212, 151, 70, 0.2);
+    --item-bloom-dim: rgba(212, 151, 70, 0.05);
+    --item-wash: rgba(212, 151, 70, 0.08);
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--sanctuary-text-muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-decoration: none;
+    position: relative;
+    border-left: 2px solid transparent;
+    opacity: 0.95;
+    transform: translateX(0);
+    transition: background 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                color 0.2s ease,
+                border-left 0.25s ease,
+                transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.25s ease,
+                opacity 0.25s ease;
+}
+
+/* Warm Muted Color Themes for Navigation Items */
+.accordion-nav-item.color-cyan {
+    --item-accent: var(--sanctuary-slate);
+    --item-bloom: rgba(107, 143, 163, 0.2);
+    --item-bloom-dim: rgba(107, 143, 163, 0.05);
+    --item-wash: rgba(107, 143, 163, 0.08);
+}
+
+.accordion-nav-item.color-lime {
+    --item-accent: var(--sanctuary-sage);
+    --item-bloom: rgba(117, 154, 127, 0.2);
+    --item-bloom-dim: rgba(117, 154, 127, 0.05);
+    --item-wash: rgba(117, 154, 127, 0.08);
+}
+
+.accordion-nav-item.color-magenta {
+    --item-accent: var(--sanctuary-rose);
+    --item-bloom: rgba(207, 112, 112, 0.2);
+    --item-bloom-dim: rgba(207, 112, 112, 0.05);
+    --item-wash: rgba(207, 112, 112, 0.08);
+}
+
+.accordion-nav-item.color-violet {
+    --item-accent: var(--sanctuary-heather);
+    --item-bloom: rgba(155, 142, 169, 0.2);
+    --item-bloom-dim: rgba(155, 142, 169, 0.05);
+    --item-wash: rgba(155, 142, 169, 0.08);
+}
+
+.accordion-nav-item.color-amber,
+.accordion-nav-item.is-announcement {
+    --item-accent: var(--sanctuary-amber);
+    --item-bloom: rgba(212, 151, 70, 0.2);
+    --item-bloom-dim: rgba(212, 151, 70, 0.05);
+    --item-wash: rgba(212, 151, 70, 0.08);
+}
+
+.accordion-nav-item.is-danger,
+.accordion-nav-item[href*="leave"] {
+    --item-accent: var(--sanctuary-rose);
+    --item-bloom: rgba(207, 112, 112, 0.2);
+    --item-bloom-dim: rgba(207, 112, 112, 0.05);
+    --item-wash: rgba(207, 112, 112, 0.08);
+}
+
+/* Staggered Entrance of Options when Drawer Expands */
+.secondary-accordion:not(.is-pinned):not(.is-open):not(:hover):not(.is-hover-active) .accordion-nav-item {
+    opacity: 0;
+    transform: translateX(-12px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    transition-delay: 0s !important;
+}
+
+.primary-rail:hover + .secondary-accordion .accordion-nav-item,
+.secondary-accordion:hover .accordion-nav-item,
+.secondary-accordion.is-pinned .accordion-nav-item,
+.secondary-accordion.is-open .accordion-nav-item,
+.secondary-accordion.is-hover-active .accordion-nav-item {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+                background 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                color 0.2s ease,
+                border-left 0.25s ease,
+                box-shadow 0.25s ease;
+    transition-delay: calc(var(--item-idx, 0) * 30ms);
+}
+
+/* Stripped tacky blurred pseudo halos */
+.accordion-nav-item .nav-icon-light,
+.accordion-nav-item::before {
+    display: none !important;
+}
+
+.accordion-nav-item i {
+    width: 20px;
+    text-align: center;
+    font-size: 0.95rem;
+    position: relative;
+    z-index: 2;
+    transition: color 0.2s ease,
+                transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    filter: none !important;
+}
+
+.accordion-nav-item span {
+    position: relative;
+    z-index: 2;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+/* Hover State - Clean, subtle warm surface tint */
+.accordion-nav-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: #ffffff;
+    border-left: 2px solid var(--item-accent);
+    transform: translateX(2px);
+}
+
+.accordion-nav-item:hover i {
+    color: var(--item-accent);
+    filter: none;
+}
+
+/* Active State - Dignified tint, no neon halos */
+.accordion-nav-item.active {
+    background: var(--item-wash);
+    color: #ffffff;
+    border-left: 2px solid var(--item-accent);
+    box-shadow: none;
+}
+
+.accordion-nav-item.active i {
+    color: var(--item-accent);
+    filter: none;
+}
+
+/* Joined Spaces shield icons */
+.accordion-nav-item i.fa-shield-halved {
+    color: var(--item-accent);
+    filter: none;
+}
+
+.accordion-nav-item:hover i.fa-shield-halved {
+    filter: none;
+}
+
+/* Special Variant: Announcements (Amber) */
+.accordion-nav-item.is-announcement {
+    color: var(--sanctuary-amber);
+}
+
+.accordion-nav-item.is-announcement i {
+    filter: none;
+}
+
+/* Special Variant: Leave Space / Danger (Rose) */
+.accordion-nav-item.is-danger,
+.accordion-nav-item[href*="leave"] {
+    color: var(--sanctuary-rose);
+}
+
+.accordion-nav-item.is-danger:hover i,
+.accordion-nav-item[href*="leave"]:hover i {
+    filter: none;
+}
+
+/* Discord-Style Docked User Profile Footer Widget */
+.discord-user-panel {
+    margin-top: auto;
+    background: #090a0d;
+    border: 1px solid var(--sanctuary-border);
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.user-panel-info {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 12px;
-    border-radius: var(--radius-md);
-    color: var(--sanctuary-text-muted);
-    font-size: 0.9rem;
-    transition: var(--transition-smooth);
     text-decoration: none;
+    overflow: hidden;
 }
 
-.accordion-nav-item:hover, .accordion-nav-item.active {
-    background-color: var(--sanctuary-surface-hover);
+.user-panel-avatar-wrap {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--sanctuary-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.8rem;
+    color: #fff;
+    flex-shrink: 0;
+    border: 1px solid var(--sanctuary-border);
+}
+
+.user-panel-avatar-wrap img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Status Indicator Dot - Clean, subtle indicator */
+.status-indicator {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #090a0d;
+}
+
+.status-indicator.online {
+    background-color: var(--sanctuary-sage);
+    box-shadow: 0 0 4px rgba(117, 154, 127, 0.5);
+}
+
+.user-panel-names {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.user-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.user-status-text {
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    color: var(--sanctuary-sage);
+    letter-spacing: 0.04em;
+}
+
+.user-panel-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.panel-icon-btn {
+    background: none;
+    border: none;
+    color: var(--sanctuary-text-muted);
+    font-size: 0.95rem;
+    padding: 6px;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease, background 0.2s ease;
+    position: relative;
+}
+
+.panel-icon-btn:hover {
     color: var(--sanctuary-text);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: none;
 }
 
-.accordion-nav-item.is-announcement {
-    color: #f59e0b;
+.panel-icon-btn:hover i {
+    filter: none;
 }
 
-/* 3. Main Sanctuary Workspace */
+.panel-icon-btn.panel-icon-audio:hover {
+    color: var(--sanctuary-heather);
+    background: rgba(155, 142, 169, 0.12);
+    box-shadow: none;
+}
+
+.panel-icon-btn.panel-icon-audio:hover i {
+    filter: none;
+}
+
+.panel-icon-btn.panel-icon-settings:hover {
+    color: var(--sanctuary-amber);
+    background: rgba(212, 151, 70, 0.12);
+    box-shadow: none;
+}
+
+.panel-icon-btn.panel-icon-settings:hover i {
+    filter: none;
+}
+
+/* ==========================================================================
+   3. MAIN WORKSPACE & TOPBAR
+   ========================================================================== */
 .sanctuary-main {
     flex: 1;
     overflow-y: auto;
@@ -210,8 +851,8 @@
 
 .sanctuary-topbar {
     height: var(--header-height);
-    background-color: rgba(17, 24, 39, 0.75);
-    backdrop-filter: blur(12px);
+    background-color: rgba(4, 5, 8, 0.82);
+    backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--sanctuary-border);
     display: flex;
     align-items: center;
@@ -225,7 +866,7 @@
 .topbar-left, .topbar-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
 }
 
 .drawer-toggle-btn {
@@ -243,15 +884,533 @@
     }
 }
 
+.topbar-brand {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--sanctuary-text);
+    text-decoration: none;
+}
+
+.topbar-brand i {
+    color: var(--sanctuary-amber);
+    filter: none;
+}
+
 .sanctuary-content {
-    max-width: 900px;
+    max-width: 920px;
     width: 100%;
     margin: 0 auto;
     padding: 24px 16px;
     flex: 1;
 }
 
-/* 4. Instagram-Style Multi-Media Carousel & Custom Player */
+/* ==========================================================================
+   4. CYBER POST CARDS & FEED
+   ========================================================================== */
+.sanctuary-post-card {
+    background-color: var(--sanctuary-card);
+    border: 1px solid var(--sanctuary-border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 24px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.sanctuary-post-card::before {
+    display: none;
+}
+
+.sanctuary-post-card:hover {
+    border-color: var(--sanctuary-border-hover);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+.post-header-sanctuary {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.post-author-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.post-avatar-img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--sanctuary-border);
+}
+
+.community-pill-tag {
+    background: rgba(212, 151, 70, 0.08);
+    color: var(--sanctuary-amber);
+    border: 1px solid rgba(212, 151, 70, 0.2);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.post-actions-bar {
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 1.15rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.post-action-btn {
+    background: none;
+    border: none;
+    color: var(--sanctuary-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: color 0.15s ease, transform 0.15s ease;
+    text-decoration: none;
+}
+
+.post-action-btn:hover {
+    color: var(--sanctuary-amber);
+}
+
+.post-action-btn.liked {
+    color: var(--sanctuary-rose);
+    text-shadow: none;
+}
+
+/* ==========================================================================
+   5. DISCORD-STYLE CHAT
+   ========================================================================== */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--header-height));
+    background-color: var(--sanctuary-bg);
+}
+
+.chat-messages-flow {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.chat-bubble-row {
+    display: flex;
+    gap: 14px;
+    position: relative;
+    padding: 4px 8px;
+    border-radius: var(--radius-md);
+    transition: background 0.15s ease;
+}
+
+.chat-bubble-row:hover {
+    background-color: rgba(255, 255, 255, 0.025);
+}
+
+.chat-msg-body {
+    background: var(--sanctuary-card);
+    border: 1px solid var(--sanctuary-border);
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    max-width: 75%;
+    position: relative;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.chat-bubble-row:hover .chat-msg-body {
+    border-color: var(--sanctuary-border-hover);
+}
+
+.chat-input-bar {
+    padding: 16px 24px;
+    background: var(--sanctuary-surface);
+    border-top: 1px solid var(--sanctuary-border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chat-input-bar input[type="text"] {
+    flex: 1;
+    padding: 12px 18px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--sanctuary-border);
+    background: #090a0d;
+    color: var(--sanctuary-text);
+    outline: none;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-input-bar input[type="text"]:focus {
+    border-color: var(--sanctuary-amber);
+    box-shadow: 0 0 0 2px rgba(212, 151, 70, 0.15);
+}
+
+/* ==========================================================================
+   6. CYBER BUTTONS & INPUTS
+   ========================================================================== */
+.cyber-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.cyber-btn-primary {
+    background: var(--sanctuary-amber);
+    color: #090a0d;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.cyber-btn-primary:hover {
+    background: #e0a95c;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.cyber-btn-ghost {
+    background: var(--sanctuary-surface);
+    color: var(--sanctuary-text);
+    border: 1px solid var(--sanctuary-border);
+}
+
+.cyber-btn-ghost:hover {
+    background: var(--sanctuary-surface-hover);
+    border-color: var(--sanctuary-border-hover);
+}
+
+.cyber-btn-danger {
+    background: var(--sanctuary-rose);
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.cyber-btn-danger:hover {
+    background: #d87d7d;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.cyber-btn-lime {
+    background: var(--sanctuary-sage);
+    color: #090a0d;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.cyber-btn-lime:hover {
+    background: #84aa8e;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.cyber-btn-magenta {
+    background: var(--sanctuary-rose);
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.cyber-btn-magenta:hover {
+    background: #d87d7d;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.cyber-btn-violet {
+    background: var(--sanctuary-heather);
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.cyber-btn-violet:hover {
+    background: #a99cb7;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.cyber-btn-amber {
+    background: var(--sanctuary-amber);
+    color: #090a0d;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.cyber-btn-amber:hover {
+    background: #e0a95c;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================================================
+   7. CYBER MODAL SYSTEM (GSAP POWERED)
+   ========================================================================== */
+.cyber-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    visibility: hidden;
+    opacity: 0;
+}
+
+.cyber-modal-card {
+    width: 100%;
+    max-width: 480px;
+    background: var(--sanctuary-card);
+    border: 1px solid var(--sanctuary-border);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+    visibility: hidden;
+    opacity: 0;
+}
+
+.cyber-modal-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--sanctuary-amber);
+}
+
+.cyber-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--sanctuary-border);
+    background: var(--sanctuary-bg);
+}
+
+.cyber-modal-tag {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--sanctuary-amber);
+}
+
+.cyber-modal-close {
+    background: none;
+    border: none;
+    color: var(--sanctuary-text-muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s ease;
+}
+
+.cyber-modal-close:hover {
+    color: var(--sanctuary-rose);
+}
+
+.cyber-modal-body {
+    padding: 20px;
+}
+
+.cyber-modal-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+
+.cyber-modal-desc {
+    color: var(--sanctuary-text-muted);
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.cyber-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--sanctuary-border);
+    background: var(--sanctuary-bg);
+}
+
+/* ==========================================================================
+   8. DISCORD-STYLE FLOATING TOOLTIPS (GSAP POWERED)
+   ========================================================================== */
+.cyber-tooltip {
+    position: fixed;
+    background: var(--sanctuary-surface);
+    color: #ffffff;
+    border: 1px solid var(--sanctuary-border);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    pointer-events: none;
+    z-index: 1050;
+    white-space: nowrap;
+    visibility: hidden;
+    opacity: 0;
+}
+
+.cyber-tooltip.tooltip-right::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    width: 8px;
+    height: 8px;
+    background: var(--sanctuary-surface);
+    border-left: 1px solid var(--sanctuary-border);
+    border-bottom: 1px solid var(--sanctuary-border);
+}
+
+.cyber-tooltip.tooltip-top::before {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 8px;
+    height: 8px;
+    background: var(--sanctuary-surface);
+    border-right: 1px solid var(--sanctuary-border);
+    border-bottom: 1px solid var(--sanctuary-border);
+}
+
+/* ==========================================================================
+   9. CYBER TOAST NOTIFICATIONS (GSAP POWERED)
+   ========================================================================== */
+.cyber-toast-stack {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 1040;
+    pointer-events: none;
+}
+
+.cyber-toast {
+    pointer-events: auto;
+    width: 320px;
+    background: var(--sanctuary-card);
+    border: 1px solid var(--sanctuary-border);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.cyber-toast-success {
+    border-color: rgba(117, 154, 127, 0.4);
+}
+
+.cyber-toast-error {
+    border-color: rgba(207, 112, 112, 0.4);
+}
+
+.cyber-toast-icon {
+    font-size: 1.15rem;
+    color: var(--sanctuary-amber);
+}
+
+.cyber-toast-success .cyber-toast-icon {
+    color: var(--sanctuary-sage);
+}
+
+.cyber-toast-error .cyber-toast-icon {
+    color: var(--sanctuary-rose);
+}
+
+.cyber-toast-content {
+    flex: 1;
+}
+
+.cyber-toast-tag {
+    font-size: 0.65rem;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--sanctuary-text-muted);
+    letter-spacing: 0.06em;
+}
+
+.cyber-toast-msg {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.cyber-toast-close {
+    background: none;
+    border: none;
+    color: var(--sanctuary-text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.cyber-toast-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--sanctuary-amber);
+}
+
+.cyber-toast-success .cyber-toast-bar {
+    background: var(--sanctuary-sage);
+}
+
+.cyber-toast-error .cyber-toast-bar {
+    background: var(--sanctuary-rose);
+}
+
+/* ==========================================================================
+   10. MULTI-MEDIA CAROUSEL STYLES
+   ========================================================================== */
 .carousel-container {
     position: relative;
     width: 100%;
@@ -307,37 +1466,36 @@
     display: block;
 }
 
-/* Tap to mute button */
 .video-mute-pill {
     position: absolute;
     bottom: 12px;
     right: 12px;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.75);
     color: #fff;
-    border: none;
+    border: 1px solid var(--sanctuary-border);
     border-radius: 20px;
-    padding: 6px 10px;
+    padding: 6px 12px;
     font-size: 0.8rem;
     display: flex;
     align-items: center;
     gap: 6px;
     cursor: pointer;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
     transition: transform 0.15s ease;
     z-index: 10;
 }
 
 .video-mute-pill:hover {
     transform: scale(1.05);
+    border-color: var(--sanctuary-amber);
 }
 
-/* Play/Pause Center Indicator */
 .play-pause-indicator {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) scale(0.6);
-    background-color: rgba(0, 0, 0, 0.65);
+    background-color: rgba(0, 0, 0, 0.7);
     color: #fff;
     width: 56px;
     height: 56px;
@@ -356,34 +1514,34 @@
     transform: translate(-50%, -50%) scale(1);
 }
 
-/* Carousel Arrows */
 .carousel-btn {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.55);
-    border: none;
+    background: rgba(0, 0, 0, 0.65);
+    border: 1px solid var(--sanctuary-border);
     color: #fff;
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     z-index: 10;
-    transition: background 0.2s ease;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .carousel-btn:hover {
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.9);
+    border-color: var(--sanctuary-amber);
+    box-shadow: 0 0 6px rgba(212, 151, 70, 0.4);
 }
 
 .carousel-btn.prev { left: 10px; }
 .carousel-btn.next { right: 10px; }
 
-/* Pagination Dots */
 .carousel-dots {
     position: absolute;
     bottom: 12px;
@@ -403,110 +1561,252 @@
 }
 
 .carousel-dot.active {
-    width: 8px;
-    height: 8px;
-    background-color: #ffffff;
+    width: 10px;
+    border-radius: 4px;
+    background-color: var(--sanctuary-amber);
+    box-shadow: 0 0 4px rgba(212, 151, 70, 0.5);
 }
 
-/* 5. Post Cards & Sanctuary Badges */
-.sanctuary-post-card {
-    background-color: var(--sanctuary-card);
-    border: 1px solid var(--sanctuary-border);
-    border-radius: var(--radius-lg);
-    margin-bottom: 24px;
+/* ==========================================================================
+   11. ASCII CURSOR CLOUD TRAIL (FIDDLE.DIGITAL AWWWARDS STYLE)
+   ========================================================================== */
+.ascii-cursor-cloud {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
     overflow: hidden;
 }
 
-.post-header-sanctuary {
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+.ascii-particle {
+    position: fixed;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    pointer-events: none;
+    user-select: none;
+    line-height: 1;
+    text-shadow: none;
+    will-change: transform, opacity;
 }
 
-.post-author-box {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.ascii-particle.cyan { color: var(--sanctuary-slate); }
+.ascii-particle.magenta { color: var(--sanctuary-rose); }
+.ascii-particle.lime { color: var(--sanctuary-sage); }
+.ascii-particle.purple { color: var(--sanctuary-heather); }
+.ascii-particle.white { color: #ffffff; }
+
+/* Custom ASCII Cursor HUD */
+.ascii-cursor-tag {
+    position: fixed;
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--sanctuary-amber);
+    background: rgba(9, 10, 13, 0.9);
+    border: 1px solid var(--sanctuary-border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    padding: 2px 6px;
+    border-radius: 4px;
+    z-index: 10000;
+    transform: translate(-50%, -140%);
+    opacity: 0;
+    white-space: nowrap;
+    transition: opacity 0.2s ease;
 }
 
-.post-avatar-img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.community-pill-tag {
-    background: rgba(99, 102, 241, 0.15);
-    color: var(--sanctuary-accent);
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.post-actions-bar {
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 1.2rem;
-}
-
-.post-action-btn {
-    background: none;
-    border: none;
-    color: var(--sanctuary-text-muted);
+/* ==========================================================================
+   12. 3D NOTE FLIP & MORPHING COLOURED BLOBS
+   ========================================================================== */
+.cyber-note-flip {
+    perspective: 1400px;
+    position: relative;
     cursor: pointer;
-    transition: color 0.15s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 1rem;
+    border-radius: var(--radius-lg);
 }
 
-.post-action-btn:hover {
-    color: var(--sanctuary-text);
+.flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.65s cubic-bezier(0.25, 1, 0.5, 1);
+    border-radius: var(--radius-lg);
 }
 
-.post-action-btn.liked {
-    color: var(--sanctuary-rose);
+.cyber-note-flip.is-flipped .flip-card-inner,
+.cyber-note-flip:hover .flip-card-inner {
+    transform: rotateY(180deg);
 }
 
-/* Chat Styles */
-.chat-container {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - var(--header-height));
+.flip-front, .flip-back {
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: var(--radius-lg);
 }
 
-.chat-messages-flow {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+.flip-front {
+    position: relative;
+    z-index: 2;
+    transform: rotateY(0deg);
 }
 
-.chat-bubble-row {
-    display: flex;
-    gap: 12px;
-}
-
-.chat-msg-body {
+.flip-back {
+    position: absolute;
+    inset: 0;
+    transform: rotateY(180deg);
+    transform-style: preserve-3d;
     background: var(--sanctuary-card);
     border: 1px solid var(--sanctuary-border);
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-    max-width: 70%;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    z-index: 1;
+    border-radius: var(--radius-lg);
 }
 
-.chat-input-bar {
-    padding: 16px 20px;
-    background: var(--sanctuary-surface);
-    border-top: 1px solid var(--sanctuary-border);
+/* Fluid Organic Coloured Blobs - Warm, Muted Ambient Tones */
+.blob-canvas-wrap {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-lg);
+    filter: blur(45px);
+    opacity: 0.45;
+    pointer-events: none;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.cyber-blob {
+    position: absolute;
+    border-radius: 50%;
+    mix-blend-mode: normal;
+    will-change: transform, border-radius;
+}
+
+.blob-cyan {
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(107, 143, 163, 0.4) 25%, transparent 70%);
+    animation: morphBlob1 8s infinite alternate ease-in-out;
+}
+
+.blob-magenta {
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(207, 112, 112, 0.35) 25%, transparent 70%);
+    animation: morphBlob2 9s infinite alternate ease-in-out;
+}
+
+.blob-purple {
+    width: 240px;
+    height: 240px;
+    background: radial-gradient(circle, rgba(155, 142, 169, 0.35) 25%, transparent 70%);
+    animation: morphBlob3 7s infinite alternate ease-in-out;
+}
+
+.blob-lime {
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(212, 151, 70, 0.35) 25%, transparent 70%);
+    animation: morphBlob1 10s infinite alternate ease-in-out;
+}
+
+@keyframes morphBlob1 {
+    0% {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+        transform: translate(-40px, -30px) rotate(0deg) scale(1);
+    }
+    50% {
+        border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+        transform: translate(35px, 30px) rotate(180deg) scale(1.15);
+    }
+    100% {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+        transform: translate(-40px, -30px) rotate(360deg) scale(1);
+    }
+}
+
+@keyframes morphBlob2 {
+    0% {
+        border-radius: 40% 60% 60% 40% / 40% 50% 50% 60%;
+        transform: translate(40px, 30px) rotate(0deg) scale(1);
+    }
+    50% {
+        border-radius: 60% 30% 40% 70% / 60% 40% 60% 40%;
+        transform: translate(-35px, -40px) rotate(-180deg) scale(1.18);
+    }
+    100% {
+        border-radius: 40% 60% 60% 40% / 40% 50% 50% 60%;
+        transform: translate(40px, 30px) rotate(-360deg) scale(1);
+    }
+}
+
+@keyframes morphBlob3 {
+    0% {
+        border-radius: 50% 50% 30% 70% / 50% 30% 70% 50%;
+        transform: translate(0px, 40px) rotate(0deg) scale(0.9);
+    }
+    50% {
+        border-radius: 70% 30% 50% 50% / 30% 60% 40% 70%;
+        transform: translate(-30px, -20px) rotate(140deg) scale(1.1);
+    }
+    100% {
+        border-radius: 50% 50% 30% 70% / 50% 30% 70% 50%;
+        transform: translate(0px, 40px) rotate(280deg) scale(0.9);
+    }
+}
+
+/* 3D Popping Content over Colored Blobs */
+.blob-pop-content {
+    position: relative;
+    z-index: 10;
+    transform: translateZ(45px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
     gap: 12px;
+    background: rgba(18, 20, 26, 0.85);
+    border: 1px solid var(--sanctuary-border);
+    backdrop-filter: blur(14px);
+    padding: 22px 26px;
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    width: 88%;
+}
+
+.blob-tag {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--sanctuary-amber);
+    letter-spacing: 0.1em;
+}
+
+.blob-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+}
+
+.blob-stats {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--sanctuary-sage);
+    letter-spacing: 0.05em;
+}
+
+/* Flip Trigger Badge */
+.flip-badge-hint {
+    display: none !important;
 }

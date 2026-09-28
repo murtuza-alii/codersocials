@@ -1,42 +1,45 @@
 {% extends 'base.html' %}
 
-{% block title %}Messages & Personal Groups{% endblock %}
+{% block title %}Direct Messages // Sanctuary{% endblock %}
 
 {% block content %}
-<div style="max-width: 750px; margin: 0 auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+<div style="max-width: 760px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 14px;">
         <div>
-            <h1 style="font-size: 1.6rem; font-weight: 800;">Direct Messages & Personal Groups</h1>
-            <p style="color: var(--sanctuary-text-muted); font-size: 0.9rem;">Chat 1-on-1 with friends by username or create independent group chats.</p>
+            <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--sanctuary-amber); letter-spacing: 0.08em; font-weight: 700; margin-bottom: 4px;">// DIRECT COMMUNICATION GRID</div>
+            <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.02em;">Messages & Groups</h1>
+            <p style="color: var(--sanctuary-text-muted); font-size: 0.88rem;">Chat 1-on-1 with network contacts or coordinate in personal groups.</p>
         </div>
         <div style="display: flex; gap: 10px;">
-            <a href="{% url 'chat:create_group' %}" style="background: var(--sanctuary-accent); color: #fff; padding: 8px 16px; border-radius: var(--radius-md); font-weight: 600; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-                <i class="fa-solid fa-users"></i> New Group Chat
+            <a href="{% url 'chat:create_group' %}" class="cyber-btn cyber-btn-primary">
+                <i class="fa-solid fa-users"></i> New Group
             </a>
         </div>
     </div>
 
     <!-- Quick DM Starter by Username -->
-    <div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 24px;">
-        <div style="font-weight: 700; font-size: 0.85rem; color: var(--sanctuary-text-muted); margin-bottom: 10px; letter-spacing: 0.05em;">START DIRECT MESSAGE</div>
+    <div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.5); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--sanctuary-amber);"></div>
+        <div style="font-weight: 700; font-size: 0.75rem; color: var(--sanctuary-amber); margin-bottom: 12px; letter-spacing: 0.08em; font-family: var(--font-mono);">START DIRECT TRANSMISSION</div>
         <form onsubmit="event.preventDefault(); const u = document.getElementById('dm-username').value.trim(); if(u) window.location.href='/chat/dm/' + u + '/';" style="display: flex; gap: 10px;">
-            <input type="text" id="dm-username" placeholder="Enter username (e.g. alex_dev)..." required style="flex: 1; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--sanctuary-border); background: var(--sanctuary-surface); color: var(--sanctuary-text); outline: none;">
-            <button type="submit" style="padding: 10px 18px; border-radius: var(--radius-md); background: var(--sanctuary-surface-hover); color: var(--sanctuary-text); border: 1px solid var(--sanctuary-border); font-weight: 600; cursor: pointer;">
-                <i class="fa-solid fa-paper-plane"></i> Message
+            <input type="text" id="dm-username" placeholder="Enter target username (e.g. alex_dev)..." required style="flex: 1; padding: 10px 16px; border-radius: var(--radius-sm); border: 1px solid var(--sanctuary-border); background: #090a0d; color: var(--sanctuary-text); outline: none;">
+            <button type="submit" class="cyber-btn cyber-btn-primary">
+                <i class="fa-solid fa-paper-plane"></i> Transmit
             </button>
         </form>
     </div>
 
     <!-- Conversations List -->
-    <div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); overflow: hidden;">
-        <div style="padding: 14px 20px; border-bottom: 1px solid var(--sanctuary-border); font-weight: 700; font-size: 0.95rem;">
-            Conversations
+    <div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.5);">
+        <div style="padding: 14px 20px; border-bottom: 1px solid var(--sanctuary-border); font-weight: 800; font-size: 0.95rem; color: #fff; background: #0d0f14; display: flex; justify-content: space-between; align-items: center;">
+            <span>ACTIVE THREADS</span>
+            <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--sanctuary-amber);">{{ conversations.count }} CONVERSATIONS</span>
         </div>
 
         {% for conv in conversations %}
         <a href="{% url 'chat:conversation_detail' conversation_id=conv.id %}" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--sanctuary-border); text-decoration: none; color: inherit; transition: background 0.15s ease;" onmouseover="this.style.background='var(--sanctuary-surface-hover)'" onmouseout="this.style.background='transparent'">
             <div style="display: flex; align-items: center; gap: 14px;">
-                <div style="width: 44px; height: 44px; border-radius: 50%; background: var(--sanctuary-surface); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: var(--sanctuary-accent);">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: var(--sanctuary-surface); display: flex; align-items: center; justify-content: center; font-size: 1.15rem; color: {% if conv.is_group %}var(--sanctuary-heather){% else %}var(--sanctuary-rose){% endif %}; border: 1px solid var(--sanctuary-border); box-shadow: none;">
                     {% if conv.is_group %}
                         <i class="fa-solid fa-users"></i>
                     {% else %}
@@ -44,34 +47,34 @@
                     {% endif %}
                 </div>
                 <div>
-                    <div style="font-weight: 700; font-size: 0.95rem;">
+                    <div style="font-weight: 700; font-size: 0.95rem; color: #fff;">
                         {% if conv.is_group %}
                             {{ conv.title|default:"Unnamed Group" }}
-                            <span style="font-size: 0.75rem; color: var(--sanctuary-text-muted); font-weight: 400;">({{ conv.participants.count }} members)</span>
+                            <span style="font-size: 0.75rem; color: var(--sanctuary-text-muted); font-family: var(--font-mono); font-weight: 400;">({{ conv.participants.count }} users)</span>
                         {% else %}
                             @{{ conv.get_recipient.username|default:"Direct Message" }}
                         {% endif %}
                     </div>
-                    <div style="font-size: 0.8rem; color: var(--sanctuary-text-muted); margin-top: 2px;">
+                    <div style="font-size: 0.82rem; color: var(--sanctuary-text-muted); margin-top: 3px;">
                         {% with last_msg=conv.messages.last %}
                             {% if last_msg %}
-                                {{ last_msg.sender.username }}: {{ last_msg.message|truncatewords:8 }}
+                                <span style="color: {% if conv.is_group %}var(--sanctuary-heather){% else %}var(--sanctuary-rose){% endif %}; font-weight: 600;">{{ last_msg.sender.username }}:</span> {{ last_msg.message|truncatewords:8 }}
                             {% else %}
-                                No messages yet
+                                Channel initialized, no messages
                             {% endif %}
                         {% endwith %}
                     </div>
                 </div>
             </div>
-            <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted);">
+            <div style="font-size: 0.72rem; color: var(--sanctuary-text-muted); font-family: var(--font-mono);">
                 {{ conv.updated_at|timesince }} ago
             </div>
         </a>
         {% empty %}
-        <div style="text-align: center; padding: 48px; color: var(--sanctuary-text-muted);">
-            <i class="fa-solid fa-comments" style="font-size: 2.2rem; margin-bottom: 12px; display: block;"></i>
-            <h3>No conversations yet</h3>
-            <p style="font-size: 0.85rem; margin-top: 4px;">Search a friend's username above to start a direct message, or create a group chat.</p>
+        <div style="text-align: center; padding: 48px 20px; color: var(--sanctuary-text-muted);">
+            <i class="fa-solid fa-comments" style="font-size: 2.4rem; margin-bottom: 12px; display: block; color: var(--sanctuary-rose);"></i>
+            <h3 style="color: #fff; font-size: 1.2rem; font-weight: 800;">No conversations yet</h3>
+            <p style="font-size: 0.85rem; margin-top: 6px;">Start a conversation from a member profile, or create a group.</p>
         </div>
         {% endfor %}
     </div>

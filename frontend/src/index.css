@@ -1,0 +1,300 @@
+@import './tokens.css';
+
+#root {
+  width: 100%;
+  height: 100dvh;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+}
+
+/* App shell: clean rails, low contrast dividers, consistent controls. */
+.sanctuary-shell-root {
+  width: 100% !important;
+  height: 100dvh !important;
+  min-width: 0;
+  background: #000 !important;
+}
+.sanctuary-shell-root > aside {
+  background: #050505 !important;
+  border-color: #202020 !important;
+  padding: 12px 0 !important;
+  gap: 8px !important;
+}
+.sanctuary-shell-root > nav {
+  background: #050505 !important;
+  border-color: #202020 !important;
+}
+.sanctuary-shell-root > nav > div:first-child {
+  background: #050505 !important;
+  border-color: #202020 !important;
+  letter-spacing: -.01em !important;
+}
+.sanctuary-shell-root > nav > div:last-child {
+  border-color: #202020 !important;
+}
+.sanctuary-shell-root > main { height: 100dvh !important; background: #000 !important; }
+.sanctuary-shell-root > main > header {
+  background: #000 !important;
+  border-color: #202020 !important;
+  padding-inline: clamp(16px, 2.5vw, 36px) !important;
+}
+.sanctuary-shell-root > main > header h1 { text-transform: none !important; letter-spacing: -.025em !important; }
+.sanctuary-shell-root > main > header > div:last-child > div {
+  background: #070707 !important;
+  border-color: #292929 !important;
+}
+.sanctuary-shell-root[data-route="create_post"] > main > header .app-button { display: none !important; }
+.sanctuary-shell-root > main > section {
+  padding: clamp(20px, 3vw, 40px) clamp(16px, 3vw, 44px) !important;
+  background: #000;
+}
+
+/* The previous system used clipped corners and heavy neon on every element. */
+.sanctuary-shell-root button,
+.sanctuary-shell-root [role="button"],
+.sanctuary-shell-root input,
+.sanctuary-shell-root textarea,
+.sanctuary-shell-root select,
+.sanctuary-shell-root article,
+.sanctuary-shell-root [class*="card" i] {
+  clip-path: none !important;
+  border-radius: 3px !important;
+}
+.sanctuary-shell-root button {
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease !important;
+}
+.sanctuary-shell-root button:hover:not(:disabled) { filter: brightness(1.12); }
+.sanctuary-shell-root button:active:not(:disabled) { transform: translateY(1px) !important; }
+.sanctuary-shell-root .app-button {
+  min-height: 34px;
+  letter-spacing: .025em !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+}
+.sanctuary-shell-root .app-button:hover:not(:disabled) {
+  background: #c4f36b !important;
+  color: #080808 !important;
+  border-color: #c4f36b !important;
+  box-shadow: none !important;
+}
+.sanctuary-shell-root article {
+  border-color: #202020 !important;
+  background: #030303 !important;
+  transition: border-color 180ms ease !important;
+}
+.sanctuary-shell-root article:hover { border-color: #3a3a3a !important; box-shadow: none !important; }
+.sanctuary-shell-root input,
+.sanctuary-shell-root textarea,
+.sanctuary-shell-root select {
+  background-color: #080808 !important;
+  border-color: #303030 !important;
+  color: #ededed !important;
+  transition: border-color 160ms ease, background-color 160ms ease !important;
+}
+.sanctuary-shell-root input::placeholder,
+.sanctuary-shell-root textarea::placeholder { color: #686868 !important; }
+.sanctuary-shell-root input:focus,
+.sanctuary-shell-root textarea:focus,
+.sanctuary-shell-root select:focus { border-color: #777 !important; outline: none !important; }
+.sanctuary-shell-root img { border-radius: 2px; }
+.sanctuary-shell-root svg { flex-shrink: 0; }
+.sanctuary-shell-root a { color: inherit; text-underline-offset: 3px; }
+.sanctuary-shell-root [style*="linear-gradient"] {
+  background-image: none !important;
+  background-color: #080808 !important;
+}
+.sanctuary-shell-root [style*="box-shadow"] { box-shadow: none !important; }
+.sanctuary-shell-root [style*="border-radius: 50%"] { border-radius: 3px !important; }
+.sanctuary-shell-root [style*="border-radius:50%"] { border-radius: 3px !important; }
+.sanctuary-shell-root h1,
+.sanctuary-shell-root h2,
+.sanctuary-shell-root h3 { text-wrap: balance; letter-spacing: -.035em; }
+
+/* Page systems: each route gets a clear width, hierarchy, and content rhythm. */
+.page-feed,
+.page-discover,
+.page-profile,
+.page-create-post,
+.page-community,
+.page-post-detail,
+.page-channel-chat,
+.page-auth {
+  color: #e8e8e8;
+  scrollbar-gutter: stable;
+  animation: route-enter 200ms cubic-bezier(.2, .75, .25, 1) both;
+}
+@keyframes route-enter {
+  from { opacity: .72; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-feed {
+  align-items: flex-start !important;
+  gap: clamp(28px, 5vw, 72px) !important;
+  max-width: 1240px !important;
+  padding: 8px 0 48px;
+}
+.page-feed > div:first-child { max-width: 720px; }
+.page-feed > div:first-child > div:first-child { margin-bottom: 28px !important; }
+.feed-discover-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin: 4px 0 24px;
+  padding: 12px 0;
+  border-top: 1px solid #222;
+  border-bottom: 1px solid #222;
+  color: #8d8d8d;
+  font-size: .84rem;
+}
+.feed-discover-link button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0 !important;
+  background: transparent !important;
+  color: #d3d3d3 !important;
+  padding: 4px 0 !important;
+  cursor: pointer;
+}
+.feed-discover-link button:hover { color: var(--neon-cyan) !important; }
+.feed-empty-state {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  max-width: 500px;
+  padding: 34px 0 28px;
+  border-top: 1px solid #252525;
+}
+.feed-empty-mark {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #303030;
+  color: #aaa;
+}
+.feed-empty-state h3 { margin: 8px 0 0; font-size: 1.3rem; font-weight: 620; }
+.feed-empty-state p { max-width: 42ch; margin: 0; color: #8d8d8d; line-height: 1.6; }
+.feed-empty-state > div:last-child { display: flex; gap: 8px; margin-top: 8px; }
+.page-feed h2 { font-size: clamp(1.55rem, 2vw, 1.9rem) !important; font-weight: 650 !important; }
+.page-feed article { margin-bottom: 14px !important; }
+.page-feed > aside { width: 270px !important; min-width: 250px !important; gap: 0 !important; }
+.page-feed > aside > div {
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid #242424 !important;
+  padding: 16px 0 !important;
+}
+.page-discover { background: #000 !important; }
+.page-discover > div:first-child {
+  padding: 38px clamp(20px, 5vw, 72px) 25px !important;
+  background: #000 !important;
+  border-bottom-color: #222 !important;
+}
+.page-discover > div:first-child h1 { font-size: clamp(2rem, 3.5vw, 3.1rem) !important; line-height: 1.05 !important; font-weight: 620 !important; }
+.page-discover > div:first-child p { max-width: 52ch; font-size: .95rem !important; }
+.page-discover > div:last-child { padding: 30px clamp(20px, 5vw, 72px) 48px !important; }
+.page-discover > div:last-child > div[style*="grid"] { grid-template-columns: repeat(auto-fill, minmax(min(100%, 285px), 1fr)) !important; gap: 14px !important; }
+.page-discover .surface-card { min-height: 280px !important; }
+
+.page-profile > div:first-child,
+.page-create-post > div:first-child {
+  height: 54px !important;
+  padding: 0 clamp(18px, 4vw, 52px) !important;
+  background: #000 !important;
+  border-bottom-color: #222 !important;
+}
+.page-profile > div:nth-child(2),
+.page-create-post > div:nth-child(2) {
+  max-width: 920px !important;
+  margin: 40px auto !important;
+  padding-inline: clamp(16px, 4vw, 40px) !important;
+}
+.page-profile > div:nth-child(2) > div:first-child {
+  padding: 24px 0 !important;
+  border: 0 !important;
+  border-top: 1px solid #282828 !important;
+  border-bottom: 1px solid #282828 !important;
+  background: transparent !important;
+}
+.page-profile > div:nth-child(2) > div:first-child > div:nth-child(2) { border-color: #242424 !important; }
+.page-profile > div:nth-child(2) > div:last-child { margin-top: 28px !important; }
+.page-profile h1 { font-size: clamp(1.8rem, 3vw, 2.4rem) !important; font-weight: 620 !important; }
+.page-create-post > div:nth-child(2) { max-width: 760px !important; margin-top: 34px !important; }
+.page-create-post form {
+  padding: clamp(20px, 4vw, 36px) !important;
+  gap: 22px !important;
+  background: #030303 !important;
+  border-color: #242424 !important;
+}
+.page-create-post h1 { font-size: clamp(1.8rem, 3vw, 2.3rem) !important; font-weight: 620 !important; }
+.page-create-post label { color: #c4c4c4 !important; font: 550 .82rem/1.4 var(--font-display) !important; letter-spacing: 0 !important; }
+.page-create-post textarea { min-height: 150px; }
+
+.page-community > div:first-child { background: #030303 !important; }
+.page-community > div:first-child > div:first-child { height: clamp(110px, 17vw, 180px) !important; }
+.page-community > div:first-child > div:last-child { padding-inline: clamp(18px, 4vw, 56px) !important; }
+.page-community h1 { font-size: clamp(1.8rem, 3vw, 2.5rem) !important; font-weight: 620 !important; }
+.page-community article { border-color: #202020 !important; background: #030303 !important; }
+.page-community-gated > div { border-color: #262626 !important; box-shadow: none !important; }
+.page-community-gated > div > div:first-child { background: #101010 !important; }
+.page-community > div:first-child > div:first-child[style*="linear-gradient"],
+.page-discover .surface-card [style*="linear-gradient"] {
+  background-image: linear-gradient(135deg, #111 0%, #080808 58%, #030303 100%) !important;
+  background-color: #050505 !important;
+}
+
+.page-channel-chat > header { height: 58px !important; padding-inline: clamp(14px, 3vw, 34px) !important; background: #030303 !important; border-bottom-color: #232323 !important; }
+.page-channel-chat > div:nth-child(2) { padding: 28px clamp(16px, 5vw, 72px) !important; gap: 16px !important; }
+.page-channel-chat > div:nth-child(2) > div:first-child { max-width: 860px; width: 100%; margin-inline: auto; border-bottom-color: #252525 !important; }
+.page-channel-chat > div:nth-child(2) > div:not(:first-child) { max-width: 860px; width: 100%; margin-inline: auto; }
+.page-channel-chat > div:last-child { background: #030303 !important; border-top-color: #242424 !important; padding-inline: clamp(14px, 5vw, 72px) !important; }
+.page-channel-chat form { max-width: 860px; margin-inline: auto; border-color: #2a2a2a !important; background: #080808 !important; }
+
+.page-post-detail > header { height: 56px !important; background: #030303 !important; border-bottom-color: #222 !important; }
+.page-post-detail article { border-color: #222 !important; background: #030303 !important; }
+.page-auth { align-items: stretch !important; padding: clamp(18px, 6vh, 64px) clamp(16px, 5vw, 48px) !important; }
+.page-auth > div { grid-template-columns: minmax(0, 1fr) minmax(260px, .8fr) !important; gap: clamp(24px, 5vw, 68px) !important; max-width: 880px !important; margin: auto; }
+.page-auth > div > div:first-child {
+  padding: clamp(24px, 5vw, 48px) 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-top: 1px solid #282828 !important;
+  border-bottom: 1px solid #282828 !important;
+}
+.page-auth > div > div:first-child > div:first-child { text-align: left !important; margin-bottom: 34px !important; }
+.page-auth > div > div:first-child > div:first-child > div:first-child { display: none !important; }
+.page-auth h1 { font-size: 2.25rem !important; font-weight: 620 !important; letter-spacing: -.05em !important; text-transform: none !important; }
+.page-auth .app-button { border-radius: 3px !important; text-transform: none !important; letter-spacing: 0 !important; }
+.page-auth label { color: #b3b3b3 !important; font: 550 .82rem/1.4 var(--font-display) !important; letter-spacing: 0 !important; }
+.page-auth > div > .surface-card { align-self: center; min-height: 0 !important; padding: 28px !important; background: #050505 !important; border-color: #202020 !important; }
+.page-auth > div > .surface-card h2 { font-size: 1.7rem !important; line-height: 1.14 !important; font-weight: 620 !important; }
+.page-auth > div > .surface-card p { max-width: 42ch; }
+
+@media (max-width: 1100px) {
+  .page-feed > aside { display: none !important; }
+  .page-feed > div:first-child { max-width: 760px; margin-inline: auto; width: 100%; }
+}
+@media (max-width: 760px) {
+  .page-feed { padding-top: 0; }
+  .page-discover > div:last-child > div[style*="grid"] { grid-template-columns: 1fr !important; }
+  .page-auth > div { grid-template-columns: 1fr !important; max-width: 480px !important; }
+  .page-auth > div > .surface-card { display: none; }
+  .page-profile > div:nth-child(2) { margin-block: 20px !important; }
+  .page-profile > div:nth-child(2) > div:first-child { padding: 18px 0 !important; }
+  .page-channel-chat > div:nth-child(2) { padding-inline: 14px !important; }
+}
+
+@media (max-width: 760px) {
+  .sanctuary-shell-root > nav { display: none !important; }
+  .sanctuary-shell-root > aside { width: 52px !important; min-width: 52px !important; }
+  .sanctuary-shell-root > aside button { width: 38px !important; height: 38px !important; }
+  .sanctuary-shell-root > main > header { padding-inline: 12px !important; gap: 8px; }
+  .sanctuary-shell-root > main > header > div:first-child { gap: 7px !important; }
+  .sanctuary-shell-root > main > header > div:first-child > span { display: none; }
+  .sanctuary-shell-root > main > header > div:last-child { gap: 6px !important; }
+  .sanctuary-shell-root > main > header > div:last-child > div { display: none !important; }
+  .sanctuary-shell-root > main > section { padding: 18px 12px !important; }
+}

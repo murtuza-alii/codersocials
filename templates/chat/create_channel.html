@@ -1,35 +1,41 @@
 {% extends 'base.html' %}
 
-{% block title %}Create Channel - {{ community.name }}{% endblock %}
+{% block title %}Create Channel // {{ community.name }}{% endblock %}
 
 {% block content %}
-<div style="max-width: 500px; margin: 40px auto; background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 24px;">
-    <h1 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 6px;">Create a Channel in {{ community.name }}</h1>
-    <p style="color: var(--sanctuary-text-muted); font-size: 0.85rem; margin-bottom: 20px;">Channels organize discussions into distinct topics (e.g. #general, #study, #announcements).</p>
+<div style="max-width: 520px; margin: 40px auto; background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 32px; box-shadow: 0 12px 40px rgba(0,0,0,0.85); position: relative; overflow: hidden;">
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--sanctuary-cyan), var(--sanctuary-magenta));"></div>
+
+    <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--sanctuary-cyan); letter-spacing: 0.08em; font-weight: 700; margin-bottom: 4px;">// CHANNEL CONFIGURATION</div>
+    <h1 style="font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -0.02em;">Create Channel in {{ community.name }}</h1>
+    <p style="color: var(--sanctuary-text-muted); font-size: 0.88rem; margin-bottom: 24px;">Channels partition text streams into organized topics (e.g. #general, #development, #announcements).</p>
 
     <form method="POST">
         {% csrf_token %}
-        <div style="margin-bottom: 16px;">
-            <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Channel Name *</label>
-            <input type="text" name="name" required placeholder="e.g. general, exam-resources, memes" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--sanctuary-border); background: var(--sanctuary-surface); color: var(--sanctuary-text); outline: none;">
+        <div class="form-group">
+            <label style="display: block; font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); color: var(--sanctuary-text-muted); text-transform: uppercase; margin-bottom: 8px;">Channel Handle *</label>
+            <div style="position: relative; display: flex; align-items: center;">
+                <span style="position: absolute; left: 14px; color: var(--sanctuary-cyan); font-weight: 800; font-size: 1.1rem; font-family: var(--font-mono);">#</span>
+                <input type="text" name="name" required placeholder="general-chat, resources, builds" style="width: 100%; padding: 12px 16px 12px 34px; border-radius: var(--radius-sm); border: 1px solid var(--sanctuary-border); background: #020306; color: var(--sanctuary-text); outline: none;">
+            </div>
         </div>
 
-        <div style="margin-bottom: 16px;">
-            <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Channel Topic</label>
-            <input type="text" name="topic" placeholder="What is discussed in this channel?" style="width: 100%; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--sanctuary-border); background: var(--sanctuary-surface); color: var(--sanctuary-text); outline: none;">
+        <div class="form-group">
+            <label style="display: block; font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); color: var(--sanctuary-text-muted); text-transform: uppercase; margin-bottom: 8px;">Channel Topic</label>
+            <input type="text" name="topic" placeholder="What is discussed in this channel stream?" style="width: 100%; padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--sanctuary-border); background: #020306; color: var(--sanctuary-text); outline: none;">
         </div>
 
-        <div style="margin-bottom: 24px;">
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem;">
-                <input type="checkbox" name="is_announcement" value="1">
-                <span>Announcement Channel (Only admins/moderators can post)</span>
+        <div style="margin-bottom: 24px; padding: 12px 14px; background: #020306; border: 1px solid var(--sanctuary-border); border-radius: var(--radius-sm);">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.88rem; color: #fff;">
+                <input type="checkbox" name="is_announcement" value="1" style="accent-color: var(--sanctuary-amber);">
+                <span><i class="fa-solid fa-bullhorn" style="color: var(--sanctuary-amber);"></i> Announcement Channel (Restricted to Space Admins)</span>
             </label>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 10px;">
-            <a href="{% url 'communities:detail' slug=community.slug %}" style="padding: 8px 16px; border-radius: var(--radius-md); background: var(--sanctuary-surface); color: var(--sanctuary-text); text-decoration: none; border: 1px solid var(--sanctuary-border); font-size: 0.85rem;">Cancel</a>
-            <button type="submit" style="padding: 8px 20px; border-radius: var(--radius-md); background: var(--sanctuary-accent); color: #fff; border: none; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
-                Create Channel
+            <a href="{% url 'communities:detail' slug=community.slug %}" class="cyber-btn cyber-btn-ghost">Cancel</a>
+            <button type="submit" class="cyber-btn cyber-btn-primary">
+                <i class="fa-solid fa-plus"></i> Deploy Channel
             </button>
         </div>
     </form>

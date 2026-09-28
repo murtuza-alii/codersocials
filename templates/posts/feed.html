@@ -1,58 +1,104 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Sanctuary Feed{% endblock %}
+{% block title %}Your feed · Sanctuary{% endblock %}
 
 {% block content %}
 <div style="max-width: 680px; margin: 0 auto;">
-    <!-- Welcome Header / Community Filter Bar -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+    <!-- Welcome Header / Cyber Filter Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 14px;">
         <div>
-            <h1 style="font-size: 1.6rem; font-weight: 800;">My Sanctuary Feed</h1>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--sanctuary-cyan); letter-spacing: 0.04em; font-weight: 600;">RECENT ACTIVITY</span>
+            </div>
+            <h1 style="font-size: 1.6rem; font-weight: 650; color: #fff; letter-spacing: -0.03em;">Your feed</h1>
             <p style="color: var(--sanctuary-text-muted); font-size: 0.85rem;">
-                Private, isolated updates from your approved spaces and friends.
+                Recent posts from spaces you follow.
             </p>
         </div>
-        <div style="display: flex; gap: 8px;">
-            <a href="{% url 'communities:explore' %}" style="padding: 8px 14px; border-radius: var(--radius-md); background: var(--sanctuary-surface); border: 1px solid var(--sanctuary-border); color: var(--sanctuary-text); font-size: 0.85rem; text-decoration: none;">
-                <i class="fa-solid fa-compass"></i> Discover Spaces
+        <div style="display: flex; gap: 10px;">
+            <a href="{% url 'communities:explore' %}" class="cyber-btn cyber-btn-ghost">
+                <i class="fa-solid fa-compass"></i> Discover
             </a>
-            <a href="{% url 'create_post' %}" style="padding: 8px 16px; border-radius: var(--radius-md); background: var(--sanctuary-accent); color: #fff; font-weight: 700; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+            <a href="{% url 'create_post' %}" class="cyber-btn cyber-btn-amber">
                 <i class="fa-solid fa-plus"></i> New Post
             </a>
         </div>
     </div>
 
+    <!-- Space discovery shortcut -->
+    <div class="cyber-note-flip" style="margin-bottom: 24px; min-height: 120px;">
+        <div class="flip-card-inner">
+            <!-- FRONT -->
+            <div class="flip-front" style="background: linear-gradient(135deg, rgba(8, 12, 22, 0.95), rgba(2, 3, 6, 0.98)); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; height: 100%; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(212, 151, 70, 0.1); border: 1px solid rgba(212, 151, 70, 0.3); display: flex; align-items: center; justify-content: center; color: var(--sanctuary-amber); font-size: 1.3rem;">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div>
+                        <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--sanctuary-amber); font-weight: 600; letter-spacing: 0.04em;">FIND YOUR COMMUNITY</div>
+                        <div style="font-size: 1.05rem; font-weight: 650; color: #fff;">Work on something with other people</div>
+                        <div style="font-size: 0.8rem; color: var(--sanctuary-text-muted);">Browse spaces built around shared interests and projects.</div>
+                    </div>
+                </div>
+                <a href="{% url 'communities:explore' %}" class="cyber-btn cyber-btn-ghost" style="padding: 6px 14px; font-size: 0.8rem;">
+                    Browse spaces <i class="fa-solid fa-arrow-right" style="margin-left: 4px;"></i>
+                </a>
+            </div>
+
+            <!-- BACK: MORPHING COLOURED BLOBS + 3D POPPING HUD -->
+            <div class="flip-back" style="padding: 16px 24px;">
+                <div class="blob-canvas-wrap">
+                    <div class="cyber-blob blob-cyan"></div>
+                    <div class="cyber-blob blob-magenta"></div>
+                    <div class="cyber-blob blob-purple"></div>
+                    <div class="cyber-blob blob-lime"></div>
+                </div>
+                <div class="blob-pop-content" style="width: 96%; padding: 14px 22px; flex-direction: row; justify-content: space-between; text-align: left;">
+                    <div>
+                        <div class="blob-tag">// QUANTUM BLOBS ACTIVATED</div>
+                        <div style="font-size: 1rem; font-weight: 800; color: #fff;">Sanctuary Mesh Protocol v2.4</div>
+                        <div class="blob-stats">LIVE FEED NODES SYNCHRONIZED</div>
+                    </div>
+                    <a href="{% url 'communities:explore' %}" class="cyber-btn cyber-btn-primary" style="padding: 8px 18px; font-size: 0.82rem;">
+                        <i class="fa-solid fa-compass"></i> Discover Spaces
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% if posts %}
         {% for post in posts %}
-        <article class="sanctuary-post-card">
+        <article class="sanctuary-post-card" id="post-card-{{ post.id }}">
             <!-- Post Header -->
             <div class="post-header-sanctuary">
                 <div class="post-author-box">
                     {% if post.author.profile.avatar %}
                     <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}" class="post-avatar-img">
                     {% else %}
-                    <div class="post-avatar-img" style="background: var(--sanctuary-surface); display:flex; align-items:center; justify-content:center; font-weight:700;">
+                    <div class="post-avatar-img" style="background: var(--sanctuary-surface); display:flex; align-items:center; justify-content:center; font-weight:800; font-family:var(--font-mono); color:var(--sanctuary-cyan);">
                         {{ post.author.username|slice:":2"|upper }}
                     </div>
                     {% endif %}
                     <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <a href="{% url 'profile' username=post.author.username %}" style="font-weight: 700; font-size: 0.95rem; text-decoration: none;">
+                            <a href="{% url 'profile' username=post.author.username %}" style="font-weight: 700; font-size: 0.95rem; color:#fff; text-decoration: none;">
                                 @{{ post.author.username }}
                             </a>
                             {% if post.community %}
                             <a href="{% url 'communities:detail' slug=post.community.slug %}" class="community-pill-tag" style="text-decoration: none;">
-                                <i class="fa-solid {% if post.community.privacy == 'PRIVATE' %}fa-lock{% else %}fa-globe{% endif %}"></i> {{ post.community.name }}
+                                <i class="fa-solid {% if post.community.privacy == 'PRIVATE' %}fa-lock{% else %}fa-hashtag{% endif %}"></i> {{ post.community.name }}
                             </a>
                             {% else %}
-                            <span style="font-size: 0.75rem; color: var(--sanctuary-text-muted);">General</span>
+                            <span style="font-size: 0.72rem; color: var(--sanctuary-text-muted); font-family: var(--font-mono);">[GENERAL]</span>
                             {% endif %}
                         </div>
-                        <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted); margin-top: 2px;">
+                        <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted); margin-top: 2px; font-family: var(--font-mono);">
                             {{ post.created_at|timesince }} ago
                             {% if post.tag %}
-                            • <span style="color: var(--sanctuary-accent); font-weight: 600;">{{ post.tag }}</span>
+                            {% cycle 'var(--sanctuary-cyan)' 'var(--sanctuary-lime)' 'var(--sanctuary-amber)' 'var(--sanctuary-violet)' as tag_color %}
+                            • <span style="color: {{ tag_color }}; font-weight: 600;">{{ post.tag }}</span>
                             {% endif %}
                         </div>
                     </div>
@@ -61,9 +107,9 @@
                 <!-- Post Actions Menu -->
                 <div style="display: flex; align-items: center; gap: 8px;">
                     {% if post.author == user or post.community.creator == user %}
-                    <form method="POST" action="{% url 'takedown_post' pk=post.id %}" onsubmit="return confirm('Take down this post?');" style="margin: 0;">
+                    <form id="takedown-form-{{ post.id }}" method="POST" action="{% url 'takedown_post' pk=post.id %}" style="margin: 0;">
                         {% csrf_token %}
-                        <button type="submit" style="background: rgba(244, 63, 94, 0.1); color: var(--sanctuary-rose); border: 1px solid rgba(244, 63, 94, 0.2); padding: 4px 10px; border-radius: var(--radius-md); font-size: 0.75rem; cursor: pointer;" title="Take down post">
+                        <button type="button" class="post-action-btn" onclick="window.cyberConfirm('Are you sure you want to take down this post from the feed?', 'Takedown Transmission', () => document.getElementById('takedown-form-{{ post.id }}').submit());" data-tooltip="Takedown Post" style="color: var(--sanctuary-magenta);">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </form>
@@ -73,70 +119,70 @@
 
             <!-- Post Text Content -->
             {% if post.caption %}
-            <div style="padding: 0 16px 14px 16px; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">{{ post.caption }}</div>
+            <div style="padding: 0 18px 14px 18px; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap; color: var(--sanctuary-text);">{{ post.caption }}</div>
             {% endif %}
 
             <!-- Shared From Reference -->
             {% if post.shared_from %}
-            <div style="margin: 0 16px 14px 16px; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--sanctuary-border); background: var(--sanctuary-surface);">
-                <div style="font-size: 0.8rem; color: var(--sanctuary-text-muted); margin-bottom: 6px;">
-                    <i class="fa-solid fa-retweet"></i> Shared from @{{ post.shared_from.author.username }} in {{ post.shared_from.community.name|default:"General" }}
+            <div style="margin: 0 18px 14px 18px; padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--sanctuary-border); background: var(--sanctuary-surface);">
+                <div style="font-size: 0.78rem; font-family: var(--font-mono); color: var(--sanctuary-cyan); margin-bottom: 6px;">
+                    <i class="fa-solid fa-retweet"></i> RE-TRANSMITTED FROM @{{ post.shared_from.author.username }} IN {{ post.shared_from.community.name|default:"General" }}
                 </div>
                 {% if post.shared_from.caption %}
-                <p style="font-size: 0.85rem;">{{ post.shared_from.caption|truncatewords:25 }}</p>
+                <p style="font-size: 0.88rem; color: var(--sanctuary-text);">{{ post.shared_from.caption|truncatewords:25 }}</p>
                 {% endif %}
             </div>
             {% endif %}
 
-            <!-- Multi-Media Carousel (Instagram-Style Player) -->
+            <!-- Multi-Media Carousel (Instagram/Cyber Player) -->
             {% if post.media_items.exists or post.media_file %}
                 {% include 'components/carousel.html' with post=post %}
             {% endif %}
 
-            <!-- Actions Bar -->
+            <!-- Actions Bar (Discord/Cyber Reaction Style) -->
             <div class="post-actions-bar">
-                <a href="{% url 'like_toggle' pk=post.id %}" class="post-action-btn {% if post.id in liked_post_ids %}liked{% endif %}">
+                <a href="{% url 'like_toggle' pk=post.id %}" class="post-action-btn like-btn {% if post.id in liked_post_ids %}liked{% endif %}" data-tooltip="React with Heart">
                     <i class="fa-solid fa-heart"></i>
                     <span>{{ post.total_likes }}</span>
                 </a>
 
-                <a href="{% url 'post_detail' pk=post.id %}" class="post-action-btn">
+                <a href="{% url 'post_detail' pk=post.id %}" class="post-action-btn" data-tooltip="Discussion Comments">
                     <i class="fa-solid fa-comment"></i>
                     <span>{{ post.total_comments }}</span>
                 </a>
 
-                <button type="button" class="post-action-btn" onclick="navigator.clipboard.writeText(window.location.origin + '{% url 'post_detail' pk=post.id %}'); alert('Link copied to clipboard!');" title="Copy Link">
+                <button type="button" class="post-action-btn" onclick="window.cyberCopyLink(window.location.origin + '{% url 'post_detail' pk=post.id %}', 'Transmission link copied to clipboard!');" data-tooltip="Copy Share Link">
                     <i class="fa-solid fa-share-nodes"></i>
                 </button>
             </div>
 
             <!-- Comments Preview -->
             {% if post.total_comments > 0 %}
-            <div style="padding: 0 16px 10px 16px;">
-                <a href="{% url 'post_detail' pk=post.id %}" style="font-size: 0.8rem; color: var(--sanctuary-text-muted); text-decoration: none;">
+            <div style="padding: 0 18px 10px 18px;">
+                <a href="{% url 'post_detail' pk=post.id %}" style="font-size: 0.82rem; color: var(--sanctuary-text-muted); text-decoration: none; font-family: var(--font-mono);">
                     View all {{ post.total_comments }} discussion comment{{ post.total_comments|pluralize }} →
                 </a>
             </div>
             {% endif %}
 
             <!-- Quick Comment Box -->
-            <form action="{% url 'add_comment' pk=post.id %}" method="POST" style="display: flex; padding: 10px 16px; border-top: 1px solid var(--sanctuary-border);">
+            <form action="{% url 'add_comment' pk=post.id %}" method="POST" style="display: flex; padding: 10px 18px; border-top: 1px solid rgba(255, 255, 255, 0.05); background: rgba(0, 0, 0, 0.3);">
                 {% csrf_token %}
-                <input type="text" name="text" placeholder="Add an organic discussion comment..." required style="flex: 1; background: transparent; border: none; color: var(--sanctuary-text); font-size: 0.85rem; outline: none;">
-                <button type="submit" style="background: none; border: none; color: var(--sanctuary-accent); font-weight: 700; cursor: pointer; font-size: 0.85rem;">Post</button>
+                <input type="text" name="text" placeholder="Add an organic discussion comment..." required style="flex: 1; background: transparent; border: none; color: var(--sanctuary-text); font-size: 0.88rem; outline: none;">
+                <button type="submit" style="background: none; border: none; color: var(--sanctuary-amber); font-weight: 700; cursor: pointer; font-size: 0.85rem; font-family: var(--font-mono); letter-spacing: 0.04em;">SEND</button>
             </form>
         </article>
         {% endfor %}
     {% else %}
-        <div style="text-align: center; padding: 60px 20px; background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg);">
-            <i class="fa-solid fa-shield-cat" style="font-size: 3rem; color: var(--sanctuary-accent); margin-bottom: 16px; display: block;"></i>
-            <h2 style="font-size: 1.4rem; font-weight: 800;">Welcome to your Sanctuary!</h2>
+        <div style="text-align: center; padding: 60px 20px; background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); box-shadow: 0 4px 16px rgba(0,0,0,0.5);">
+            <i class="fa-solid fa-shield-cat" style="font-size: 3rem; color: var(--sanctuary-amber); margin-bottom: 16px; display: block;"></i>
+            <h2 style="font-size: 1.4rem; font-weight: 800; color: #fff;">Welcome to your Sanctuary!</h2>
             <p style="color: var(--sanctuary-text-muted); margin: 12px 0 24px; font-size: 0.95rem;">
                 Your feed displays posts only from approved community spaces you have joined.
             </p>
             <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <a href="{% url 'communities:explore' %}" style="background: var(--sanctuary-accent); color: #fff; padding: 10px 20px; border-radius: var(--radius-md); font-weight: 700; text-decoration: none;">Discover Community Spaces</a>
-                <a href="{% url 'communities:create' %}" style="background: var(--sanctuary-surface); border: 1px solid var(--sanctuary-border); color: var(--sanctuary-text); padding: 10px 20px; border-radius: var(--radius-md); font-weight: 600; text-decoration: none;">Create Your Own Space</a>
+                <a href="{% url 'communities:explore' %}" class="cyber-btn cyber-btn-lime">Discover Community Spaces</a>
+                <a href="{% url 'communities:create' %}" class="cyber-btn cyber-btn-amber">Create Your Own Space</a>
             </div>
         </div>
     {% endif %}

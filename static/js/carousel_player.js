@@ -1,5 +1,6 @@
 /**
  * Community Sanctuary Platform - Custom Instagram-Style Carousel & Video Player
+ * Enhanced with GSAP Core Motion for zero-jank slide physics and tactile indicators.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,9 +19,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function updateCarousel(index) {
             currentIndex = (index + totalSlides) % totalSlides;
-            track.style.transform = `translateX(-${currentIndex * 100}%)`;
 
-            // Pause all videos when sliding
+            // Use GSAP for buttery smooth hardware-accelerated slide motion
+            if (typeof gsap !== 'undefined') {
+                gsap.to(track, {
+                    xPercent: -currentIndex * 100,
+                    duration: 0.35,
+                    ease: 'power2.out',
+                    overwrite: 'auto'
+                });
+            } else {
+                track.style.transform = `translateX(-${currentIndex * 100}%)`;
+            }
+
+            // Pause all videos when sliding away
             slides.forEach((slide, idx) => {
                 const video = slide.querySelector('video');
                 if (video && idx !== currentIndex) {
@@ -28,9 +40,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Update dots
+            // Update dots with GSAP scale
             dots.forEach((dot, idx) => {
-                dot.classList.toggle('active', idx === currentIndex);
+                const isActive = idx === currentIndex;
+                dot.classList.toggle('active', isActive);
+                if (typeof gsap !== 'undefined') {
+                    gsap.to(dot, {
+                        width: isActive ? 10 : 6,
+                        scale: isActive ? 1.15 : 1,
+                        duration: 0.2,
+                        overwrite: 'auto'
+                    });
+                }
             });
         }
 
@@ -82,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Tap/click to play/pause
         box.addEventListener('click', (e) => {
             if (e.target.closest('.video-mute-pill') || e.target.closest('.carousel-btn')) {
-                return; // Let mute pill or carousel button handle it
+                return;
             }
 
             if (video.paused) {
@@ -99,11 +120,13 @@ document.addEventListener('DOMContentLoaded', () => {
             muteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 video.muted = !video.muted;
-                const icon = muteBtn.querySelector('i') || muteBtn;
                 if (video.muted) {
                     muteBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
                 } else {
                     muteBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+                }
+                if (window.showCyberToast) {
+                    window.showCyberToast(video.muted ? 'Audio muted' : 'Audio active', 'info', 1500);
                 }
             });
         }
@@ -111,10 +134,29 @@ document.addEventListener('DOMContentLoaded', () => {
         function showIndicator(iconClass) {
             if (!indicator) return;
             indicator.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
-            indicator.classList.add('show');
-            setTimeout(() => {
-                indicator.classList.remove('show');
-            }, 500);
+            if (typeof gsap !== 'undefined') {
+                gsap.fromTo(indicator,
+                    { scale: 0.5, autoAlpha: 0 },
+                    {
+                        scale: 1,
+                        autoAlpha: 1,
+                        duration: 0.2,
+                        ease: 'back.out(2)',
+                        onComplete: () => {
+                            gsap.to(indicator, {
+                                scale: 0.8,
+                                autoAlpha: 0,
+                                delay: 0.25,
+                                duration: 0.22,
+                                ease: 'power2.in'
+                            });
+                        }
+                    }
+                );
+            } else {
+                indicator.classList.add('show');
+                setTimeout(() => indicator.classList.remove('show'), 500);
+            }
         }
 
         // Intersection Observer: Auto pause when scrolled out of viewport

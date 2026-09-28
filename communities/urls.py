@@ -5,6 +5,7 @@ app_name = 'communities'
 
 urlpatterns = [
     path('', views.explore_communities, name='explore'),
+    path('explore/', views.explore_communities, name='explore_alias'),
     path('create/', views.create_community, name='create'),
     path('c/<slug:slug>/', views.community_detail, name='detail'),
     path('c/<slug:slug>/join/', views.request_to_join, name='join'),
