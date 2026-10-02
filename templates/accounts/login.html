@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign in · Sanctuary{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 40px auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px; align-items: stretch;">
+    <!-- 1. Form Card -->
+    <div class="form-card" style="margin: 0; width: 100%; display: flex; flex-direction: column; justify-content: center;">
+        <div style="text-align: center; margin-bottom: 24px;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 50%; background: #000; border: 2px solid var(--sanctuary-cyan); box-shadow: 0 0 20px rgba(0, 240, 255, 0.4); margin-bottom: 12px;">
+                <i class="fa-solid fa-people-group" style="font-size: 1.35rem; color: var(--sanctuary-cyan);"></i>
+            </div>
+            <h1 style="font-size: 1.8rem; font-weight: 800; color: #fff; letter-spacing: -0.02em;">Sanctuary</h1>
+            <p style="color: var(--sanctuary-text-muted); font-size: 0.85rem; margin-top: 4px; font-family: var(--font-mono);">
+                Sign in to your account
+            </p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_username">Username</label>
+                <input type="text" name="username" id="id_username" required placeholder="Enter username">
+            </div>
+
+            <div class="form-group">
+                <label for="id_password">Password</label>
+                <input type="password" name="password" id="id_password" required placeholder="Enter password">
+            </div>
+
+            <button type="submit" class="cyber-btn cyber-btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;">
+                <i class="fa-solid fa-right-to-bracket"></i> Sign in
+            </button>
+        </form>
+
+        <div class="form-footer">
+            New here? <a href="{% url 'register' %}">Create an account</a>
+        </div>
+    </div>
+
+    <!-- 2. Interactive 3D Note-Flip Portal with Morphing Coloured Blobs -->
+    <div class="cyber-note-flip" style="min-height: 400px; width: 100%;">
+        <div class="flip-card-inner">
+            <!-- FRONT -->
+            <div class="flip-front" style="background: linear-gradient(135deg, rgba(8, 12, 24, 0.95), rgba(2, 3, 6, 0.98)); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 32px 28px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 10px 35px rgba(0, 0, 0, 0.85); height: 100%;">
+                <div>
+                    <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--sanctuary-cyan); font-weight: 700; letter-spacing: 0.12em; margin-bottom: 8px;">
+                        A NETWORK FOR YOUR WORK
+                    </div>
+                    <h2 style="font-size: 1.45rem; font-weight: 800; color: #fff; line-height: 1.25; margin-bottom: 12px;">
+                        A better place to build in public
+                    </h2>
+                    <p style="color: var(--sanctuary-text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 20px;">
+                        Meet people working on similar problems, share progress, and keep useful conversations close to the work.
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 10px; font-family: var(--font-mono); font-size: 0.8rem;">
+                        <div style="display: flex; align-items: center; gap: 8px; color: var(--sanctuary-lime);">
+                            <i class="fa-solid fa-circle-check"></i> Public and private spaces
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; color: var(--sanctuary-cyan);">
+                            <i class="fa-solid fa-circle-check"></i> Channels for ongoing discussions
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; color: var(--sanctuary-magenta);">
+                            <i class="fa-solid fa-circle-check"></i> Posts, replies, and direct messages
+                        </div>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--sanctuary-border); padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--sanctuary-text-muted);">
+                        Spaces · posts · conversations
+                    </span>
+                    <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--sanctuary-cyan);">
+                        Find your people
+                    </span>
+                </div>
+            </div>
+
+            <!-- BACK: MORPHING COLOURED BLOBS + 3D POPPING HUD -->
+            <div class="flip-back">
+                <div class="blob-canvas-wrap">
+                    <div class="cyber-blob blob-cyan"></div>
+                    <div class="cyber-blob blob-magenta"></div>
+                    <div class="cyber-blob blob-purple"></div>
+                    <div class="cyber-blob blob-lime"></div>
+                </div>
+                <div class="blob-pop-content">
+                    <div class="blob-tag">// QUANTUM CORE INITIALIZED</div>
+                    <div class="blob-title">Fluid Motion Matrix</div>
+                    <div class="blob-stats">
+                        <span style="color: var(--sanctuary-lime);"><i class="fa-solid fa-atom"></i> ACTIVE</span>
+                        <span style="margin: 0 6px; opacity: 0.3;">//</span>
+                        <span style="color: var(--sanctuary-cyan);">144 FPS UNLOCKED</span>
+                    </div>
+                    <p style="font-size: 0.82rem; color: #ced4da; line-height: 1.45; margin: 8px 0 16px;">
+                        Move your cursor across the portal to observe high-velocity ASCII emission and hardware-accelerated fluid blob morphing.
+                    </p>
+                    <a href="{% url 'communities:explore' %}" class="cyber-btn cyber-btn-primary" style="width: 100%; justify-content: center; padding: 10px;">
+                        <i class="fa-solid fa-compass"></i> Explore Public Spaces
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Space Nodes // {{ community.name }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 780px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 14px;">
+        <div>
+            <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--sanctuary-cyan); letter-spacing: 0.08em; font-weight: 700; margin-bottom: 4px;">// ACCESS MODERATION</div>
+            <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.02em;">Manage Space Nodes</h1>
+            <p style="color: var(--sanctuary-text-muted); font-size: 0.88rem;">Review pending access requests and oversee membership for {{ community.name }}.</p>
+        </div>
+        <a href="{% url 'communities:detail' slug=community.slug %}" class="cyber-btn cyber-btn-ghost">
+            <i class="fa-solid fa-arrow-left"></i> Space Stream
+        </a>
+    </div>
+
+    <!-- 1. Pending Join Requests -->
+    <div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.8);">
+        <h2 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: #fff;">
+            <i class="fa-solid fa-user-clock" style="color: var(--sanctuary-amber);"></i>
+            <span>Pending Access Requests ({{ pending_requests.count }})</span>
+        </h2>
+
+        {% for req in pending_requests %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-radius: var(--radius-sm); background: #020306; border: 1px solid var(--sanctuary-border); margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--sanctuary-surface); display: flex; align-items: center; justify-content: center; font-weight: 800; font-family: var(--font-mono); color: var(--sanctuary-cyan); border: 1px solid var(--sanctuary-border);">
+                    {{ req.user.username|slice:":2"|upper }}
+                </div>
+                <div>
+                    <div style="font-weight: 700; font-size: 0.95rem; color: #fff;">@{{ req.user.username }}</div>
+                    <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted); font-family: var(--font-mono);">Requested {{ req.created_at|timesince }} ago</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <a href="{% url 'communities:approve_request' slug=community.slug membership_id=req.id %}" class="cyber-btn" style="background: var(--sanctuary-lime); color: #000; box-shadow: 0 0 12px rgba(0, 255, 102, 0.4); padding: 6px 16px; font-size: 0.8rem;">
+                    Approve
+                </a>
+                <a href="{% url 'communities:reject_request' slug=community.slug membership_id=req.id %}" class="cyber-btn cyber-btn-danger" style="padding: 6px 16px; font-size: 0.8rem;">
+                    Decline
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div style="color: var(--sanctuary-text-muted); font-size: 0.88rem; padding: 10px 0; font-family: var(--font-mono);">No pending join requests detected.</div>
+        {% endfor %}
+    </div>
+
+    <!-- 2. Approved Members -->
+    <div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.8);">
+        <h2 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: #fff;">
+            <i class="fa-solid fa-users" style="color: var(--sanctuary-cyan);"></i>
+            <span>Active Space Nodes ({{ approved_members.count }})</span>
+        </h2>
+
+        {% for m in approved_members %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-radius: var(--radius-sm); background: #020306; border: 1px solid var(--sanctuary-border); margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--sanctuary-surface); display: flex; align-items: center; justify-content: center; font-weight: 800; font-family: var(--font-mono); color: var(--sanctuary-cyan); border: 1px solid var(--sanctuary-border);">
+                    {{ m.user.username|slice:":2"|upper }}
+                </div>
+                <div>
+                    <div style="font-weight: 700; font-size: 0.92rem; color: #fff;">
+                        @{{ m.user.username }}
+                        {% if m.user == community.creator %}
+                        <span style="font-size: 0.68rem; font-family: var(--font-mono); background: rgba(0, 240, 255, 0.15); color: var(--sanctuary-cyan); border: 1px solid rgba(0, 240, 255, 0.3); padding: 2px 8px; border-radius: 6px; margin-left: 6px;">CREATOR</span>
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted); font-family: var(--font-mono);">ROLE: {{ m.get_role_display|upper }}</div>
+                </div>
+            </div>
+
+            <span style="font-size: 0.75rem; color: var(--sanctuary-text-muted); font-family: var(--font-mono);">SYNCED {{ m.created_at|date:"M d, Y" }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

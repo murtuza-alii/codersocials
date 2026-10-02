@@ -1,0 +1,54 @@
+{% load static %}
+<div class="carousel-container" data-post-id="{{ post.id }}">
+    <div class="carousel-track">
+        {% if post.media_items.exists %}
+            {% for item in post.media_items.all %}
+            <div class="carousel-slide" data-slide-index="{{ forloop.counter0 }}">
+                {% if item.is_video %}
+                    <div class="carousel-video-box">
+                        <video playsinline loop preload="metadata" poster="{% if item.thumbnail %}{{ item.thumbnail.url }}{% endif %}">
+                            <source src="{{ item.file.url }}" type="video/mp4">
+                        </video>
+                        <button type="button" class="video-mute-pill" title="Toggle audio">
+                            <i class="fa-solid fa-volume-xmark"></i>
+                        </button>
+                        <div class="play-pause-indicator"></div>
+                    </div>
+                {% else %}
+                    <img src="{{ item.file.url }}" alt="Post photo" loading="lazy">
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% elif post.media_file %}
+            <div class="carousel-slide" data-slide-index="0">
+                {% if post.is_video %}
+                    <div class="carousel-video-box">
+                        <video playsinline loop preload="metadata" poster="{% if post.thumbnail %}{{ post.thumbnail.url }}{% endif %}">
+                            <source src="{{ post.media_file.url }}" type="video/mp4">
+                        </video>
+                        <button type="button" class="video-mute-pill" title="Toggle audio">
+                            <i class="fa-solid fa-volume-xmark"></i>
+                        </button>
+                        <div class="play-pause-indicator"></div>
+                    </div>
+                {% else %}
+                    <img src="{{ post.media_file.url }}" alt="Post photo" loading="lazy">
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    {% if post.media_items.count > 1 %}
+        <button type="button" class="carousel-btn prev" aria-label="Previous slide">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <button type="button" class="carousel-btn next" aria-label="Next slide">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        <div class="carousel-dots">
+            {% for item in post.media_items.all %}
+                <span class="carousel-dot {% if forloop.first %}active{% endif %}"></span>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

@@ -1,0 +1,362 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="A focused network for communities, shared work, and useful conversations.">
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+    <title>{% block title %}Sanctuary{% endblock %} · Community network</title>
+    
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- GSAP 3 Core Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+    <!-- App & Sanctuary Stylesheets -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sanctuary_layout.css' %}">
+    <link rel="stylesheet" href="{% static 'css/premium_black.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="sanctuary-app">
+        {% if user.is_authenticated %}
+        <!-- 1. Primary Slim Icon Rail (Discord Style) -->
+        <aside class="primary-rail">
+            <!-- Home Feed Button -->
+            <a href="{% url 'feed' %}" class="rail-btn rail-color-cyan {% if request.resolver_match.url_name == 'feed' %}active{% endif %}" data-tooltip="Home feed">
+                <span class="rail-pill"></span>
+                <i class="fa-solid fa-house"></i>
+            </a>
+
+            <div class="rail-divider"></div>
+
+            <!-- Joined Communities Avatars with Chromatic Themes -->
+            <div class="rail-section">
+                {% for comm in joined_communities %}
+                <a href="{% url 'communities:detail' slug=comm.slug %}" class="rail-btn {% if forloop.counter0|divisibleby:3 %}rail-color-lime{% elif forloop.counter|divisibleby:2 %}rail-color-violet{% else %}rail-color-amber{% endif %} {% if community and community.id == comm.id %}active{% endif %}" data-tooltip="{{ comm.name }}">
+                    <span class="rail-pill"></span>
+                    {% if comm.avatar %}
+                        <img src="{{ comm.avatar.url }}" alt="{{ comm.name }}">
+                    {% else %}
+                        <span>{{ comm.name|slice:":2"|upper }}</span>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+
+            <!-- Add / Explore Communities -->
+            <a href="{% url 'communities:create' %}" class="rail-btn rail-color-amber" data-tooltip="Create Community Space">
+                <span class="rail-pill"></span>
+                <i class="fa-solid fa-plus"></i>
+            </a>
+            <a href="{% url 'communities:explore' %}" class="rail-btn rail-color-lime {% if request.resolver_match.url_name == 'explore' and 'communities' in request.path %}active{% endif %}" data-tooltip="Explore Hub">
+                <span class="rail-pill"></span>
+                <i class="fa-solid fa-compass"></i>
+            </a>
+
+            <div class="rail-divider"></div>
+
+            <!-- Direct Messaging & Personal Groups -->
+            <a href="{% url 'chat:inbox' %}" class="rail-btn rail-color-magenta {% if 'chat' in request.path and not community %}active{% endif %}" data-tooltip="Direct Messages">
+                <span class="rail-pill"></span>
+                <i class="fa-solid fa-comments"></i>
+            </a>
+
+            <!-- Create Post Button -->
+            <a href="{% url 'create_post' %}" class="rail-btn rail-color-violet {% if request.resolver_match.url_name == 'create_post' %}active{% endif %}" data-tooltip="New post">
+                <span class="rail-pill"></span>
+                <i class="fa-solid fa-pen-to-square"></i>
+            </a>
+
+            <!-- Spacer -->
+            <div style="flex: 1;"></div>
+
+            <!-- User Profile & Logout -->
+            <a href="{% url 'profile' username=user.username %}" class="rail-btn rail-color-cyan" data-tooltip="@{{ user.username }}">
+                <span class="rail-pill"></span>
+                {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar.url }}" alt="avatar">
+                {% else %}
+                    <i class="fa-solid fa-user"></i>
+                {% endif %}
+            </a>
+            <a href="{% url 'logout' %}" class="rail-btn rail-color-danger" data-tooltip="Disconnect / Sign Out">
+                <span class="rail-pill"></span>
+                <i class="fa-solid fa-power-off"></i>
+            </a>
+        </aside>
+
+        <!-- 2. Secondary Accordion Drawer (Channels & Space Navigation) -->
+        <aside class="secondary-accordion">
+            <div class="accordion-inner">
+                {% if community %}
+                    <!-- Inside Community Context -->
+                    <div class="accordion-header">
+                        <div class="accordion-title" title="{{ community.name }}">{{ community.name }}</div>
+                        <button type="button" id="pin-accordion-btn" data-tooltip="Pin Sidebar" style="background:none; border:none; color:var(--sanctuary-text-muted); cursor:pointer;">
+                            <i class="fa-solid fa-angles-left"></i>
+                        </button>
+                    </div>
+
+                    <div style="font-size: 0.8rem; color: var(--sanctuary-text-muted); margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+                        <span class="community-pill-tag">{{ community.get_privacy_display }}</span>
+                        <span style="color: var(--sanctuary-text-dark);">•</span>
+                        <span style="font-family: var(--font-mono); font-size: 0.75rem;">{{ community.member_count }} USERS</span>
+                    </div>
+
+                    <!-- Channels List Accordion Section -->
+                    <div class="accordion-section" data-section-id="channels_{{ community.slug }}">
+                        <div class="accordion-category-header-wrap">
+                            <button type="button" class="accordion-category-header" aria-expanded="true">
+                                <i class="fa-solid fa-chevron-down accordion-chevron"></i>
+                                <span>TEXT CHANNELS</span>
+                            </button>
+                            {% if is_admin %}
+                            <a href="{% url 'chat:create_channel' community_slug=community.slug %}" class="accordion-action-link" style="color: var(--sanctuary-cyan);" data-tooltip="Add Channel">
+                                <i class="fa-solid fa-plus"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+
+                        <div class="accordion-collapse-wrapper">
+                            <div class="accordion-collapse-inner">
+                                <nav class="accordion-nav-list">
+                                    <a href="{% url 'communities:detail' slug=community.slug %}" class="accordion-nav-item color-cyan {% if not channel %}active{% endif %}" style="--item-idx: 0;">
+                                        <span class="nav-icon-light" aria-hidden="true"></span>
+                                        <i class="fa-solid fa-newspaper"></i>
+                                        <span>Feed & Posts</span>
+                                    </a>
+                                    {% for ch in community.channels.all %}
+                                    <a href="{% url 'chat:channel_chat' community_slug=community.slug channel_slug=ch.slug %}" class="accordion-nav-item {% if ch.is_announcement %}color-amber is-announcement{% else %}{% cycle 'color-cyan' 'color-violet' 'color-lime' 'color-magenta' %}{% endif %} {% if channel and channel.id == ch.id %}active{% endif %}" style="--item-idx: {{ forloop.counter }};">
+                                        <span class="nav-icon-light" aria-hidden="true"></span>
+                                        <i class="fa-solid {% if ch.is_announcement %}fa-bullhorn{% else %}fa-hashtag{% endif %}"></i>
+                                        <span>{{ ch.name }}</span>
+                                    </a>
+                                    {% empty %}
+                                    <div style="font-size: 0.8rem; color: var(--sanctuary-text-muted); padding: 4px 8px;">No channels yet</div>
+                                    {% endfor %}
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rules Charter Accordion Section -->
+                    {% if community.rules %}
+                    <div class="accordion-section" data-section-id="rules_{{ community.slug }}">
+                        <button type="button" class="accordion-category-header" aria-expanded="true">
+                            <i class="fa-solid fa-chevron-down accordion-chevron"></i>
+                            <span>RULES & CHARTER</span>
+                        </button>
+                        <div class="accordion-collapse-wrapper">
+                            <div class="accordion-collapse-inner">
+                                <div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-sm); padding: 10px; font-size: 0.78rem; color: var(--sanctuary-text-muted); white-space: pre-wrap; margin-bottom: 16px; line-height: 1.4;">{{ community.rules }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Admin / Member Actions -->
+                    <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; margin-top: auto;">
+                        {% if is_admin %}
+                        <a href="{% url 'communities:manage_members' slug=community.slug %}" class="accordion-nav-item color-violet" style="--item-idx: 0;">
+                            <span class="nav-icon-light" aria-hidden="true"></span>
+                            <i class="fa-solid fa-user-shield"></i>
+                            <span>Manage Space</span>
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'communities:leave' slug=community.slug %}" class="accordion-nav-item color-magenta is-danger" style="--item-idx: 1;">
+                            <span class="nav-icon-light" aria-hidden="true"></span>
+                            <i class="fa-solid fa-door-open"></i>
+                            <span>Leave Space</span>
+                        </a>
+                    </div>
+
+                {% else %}
+                    <!-- Global / Home Context -->
+                    <div class="accordion-header">
+                        <div class="accordion-title">Sanctuary // Net</div>
+                        <button type="button" id="pin-accordion-btn" data-tooltip="Pin Sidebar" style="background:none; border:none; color:var(--sanctuary-text-muted); cursor:pointer;">
+                            <i class="fa-solid fa-angles-left"></i>
+                        </button>
+                    </div>
+
+                    <!-- Navigation Category Accordion Section -->
+                    <div class="accordion-section" data-section-id="navigation">
+                        <button type="button" class="accordion-category-header" aria-expanded="true">
+                            <i class="fa-solid fa-chevron-down accordion-chevron"></i>
+                            <span>NAVIGATION</span>
+                        </button>
+                        <div class="accordion-collapse-wrapper">
+                            <div class="accordion-collapse-inner">
+                                <nav class="accordion-nav-list">
+                                    <a href="{% url 'feed' %}" class="accordion-nav-item color-cyan {% if request.resolver_match.url_name == 'feed' %}active{% endif %}" style="--item-idx: 0;">
+                                        <span class="nav-icon-light" aria-hidden="true"></span>
+                                        <i class="fa-solid fa-house"></i>
+                                        <span>Main Stream</span>
+                                    </a>
+                                    <a href="{% url 'communities:explore' %}" class="accordion-nav-item color-lime" style="--item-idx: 1;">
+                                        <span class="nav-icon-light" aria-hidden="true"></span>
+                                        <i class="fa-solid fa-compass"></i>
+                                        <span>Discover Spaces</span>
+                                    </a>
+                                    <a href="{% url 'chat:inbox' %}" class="accordion-nav-item color-magenta {% if 'chat' in request.path %}active{% endif %}" style="--item-idx: 2;">
+                                        <span class="nav-icon-light" aria-hidden="true"></span>
+                                        <i class="fa-solid fa-envelope"></i>
+                                        <span>Direct Messages</span>
+                                    </a>
+                                    <a href="{% url 'chat:create_group' %}" class="accordion-nav-item color-violet" style="--item-idx: 3;">
+                                        <span class="nav-icon-light" aria-hidden="true"></span>
+                                        <i class="fa-solid fa-users"></i>
+                                        <span>New Personal Group</span>
+                                    </a>
+                                    <a href="{% url 'create_post' %}" class="accordion-nav-item color-amber" style="--item-idx: 4;">
+                                        <span class="nav-icon-light" aria-hidden="true"></span>
+                                        <i class="fa-solid fa-circle-plus"></i>
+                                        <span>New Post</span>
+                                    </a>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Joined Spaces Category Accordion Section -->
+                    <div class="accordion-section" data-section-id="joined_spaces" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+                        <button type="button" class="accordion-category-header" aria-expanded="true">
+                            <i class="fa-solid fa-chevron-down accordion-chevron"></i>
+                            <span>JOINED SPACES</span>
+                        </button>
+                        <div class="accordion-collapse-wrapper" style="flex: 1; min-height: 0; display: flex; flex-direction: column;">
+                            <div class="accordion-collapse-inner" style="flex: 1; min-height: 0; display: flex; flex-direction: column;">
+                                <div style="display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; padding-right: 2px;">
+                                    {% for comm in joined_communities %}
+                                    <a href="{% url 'communities:detail' slug=comm.slug %}" class="accordion-nav-item {% cycle 'color-lime' 'color-violet' 'color-amber' 'color-cyan' 'color-magenta' %} {% if community and community.id == comm.id %}active{% endif %}" style="--item-idx: {{ forloop.counter0 }};">
+                                        <span class="nav-icon-light" aria-hidden="true"></span>
+                                        <i class="fa-solid fa-shield-halved"></i>
+                                        <span style="overflow: hidden; text-overflow: ellipsis;">{{ comm.name }}</span>
+                                    </a>
+                                    {% empty %}
+                                    <div style="font-size: 0.8rem; color: var(--sanctuary-text-muted); padding: 8px;">
+                                        No joined spaces.<br>
+                                        <a href="{% url 'communities:explore' %}" style="color: var(--sanctuary-lime);">Discover spaces →</a>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Discord-Style Docked User Profile Footer Widget -->
+                <div class="discord-user-panel">
+                    <a href="{% url 'profile' username=user.username %}" class="user-panel-info" data-tooltip="View Profile">
+                        <div class="user-panel-avatar-wrap">
+                            {% if user.profile.avatar %}
+                            <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}">
+                            {% else %}
+                            <span>{{ user.username|slice:":2"|upper }}</span>
+                            {% endif %}
+                            <span class="status-indicator online"></span>
+                        </div>
+                        <div class="user-panel-names">
+                            <span class="user-name">@{{ user.username }}</span>
+                            <span class="user-status-text">ONLINE</span>
+                        </div>
+                    </a>
+                    <div class="user-panel-controls">
+                        <button type="button" class="panel-icon-btn panel-icon-audio" onclick="window.showCyberToast('Audio channel initialized', 'info')" data-tooltip="Audio Connected">
+                            <i class="fa-solid fa-headphones"></i>
+                        </button>
+                        <a href="{% url 'edit_profile' %}" class="panel-icon-btn panel-icon-settings" data-tooltip="Account Settings">
+                            <i class="fa-solid fa-gear"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        {% endif %}
+
+        <!-- 3. Main Workspace Area -->
+        <main class="sanctuary-main {% if not user.is_authenticated %}auth-layout{% endif %}">
+            <!-- Topbar Header -->
+            <header class="sanctuary-topbar">
+                <div class="topbar-left">
+                    {% if user.is_authenticated %}
+                    <button type="button" class="drawer-toggle-btn" id="drawer-toggle-btn" data-tooltip="Toggle Sidebar">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    {% endif %}
+                    <a href="{% url 'feed' %}" class="topbar-brand">
+                        <i class="fa-solid fa-people-group"></i>
+                        <span>Sanctuary</span>
+                    </a>
+                </div>
+
+                <div class="topbar-right">
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'create_post' %}" class="cyber-btn cyber-btn-amber">
+                        <i class="fa-solid fa-plus"></i> New post
+                    </a>
+                    {% else %}
+                    <a href="{% url 'login' %}" style="color: var(--sanctuary-text); margin-right: 12px; font-weight: 600;">Sign In</a>
+                    <a href="{% url 'register' %}" class="cyber-btn cyber-btn-primary">Register</a>
+                    {% endif %}
+                </div>
+            </header>
+
+            <!-- Alerts / Toast Messages -->
+            {% if messages %}
+            <div class="toast-container" style="padding: 16px 24px 0 24px;">
+                {% for message in messages %}
+                <div class="toast-alert toast-{{ message.tags }}">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Dynamic Body Content -->
+            <div class="sanctuary-content">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Global Cyberpunk GSAP Modal -->
+    <div id="cyber-modal-backdrop" class="cyber-modal-backdrop">
+        <div id="cyber-modal-card" class="cyber-modal-card">
+            <div class="cyber-modal-header">
+                <div class="cyber-modal-tag" id="cyber-modal-type-label">
+                    <i class="fa-solid fa-terminal" style="color: var(--sanctuary-cyan);"></i>
+                    <span style="color: var(--sanctuary-cyan);">TERMINAL // NOTICE</span>
+                </div>
+                <button type="button" class="cyber-modal-close" id="cyber-modal-close-btn">&times;</button>
+            </div>
+            <div class="cyber-modal-body">
+                <h3 id="cyber-modal-title" class="cyber-modal-title">System Alert</h3>
+                <p id="cyber-modal-msg" class="cyber-modal-desc">Message content goes here.</p>
+                <div id="cyber-modal-custom-slot"></div>
+            </div>
+            <div class="cyber-modal-footer">
+                <button type="button" class="cyber-btn cyber-btn-ghost" id="cyber-modal-cancel-btn">Cancel</button>
+                <button type="button" class="cyber-btn cyber-btn-primary" id="cyber-modal-confirm-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Dynamic Discord/Cyber Tooltip -->
+    <div id="cyber-tooltip" class="cyber-tooltip" aria-hidden="true"></div>
+
+    <!-- Global Cyber Toast Stack -->
+    <div id="cyber-toast-stack" class="cyber-toast-stack"></div>
+    <!-- Scripts -->
+    <script src="{% static 'js/cyber_gsap.js' %}"></script>
+    <script src="{% static 'js/carousel_player.js' %}"></script>
+    <script src="{% static 'js/accordion_sidebar.js' %}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,165 @@
+/* Shared black visual system for the Django-rendered routes. */
+:root {
+  color-scheme: dark;
+  --bg-primary: #000;
+  --bg-surface: #070707;
+  --bg-surface-hover: #101010;
+  --border-color: #202020;
+  --border-hover: #373737;
+  --text-primary: #e7e7e7;
+  --text-secondary: #929292;
+  --text-muted: #626262;
+  --accent-color: #c4f36b;
+  --accent-hover: #d5ff91;
+  --like-active: #df7d78;
+  --font-family: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-code: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  --sidebar-width: 224px;
+  --sanctuary-bg: #000;
+  --sanctuary-bg-subtle: #030303;
+  --sanctuary-rail: #030303;
+  --sanctuary-surface: #070707;
+  --sanctuary-surface-hover: #101010;
+  --sanctuary-card: #050505;
+  --sanctuary-card-hover: #0b0b0b;
+  --sanctuary-border: #202020;
+  --sanctuary-border-strong: #303030;
+  --sanctuary-text: #ededed;
+  --sanctuary-text-primary: #e7e7e7;
+  --sanctuary-text-muted: #929292;
+  --sanctuary-text-dark: #626262;
+  --sanctuary-amber: #c4f36b;
+  --sanctuary-amber-dim: rgba(196, 243, 107, .08);
+  --sanctuary-lime: #c4f36b;
+  --sanctuary-lime-dim: rgba(196, 243, 107, .08);
+  --sanctuary-cyan: #c4f36b;
+  --sanctuary-cyan-dim: rgba(196, 243, 107, .08);
+  --sanctuary-sage: #c4f36b;
+  --sanctuary-sage-dim: rgba(196, 243, 107, .08);
+  --sanctuary-slate: #c4f36b;
+  --sanctuary-slate-dim: rgba(196, 243, 107, .08);
+  --sanctuary-violet: #c4f36b;
+  --sanctuary-violet-dim: rgba(196, 243, 107, .08);
+  --sanctuary-heather: #b9b9b9;
+  --sanctuary-rose: #df7d78;
+  --sanctuary-rose-dim: rgba(223, 125, 120, .08);
+  --sanctuary-magenta: #df7d78;
+  --sanctuary-magenta-dim: rgba(223, 125, 120, .08);
+  --sanctuary-accent: #c4f36b;
+  --sanctuary-accent-hover: #d5ff91;
+  --sanctuary-border-hover: #373737;
+  --sanctuary-border-accent: rgba(196, 243, 107, .24);
+  --sanctuary-border-subtle: #171717;
+  --font-sans: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  --radius-sm: 3px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --shadow-card: none;
+}
+
+html, body { background: #000 !important; color: #e7e7e7; }
+body { font-family: var(--font-family) !important; }
+.sanctuary-app, .sanctuary-main { background: #000 !important; }
+.sanctuary-app { height: 100dvh !important; background-image: none !important; }
+.primary-rail, .secondary-accordion { background: #030303 !important; border-color: #202020 !important; }
+.sanctuary-topbar { background: #000 !important; backdrop-filter: none !important; border-color: #202020 !important; }
+.sanctuary-content { max-width: 1180px; padding: clamp(20px, 3vw, 38px) clamp(16px, 3vw, 36px) !important; }
+.topbar-brand { font-size: 1rem !important; letter-spacing: -.03em !important; }
+.topbar-brand i { color: #c4f36b !important; filter: none !important; }
+.accordion-category-header { text-transform: none !important; letter-spacing: .01em !important; font-weight: 600 !important; }
+.sanctuary-content h1, .sanctuary-content h2, .sanctuary-content h3 { letter-spacing: -.035em; font-weight: 620 !important; text-wrap: balance; }
+
+button, input, textarea, select, .cyber-btn, .rail-btn,
+.sanctuary-post-card, .cyber-modal-card, .conversation-card,
+.community-card, .profile-panel, .post-detail-sidebar,
+.avatar-img, .rail-btn img {
+  border-radius: 3px !important;
+  box-shadow: none !important;
+}
+button, .cyber-btn { font-family: var(--font-family) !important; text-transform: none !important; letter-spacing: 0 !important; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid #c4f36b !important;
+  outline-offset: 2px;
+}
+.rail-btn { color: #909090 !important; border-color: transparent !important; }
+.rail-btn:hover, .rail-btn.active { color: #c4f36b !important; border-color: #303030 !important; background: #101010 !important; }
+.rail-btn[href*="logout"]:hover { color: #df7d78 !important; }
+.rail-pill { background: #c4f36b !important; box-shadow: none !important; }
+.accordion-header, .sanctuary-content [class*="card"], .sanctuary-content [class*="panel"] {
+  background-color: #050505 !important;
+  border-color: #222 !important;
+  box-shadow: none !important;
+}
+.accordion-nav-item { color: #969696 !important; border-radius: 3px !important; }
+.accordion-nav-item:hover, .accordion-nav-item.active { color: #f2f2f2 !important; background: #101010 !important; }
+.accordion-nav-item .nav-icon-light { background: #c4f36b !important; }
+
+.cyber-btn, .cyber-btn-primary, .cyber-btn-amber, .cyber-btn-lime,
+.cyber-btn-magenta, .cyber-btn-violet, .cyber-btn-ghost {
+  min-height: 36px;
+  padding: 8px 13px !important;
+  border: 1px solid #383838 !important;
+  background: #080808 !important;
+  color: #e9e9e9 !important;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, transform 150ms ease !important;
+}
+.cyber-btn-primary, .cyber-btn-amber, .cyber-btn-lime { border-color: #c4f36b !important; background: #c4f36b !important; color: #080808 !important; }
+.cyber-btn:hover:not(:disabled) { border-color: #c4f36b !important; background: #111 !important; color: #d5ff91 !important; transform: translateY(-1px); }
+.cyber-btn-primary:hover:not(:disabled), .cyber-btn-amber:hover:not(:disabled), .cyber-btn-lime:hover:not(:disabled) { background: #d5ff91 !important; color: #080808 !important; }
+.cyber-btn-danger { border-color: rgba(223, 125, 120, .4) !important; color: #df7d78 !important; }
+.cyber-btn-danger:hover:not(:disabled), .rail-btn[href*="logout"]:hover { border-color: #df7d78 !important; color: #f09590 !important; }
+
+input, textarea, select {
+  background: #080808 !important;
+  border: 1px solid #303030 !important;
+  color: #ededed !important;
+  font: inherit;
+  padding: 10px 12px;
+}
+input::placeholder, textarea::placeholder { color: #686868 !important; }
+input:focus, textarea:focus, select:focus { border-color: #777 !important; box-shadow: none !important; }
+.sanctuary-post-card, .cyber-modal-card { background: #030303 !important; border-color: #222 !important; }
+.sanctuary-post-card:hover { border-color: #3a3a3a !important; transform: none !important; }
+.cyber-modal-backdrop { background: rgba(0, 0, 0, .84) !important; backdrop-filter: none !important; }
+.cyber-modal-card::before, .sanctuary-post-card::before { display: none !important; }
+.cyber-note-flip { border: 1px solid #222 !important; background: #050505 !important; border-radius: 3px !important; box-shadow: none !important; transform: none !important; perspective: none !important; }
+.flip-card-inner, .cyber-note-flip:hover .flip-card-inner, .cyber-note-flip.is-flipped .flip-card-inner { transform: none !important; transform-style: flat !important; }
+.flip-front { position: relative !important; inset: auto !important; height: auto !important; min-height: 100% !important; background: #050505 !important; border: 0 !important; border-radius: 3px !important; box-shadow: none !important; }
+.flip-back { display: none !important; }
+.blob-canvas-wrap, .cyber-blob { display: none !important; }
+.auth-layout .sanctuary-content { max-width: 940px; }
+.auth-layout .form-card { background: transparent !important; border: 0 !important; border-top: 1px solid #262626 !important; border-bottom: 1px solid #262626 !important; border-radius: 0 !important; box-shadow: none !important; padding: 32px !important; }
+.auth-layout .form-card > div:first-child { text-align: left !important; }
+.auth-layout .form-card > div:first-child > div:first-child { display: none !important; }
+.auth-layout .cyber-note-flip { min-height: 0 !important; align-self: center; }
+.profile-header { background: transparent !important; border-inline: 0 !important; border-block: 1px solid #242424 !important; padding: 24px 0 !important; }
+.profile-avatar-large, .profile-avatar, .avatar-img { border-radius: 3px !important; box-shadow: none !important; }
+.profile-avatar-large { width: 104px !important; height: 104px !important; }
+.sanctuary-content [style*="border-radius: 50%"], .sanctuary-content [style*="border-radius:50%"] { border-radius: 3px !important; }
+.posts-grid { gap: 12px !important; }
+.grid-item, .community-card, .conversation-card { border-color: #242424 !important; box-shadow: none !important; }
+.grid-item:hover, .community-card:hover, .conversation-card:hover { border-color: #444 !important; transform: none !important; }
+.chat-container, .chat-messages-flow, .post-detail-layout { background: #000 !important; }
+.post-detail-sidebar, .form-card { background: #030303 !important; border-color: #242424 !important; }
+[style*="linear-gradient"] { background-image: linear-gradient(135deg, #101010 0%, #070707 60%, #030303 100%) !important; }
+[style*="linear-gradient"] { background-image: linear-gradient(135deg, #101010 0%, #070707 60%, #030303 100%) !important; }
+[style*="box-shadow"] { box-shadow: none !important; }
+
+@media (max-width: 768px) {
+  .sanctuary-app { height: 100dvh !important; }
+  .sanctuary-topbar { padding-inline: 14px !important; }
+  .sanctuary-content { padding: 18px 14px !important; }
+  .secondary-accordion { background: #030303 !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+html, body, .sanctuary-app, .sanctuary-main {
+  background-image: url('../images/bg.jpg') !important;
+  background-color: transparent !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-attachment: fixed !important;
+}

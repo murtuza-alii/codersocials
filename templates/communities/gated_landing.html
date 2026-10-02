@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Encrypted Space // {{ community.name }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 620px; margin: 40px auto; background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); overflow: hidden; text-align: center; box-shadow: 0 16px 50px rgba(0,0,0,0.9); position: relative;">
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--sanctuary-magenta), var(--sanctuary-cyan));"></div>
+
+    <div style="height: 130px; background: linear-gradient(135deg, #090c17 0%, #151a2d 50%, #030408 100%); position: relative; border-bottom: 1px solid var(--sanctuary-border);">
+        {% if community.banner %}
+        <img src="{{ community.banner.url }}" alt="{{ community.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+        {% else %}
+        <div style="position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(255, 0, 85, 0.15), transparent 70%);"></div>
+        {% endif %}
+    </div>
+
+    <div style="padding: 28px 24px 32px 24px; position: relative;">
+        <div style="width: 76px; height: 76px; border-radius: 50%; border: 3px solid var(--sanctuary-magenta); background: var(--sanctuary-surface); overflow: hidden; margin: -64px auto 16px auto; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 800; color: #fff; box-shadow: 0 0 20px rgba(255, 0, 85, 0.4);">
+            {% if community.avatar %}
+            <img src="{{ community.avatar.url }}" alt="{{ community.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+            {% else %}
+            <span style="font-family: var(--font-mono); color: var(--sanctuary-magenta);">{{ community.name|slice:":2"|upper }}</span>
+            {% endif %}
+        </div>
+
+        <h1 style="font-size: 1.7rem; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -0.02em;">{{ community.name }}</h1>
+        <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 0, 85, 0.12); border: 1px solid rgba(255, 0, 85, 0.3); color: var(--sanctuary-magenta); padding: 4px 14px; border-radius: 14px; font-size: 0.78rem; font-weight: 700; font-family: var(--font-mono); margin-bottom: 20px;">
+            <i class="fa-solid fa-lock"></i> PRIVATE ENCRYPTED SANCTUARY
+        </div>
+
+        <p style="color: var(--sanctuary-text-muted); font-size: 0.92rem; line-height: 1.55; margin-bottom: 24px;">
+            {{ community.description|default:"This is a private community. Request to join to see its posts and conversations." }}
+        </p>
+
+        <!-- Rules Preview -->
+        {% if community.rules %}
+        <div style="text-align: left; background: #020306; border: 1px solid var(--sanctuary-border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 28px;">
+            <div style="font-weight: 700; font-size: 0.75rem; color: var(--sanctuary-cyan); margin-bottom: 8px; font-family: var(--font-mono); letter-spacing: 0.08em;">COMMUNITY CHARTER & PROTOCOLS</div>
+            <div style="font-size: 0.85rem; color: var(--sanctuary-text); white-space: pre-wrap; line-height: 1.45;">{{ community.rules }}</div>
+        </div>
+        {% endif %}
+
+        <div>
+            {% if membership and membership.status == 'PENDING' %}
+                <div style="padding: 14px 20px; border-radius: var(--radius-sm); background: rgba(255, 170, 0, 0.1); border: 1px solid rgba(255, 170, 0, 0.35); color: var(--sanctuary-amber); font-weight: 700; font-size: 0.9rem; font-family: var(--font-mono);">
+                    <i class="fa-solid fa-hourglass-half"></i> REQUEST STAGED // AWAITING OPERATOR VERIFICATION
+                </div>
+            {% elif membership and membership.status == 'BANNED' %}
+                <div style="padding: 14px 20px; border-radius: var(--radius-sm); background: rgba(255, 0, 85, 0.15); border: 1px solid var(--sanctuary-magenta); color: var(--sanctuary-magenta); font-weight: 700; font-family: var(--font-mono);">
+                    <i class="fa-solid fa-ban"></i> ACCESS RESTRICTED // NODE REVOKED
+                </div>
+            {% else %}
+                <a href="{% url 'communities:join' slug=community.slug %}" class="cyber-btn cyber-btn-primary" style="padding: 12px 32px; font-size: 0.95rem;">
+                    <i class="fa-solid fa-key"></i> Request Access Clearance
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

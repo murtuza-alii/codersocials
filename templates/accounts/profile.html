@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}@{{ target_user.username }} // User Profile{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- Cyber Profile Header -->
+    <header class="profile-header" style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.85); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--sanctuary-cyan), var(--sanctuary-violet), var(--sanctuary-magenta));"></div>
+
+        <div style="position: relative;">
+            {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="{{ target_user.username }}" class="profile-avatar-large">
+            {% else %}
+                <div class="profile-avatar-large" style="display: flex; align-items: center; justify-content: center; background: var(--sanctuary-surface); font-size: 3rem; color: var(--sanctuary-cyan); font-family: var(--font-mono);">
+                    {{ target_user.username|slice:":2"|upper }}
+                </div>
+            {% endif %}
+            <span class="status-indicator online" style="width: 18px; height: 18px; bottom: 6px; right: 6px; border: 3px solid #000;"></span>
+        </div>
+
+        <div class="profile-info">
+            <div class="profile-top-row">
+                <div>
+                    <h2 class="profile-username">@{{ target_user.username }}</h2>
+                    <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--sanctuary-cyan); letter-spacing: 0.06em;">[IDENT: USER#{{ target_user.id }}]</span>
+                </div>
+                
+                {% if request.user == target_user %}
+                    <a href="{% url 'edit_profile' %}" class="cyber-btn cyber-btn-ghost">
+                        <i class="fa-solid fa-user-gear"></i> Edit Profile
+                    </a>
+                {% else %}
+                    <form action="{% url 'follow_toggle' username=target_user.username %}" method="POST" style="display: inline;">
+                        {% csrf_token %}
+                        {% if is_following %}
+                            <button type="submit" class="cyber-btn cyber-btn-ghost">Following ✓</button>
+                        {% else %}
+                            <button type="submit" class="cyber-btn cyber-btn-primary">Follow User</button>
+                        {% endif %}
+                    </form>
+                    <a href="{% url 'chat:dm_view' username=target_user.username %}" class="cyber-btn cyber-btn-ghost" data-tooltip="Direct Message">
+                        <i class="fa-solid fa-message"></i> Message
+                    </a>
+                {% endif %}
+            </div>
+
+            <div class="profile-stats">
+                <div class="stat-item"><span class="stat-num">{{ posts_count }}</span> TRANSMISSIONS</div>
+                <div class="stat-item"><span class="stat-num">{{ followers_count }}</span> FOLLOWERS</div>
+                <div class="stat-item"><span class="stat-num">{{ following_count }}</span> FOLLOWING</div>
+            </div>
+
+            <div class="profile-bio" style="color: var(--sanctuary-text); font-size: 0.95rem; margin-top: 10px;">
+                {% if profile.bio %}
+                    {{ profile.bio }}
+                {% else %}
+                    <span style="color: var(--sanctuary-text-muted); font-style: italic; font-size: 0.88rem;">Add a short introduction so people know what you work on.</span>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Posts Grid -->
+    <section style="margin-top: 32px;">
+        <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--sanctuary-cyan); letter-spacing: 0.08em; font-weight: 700; margin-bottom: 16px;">
+            // BROADCAST MEDIA GRID
+        </div>
+        {% if posts %}
+        <div class="posts-grid">
+            {% for post in posts %}
+            <a href="{% url 'post_detail' pk=post.pk %}" class="grid-item">
+                <img src="{% if post.thumbnail %}{{ post.thumbnail.url }}{% else %}{{ post.media_file.url }}{% endif %}" alt="Post thumbnail">
+                {% if post.is_video %}
+                    <span style="position: absolute; top: 8px; right: 8px; color: #fff; font-size: 0.85rem; background: rgba(0,0,0,0.7); border: 1px solid var(--sanctuary-border); padding: 2px 6px; border-radius: 4px;"><i class="fa-solid fa-video"></i></span>
+                {% endif %}
+                <div class="grid-item-overlay">
+                    <span><i class="fa-solid fa-heart"></i> {{ post.total_likes }}</span>
+                    <span><i class="fa-solid fa-comment"></i> {{ post.total_comments }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 60px 0; color: var(--sanctuary-text-muted); background: var(--sanctuary-card); border-radius: var(--radius-lg); border: 1px solid var(--sanctuary-border);">
+            <i class="fa-solid fa-camera" style="font-size: 2.8rem; margin-bottom: 12px; display: block; color: var(--sanctuary-amber);"></i>
+            <h3 style="color: #fff; font-weight: 800;">No Transmissions Yet</h3>
+            <p style="font-size: 0.88rem; margin-top: 6px;">Your posts will appear here.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

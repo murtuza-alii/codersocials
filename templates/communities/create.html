@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Community Space // Sanctuary{% endblock %}
+
+{% block content %}
+<div style="max-width: 660px; margin: 20px auto; background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 32px; box-shadow: 0 12px 40px rgba(0,0,0,0.85); position: relative; overflow: hidden;">
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--sanctuary-amber), var(--sanctuary-lime), var(--sanctuary-cyan));"></div>
+
+    <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--sanctuary-amber); letter-spacing: 0.08em; font-weight: 700; margin-bottom: 4px;">// INITIALIZE NEW SPACE</div>
+    <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -0.02em;">Create a Community Space</h1>
+    <p style="color: var(--sanctuary-text-muted); font-size: 0.88rem; margin-bottom: 24px;">
+        Deploy a public or private cyber sanctuary for your cohort, engineering team, or creative guild.
+    </p>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label style="display: block; font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); color: var(--sanctuary-text-muted); text-transform: uppercase; margin-bottom: 8px;">Space Name *</label>
+            <input type="text" name="name" required placeholder="e.g. Cyber Security Labs, Neural Developers" style="width: 100%; padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--sanctuary-border); background: #020306; color: var(--sanctuary-text); outline: none;">
+        </div>
+
+        <div class="form-group">
+            <label style="display: block; font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); color: var(--sanctuary-text-muted); text-transform: uppercase; margin-bottom: 8px;">Description</label>
+            <textarea name="description" rows="3" placeholder="What is the objective of this space?" style="width: 100%; padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--sanctuary-border); background: #020306; color: var(--sanctuary-text); outline: none;"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label style="display: block; font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); color: var(--sanctuary-text-muted); text-transform: uppercase; margin-bottom: 8px;">Rules Charter & Protocols</label>
+            <textarea name="rules" rows="4" placeholder="1. Be respectful. 2. Credit original work. 3. Keep promotion relevant." style="width: 100%; padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--sanctuary-border); background: #020306; color: var(--sanctuary-text); outline: none;"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label style="display: block; font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); color: var(--sanctuary-text-muted); text-transform: uppercase; margin-bottom: 8px;">Access Model</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <label style="border: 1px solid var(--sanctuary-border); padding: 14px; border-radius: var(--radius-sm); background: #020306; cursor: pointer; display: flex; align-items: flex-start; gap: 10px;">
+                    <input type="radio" name="privacy" value="PUBLIC" checked style="margin-top: 3px; accent-color: var(--sanctuary-cyan);">
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.9rem; color: #fff;"><i class="fa-solid fa-globe" style="color: var(--sanctuary-cyan);"></i> Public Space</div>
+                        <div style="font-size: 0.78rem; color: var(--sanctuary-text-muted); margin-top: 2px;">Open to all network nodes.</div>
+                    </div>
+                </label>
+                <label style="border: 1px solid var(--sanctuary-border); padding: 14px; border-radius: var(--radius-sm); background: #020306; cursor: pointer; display: flex; align-items: flex-start; gap: 10px;">
+                    <input type="radio" name="privacy" value="PRIVATE" style="margin-top: 3px; accent-color: var(--sanctuary-magenta);">
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.9rem; color: #fff;"><i class="fa-solid fa-lock" style="color: var(--sanctuary-magenta);"></i> Private Sanctuary</div>
+                        <div style="font-size: 0.78rem; color: var(--sanctuary-text-muted); margin-top: 2px;">New members need approval to join.</div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px;">
+            <div>
+                <label style="display: block; font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); color: var(--sanctuary-text-muted); text-transform: uppercase; margin-bottom: 8px;">Space Avatar</label>
+                <input type="file" name="avatar" accept="image/*" style="font-size: 0.85rem; color: var(--sanctuary-text-muted);">
+            </div>
+            <div>
+                <label style="display: block; font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); color: var(--sanctuary-text-muted); text-transform: uppercase; margin-bottom: 8px;">Cover Banner</label>
+                <input type="file" name="banner" accept="image/*" style="font-size: 0.85rem; color: var(--sanctuary-text-muted);">
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+            <a href="{% url 'communities:explore' %}" class="cyber-btn cyber-btn-ghost">Cancel</a>
+            <button type="submit" class="cyber-btn cyber-btn-amber">
+                <i class="fa-solid fa-circle-plus"></i> Initialize Space
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

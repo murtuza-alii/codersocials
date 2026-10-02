@@ -1,0 +1,1 @@
+"""Communities application package."""

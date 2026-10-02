@@ -1,0 +1,91 @@
+:root {
+  /* Sanctuary — black, quiet, and built for long sessions. */
+  --bg-pitch: #000000;
+  --bg-surface: #080808;
+  --bg-surface-elevated: #0d0d0d;
+  --bg-surface-card: #050505;
+  --bg-overlay: rgba(0, 0, 0, .94);
+
+  --neon-cyan: #c4f36b;
+  --neon-cyan-bright: #d5ff85;
+  --neon-cyan-dim: rgba(196, 243, 107, .09);
+  --neon-cyan-border: rgba(255, 255, 255, .10);
+  --neon-cyan-border-active: #c4f36b;
+  --neon-magenta: #df7d78;
+  --neon-magenta-bright: #f09590;
+  --neon-magenta-dim: rgba(223, 125, 120, .08);
+  --neon-magenta-border: rgba(223, 125, 120, .28);
+  --neon-magenta-border-active: #df7d78;
+  --neon-warning: #c4f36b;
+  --neon-warning-bright: #d5ff85;
+  --neon-warning-dim: rgba(196, 243, 107, .08);
+  --neon-warning-border: rgba(255, 255, 255, .12);
+  --neon-warning-border-active: #c4f36b;
+
+  --text-pure: #f5f5f5;
+  --text-primary: #e6e6e6;
+  --text-secondary: #929292;
+  --text-dim: #606060;
+  --text-inverse: #000;
+
+  --shadow-hard-cyan: none;
+  --shadow-hard-cyan-lg: none;
+  --shadow-hard-magenta: none;
+  --shadow-hard-magenta-lg: none;
+  --shadow-hard-warning: none;
+  --shadow-hard-dim: none;
+  --shadow-pressed: none;
+
+  --chamfer-xs: none;
+  --chamfer-sm: none;
+  --chamfer-md: none;
+  --chamfer-pill: none;
+  --font-display: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+
+  --rail-width: 60px;
+  --channel-col-width: 224px;
+  --topbar-height: 58px;
+  --feed-max-width: 700px;
+
+  --z-rail: 40;
+  --z-topbar: 50;
+  --z-dropdown: 60;
+  --z-modal-backdrop: 100;
+  --z-modal-card: 110;
+  --z-tooltip: 120;
+  --z-toast: 130;
+  --z-cursor-canvas: 1;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg-pitch);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 14px;
+  line-height: 1.55;
+  width: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button, input, textarea, select { font: inherit; }
+button { color: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--neon-cyan) !important;
+  outline-offset: 2px;
+}
+::selection { background: var(--neon-cyan); color: #000; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #000; }
+::-webkit-scrollbar-thumb { background: #292929; }
+::-webkit-scrollbar-thumb:hover { background: #484848; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}#{{ channel.name }} // {{ community.name }}{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Channel Header (Discord Style) -->
+    <div style="padding: 12px 24px; background: #040508; border-bottom: 1px solid var(--sanctuary-border); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 1.4rem; color: {% if channel.is_announcement %}var(--sanctuary-amber){% else %}var(--sanctuary-amber){% endif %};">
+                <i class="fa-solid {% if channel.is_announcement %}fa-bullhorn{% else %}fa-hashtag{% endif %}"></i>
+            </span>
+            <div>
+                <div style="font-weight: 800; font-size: 1.1rem; color: #fff; letter-spacing: -0.02em;">{{ channel.name }}</div>
+                <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted); font-family: var(--font-mono);">
+                    {{ channel.topic|default:"Community discussion channel" }}
+                </div>
+            </div>
+        </div>
+
+        <a href="{% url 'communities:detail' slug=community.slug %}" class="cyber-btn cyber-btn-ghost" style="padding: 6px 14px; font-size: 0.8rem;">
+            <i class="fa-solid fa-arrow-left"></i> Space Feed
+        </a>
+    </div>
+
+    <!-- Message Stream -->
+    <div class="chat-messages-flow" id="chat-stream">
+        {% for msg in chat_messages %}
+        <div class="chat-bubble-row">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--sanctuary-surface); display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; border: 1px solid var(--sanctuary-border); font-family: var(--font-mono); color: var(--sanctuary-cyan);">
+                {% if msg.sender.profile.avatar %}
+                <img src="{{ msg.sender.profile.avatar.url }}" alt="{{ msg.sender.username }}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+                {% else %}
+                {{ msg.sender.username|slice:":2"|upper }}
+                {% endif %}
+            </div>
+            <div class="chat-msg-body">
+                <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px;">
+                    <span style="font-weight: 700; font-size: 0.88rem; color: var(--sanctuary-cyan);">@{{ msg.sender.username }}</span>
+                    <span style="font-size: 0.7rem; color: var(--sanctuary-text-muted); font-family: var(--font-mono);">{{ msg.created_at|date:"M d, H:i" }}</span>
+                </div>
+                <div style="font-size: 0.92rem; line-height: 1.45; color: var(--sanctuary-text); white-space: pre-wrap;">{{ msg.message }}</div>
+                {% if msg.attachment %}
+                <div style="margin-top: 10px;">
+                    <a href="{{ msg.attachment.url }}" target="_blank" class="cyber-btn cyber-btn-ghost" style="padding: 4px 10px; font-size: 0.78rem;">
+                        <i class="fa-solid fa-paperclip"></i> View Attachment
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; color: var(--sanctuary-text-muted); margin: auto; padding: 48px;">
+            <i class="fa-solid fa-hashtag" style="font-size: 3rem; color: var(--sanctuary-amber); margin-bottom: 12px; display: block;"></i>
+            <h3 style="color: #fff; font-size: 1.3rem; font-weight: 800;">Welcome to #{{ channel.name }}!</h3>
+            <p style="font-size: 0.88rem; margin-top: 6px;">Start a conversation in {{ community.name }}.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Message Input Bar (Discord Style) -->
+    {% if can_post %}
+    <form method="POST" enctype="multipart/form-data" class="chat-input-bar" id="chat-form">
+        {% csrf_token %}
+        <input type="text" name="message" placeholder="Message #{{ channel.name }}..." required autocomplete="off">
+        <label style="cursor: pointer; display: flex; align-items: center; padding: 0 12px; color: var(--sanctuary-text-muted); transition: color 0.15s ease;" data-tooltip="Add Attachment">
+            <i class="fa-solid fa-paperclip" style="font-size: 1.1rem;"></i>
+            <input type="file" name="attachment" style="display: none;" onchange="if(this.files[0]) window.showCyberToast('File staged: ' + this.files[0].name, 'info');">
+        </label>
+        <button type="submit" class="cyber-btn cyber-btn-primary" style="padding: 10px 20px;">
+            <i class="fa-solid fa-paper-plane"></i>
+        </button>
+    </form>
+    {% else %}
+    <div style="padding: 14px 24px; background: #040508; border-top: 1px solid var(--sanctuary-border); text-align: center; font-size: 0.85rem; color: var(--sanctuary-text-muted); font-family: var(--font-mono);">
+        <i class="fa-solid fa-lock" style="color: var(--sanctuary-amber);"></i> ONLY ADMINISTRATORS CAN TRANSMIT IN THIS ANNOUNCEMENT CHANNEL.
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Auto scroll chat to bottom with GSAP smoothing
+    const stream = document.getElementById('chat-stream');
+    if (stream) {
+        stream.scrollTop = stream.scrollHeight;
+    }
+</script>
+{% endblock %}
