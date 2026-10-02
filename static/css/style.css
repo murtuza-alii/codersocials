@@ -697,3 +697,70 @@ body {
   background-position: center;
   background-attachment: fixed;
 }
+
+:is(button, .btn, [role="button"], a[class*="btn"], a[class*="button"]) {
+  --lime-1: #d4ff5c;
+  --lime-2: #8de02e;
+  position: relative;
+  isolation: isolate;
+  border: none !important;
+  border-radius: 12px;
+  padding: 14px 32px;
+  background: linear-gradient(90deg, var(--lime-1), var(--lime-2)) !important;
+  color: #d4ff5c !important;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+/* black cover: hides the lime fill until you hover */
+:is(button, .btn, [role="button"], a[class*="btn"], a[class*="button"])::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #0a0a0a;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+/* lime glow around the button */
+:is(button, .btn, [role="button"], a[class*="btn"], a[class*="button"])::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--lime-1), var(--lime-2));
+  filter: blur(14px);
+  opacity: 0.75;
+  z-index: -2;
+  pointer-events: none;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+/* hover: lime fill, black text, stronger glow */
+:is(button, .btn, [role="button"], a[class*="btn"], a[class*="button"]):hover {
+  color: #0a0a0a !important;
+  transform: translateY(-3px);
+}
+
+:is(button, .btn, [role="button"], a[class*="btn"], a[class*="button"]):hover::after {
+  opacity: 0;
+}
+
+:is(button, .btn, [role="button"], a[class*="btn"], a[class*="button"]):hover::before {
+  opacity: 1;
+  filter: blur(18px);
+}
+
+:is(button, .btn, [role="button"], a[class*="btn"], a[class*="button"]):active {
+  transform: translateY(0) scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(button, .btn, [role="button"], a[class*="btn"], a[class*="button"]),
+  :is(button, .btn, [role="button"], a[class*="btn"], a[class*="button"])::before,
+  :is(button, .btn, [role="button"], a[class*="btn"], a[class*="button"])::after {
+    transition: none;
+  }
