@@ -84,5 +84,14 @@
     {% endif %}
 
     {% block extra_scripts %}{% endblock %}
+<style>
+    body {
+        background-image: url("{% static 'images/bg.jpg' %}") !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        background-attachment: fixed !important;
+    }
+</style>    
 </body>
 </html>

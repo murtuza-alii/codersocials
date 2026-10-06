@@ -1,8 +1,18 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Log In - SocialConnect{% endblock %}
 
 {% block content %}
+<style>
+    body {
+        background-image: url("{% static 'images/bg.jpg' %}") !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        background-attachment: fixed !important;
+    }
+</style>
 <div class="form-card">
     <div style="text-align: center; margin-bottom: 24px;">
         <h1 style="font-size: 2rem; font-weight: 800; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SocialConnect</h1>
