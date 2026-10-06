@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Explore - SocialConnect{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div style="margin-bottom: 24px;">
+        <h2 style="font-size: 1.5rem; font-weight: 700;">Explore Community</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">Discover photos and trending posts from creators.</p>
+    </div>
+
+    {% if posts %}
+    <div class="posts-grid">
+        {% for post in posts %}
+        <a href="{% url 'post_detail' pk=post.pk %}" class="grid-item">
+            <img src="{% if post.thumbnail %}{{ post.thumbnail.url }}{% else %}{{ post.media_file.url }}{% endif %}" alt="Post thumbnail">
+            {% if post.is_video %}
+                <span style="position: absolute; top: 8px; right: 8px; color: #fff; font-size: 0.9rem; text-shadow: 0 1px 4px rgba(0,0,0,0.7);"><i class="fa-solid fa-video"></i></span>
+            {% endif %}
+            <div class="grid-item-overlay">
+                <span><i class="fa-solid fa-heart"></i> {{ post.total_likes }}</span>
+                <span><i class="fa-solid fa-comment"></i> {{ post.total_comments }}</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 60px 0; color: var(--text-muted);">
+        <i class="fa-solid fa-camera" style="font-size: 3rem; margin-bottom: 12px; display: block;"></i>
+        <h3>No Posts Yet</h3>
+        <p style="font-size: 0.9rem; margin-top: 6px;">Be the first person to share a photo!</p>
+        <a href="{% url 'create_post' %}" class="btn btn-primary" style="margin-top: 16px;">Create Post</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
