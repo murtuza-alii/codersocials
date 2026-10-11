@@ -103,10 +103,12 @@ export default function Auth({
         justifyContent: 'center',
         width: '100%',
         minHeight: '100%',
-        background: '#000000',
+        background: 'transparent',
         padding: '32px 20px',
         boxSizing: 'border-box',
         overflowY: 'auto',
+        position: 'relative',
+        zIndex: 10,
       }}
     >
       <div
@@ -122,7 +124,9 @@ export default function Auth({
         {/* 1. Interactive Form Card */}
         <div
           style={{
-            background: 'var(--bg-surface)',
+            background: 'rgba(6, 8, 12, 0.88)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
             border: '1px solid var(--neon-cyan-border)',
             padding: '36px 32px',
             display: 'flex',

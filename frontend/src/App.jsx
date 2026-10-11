@@ -9,6 +9,7 @@ import CreatePost from './CreatePost';
 import ChannelChat from './ChannelChat';
 import Profile from './Profile';
 import Auth from './Auth';
+import Creative3DBackground from './Creative3DBackground';
 
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState('feed');
@@ -67,82 +68,92 @@ export default function App() {
     setCurrentRoute('create_post');
   };
 
-  if (currentRoute === 'login' || currentRoute === 'register') {
-    return (
-      <Auth
-        initialMode={currentRoute === 'register' ? 'register' : 'login'}
-        onAuthSuccess={(userData) => {
-          setUser(userData);
-          setCurrentRoute('feed');
-        }}
-      />
-    );
-  }
-
   return (
-    <AppShell
-      currentRoute={currentRoute}
-      activeCommunity={activeCommunity}
-      activeChannel={activeChannel}
-      joinedCommunities={joinedCommunities}
-      channels={channels}
-      user={user}
-      onNavigate={handleNavigate}
-      onCreatePostClick={handleOpenCreatePost}
+    <div
+      style={{
+        position: 'relative',
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        background: '#000000',
+      }}
     >
-      {currentRoute === 'post_detail' ? (
-        <PostDetail
-          postId={activePost?.id}
-          initialPost={activePost?.post || null}
-          currentUser={user}
-          onNavigate={handleNavigate}
-          onBack={() => setCurrentRoute('feed')}
-          onPostDeleted={() => setCurrentRoute('feed')}
-        />
-      ) : currentRoute === 'explore' || currentRoute === 'discover' ? (
-        <DiscoverSpaces
-          onNavigate={handleNavigate}
-          onCreateSpaceClick={() => handleNavigate('create_community')}
-        />
-      ) : currentRoute === 'community' ? (
-        <CommunityDetail
-          communitySlug={activeCommunity?.slug}
-          initialCommunity={activeCommunity}
-          currentUser={user}
-          onNavigate={handleNavigate}
-          onCreatePostClick={handleOpenCreatePost}
-        />
-      ) : currentRoute === 'create_post' ? (
-        <CreatePost
-          initialCommunity={activeCommunity}
-          availableCommunities={joinedCommunities}
-          currentUser={user}
-          onNavigate={handleNavigate}
-          onBack={() => setCurrentRoute(activeCommunity ? 'community' : 'feed')}
-          onPostCreated={(_newPost) => setCurrentRoute('feed')}
-        />
-      ) : currentRoute === 'channel' ? (
-        <ChannelChat
-          community={activeCommunity || joinedCommunities[0]}
-          channel={activeChannel}
-          currentUser={user}
-          onNavigate={handleNavigate}
-          onBack={() => setCurrentRoute(activeCommunity ? 'community' : 'feed')}
-        />
-      ) : currentRoute === 'profile' ? (
-        <Profile
-          username={activeProfileUsername}
-          currentUser={user}
-          onNavigate={handleNavigate}
-          onBack={() => setCurrentRoute('feed')}
+      <Creative3DBackground currentRoute={currentRoute} />
+
+      {currentRoute === 'login' || currentRoute === 'register' ? (
+        <Auth
+          initialMode={currentRoute === 'register' ? 'register' : 'login'}
+          onAuthSuccess={(userData) => {
+            setUser(userData);
+            setCurrentRoute('feed');
+          }}
         />
       ) : (
-        <Feed
-          currentUser={user}
+        <AppShell
+          currentRoute={currentRoute}
+          activeCommunity={activeCommunity}
+          activeChannel={activeChannel}
+          joinedCommunities={joinedCommunities}
+          channels={channels}
+          user={user}
           onNavigate={handleNavigate}
           onCreatePostClick={handleOpenCreatePost}
-        />
+        >
+          {currentRoute === 'post_detail' ? (
+            <PostDetail
+              postId={activePost?.id}
+              initialPost={activePost?.post || null}
+              currentUser={user}
+              onNavigate={handleNavigate}
+              onBack={() => setCurrentRoute('feed')}
+              onPostDeleted={() => setCurrentRoute('feed')}
+            />
+          ) : currentRoute === 'explore' || currentRoute === 'discover' ? (
+            <DiscoverSpaces
+              onNavigate={handleNavigate}
+              onCreateSpaceClick={() => handleNavigate('create_community')}
+            />
+          ) : currentRoute === 'community' ? (
+            <CommunityDetail
+              communitySlug={activeCommunity?.slug}
+              initialCommunity={activeCommunity}
+              currentUser={user}
+              onNavigate={handleNavigate}
+              onCreatePostClick={handleOpenCreatePost}
+            />
+          ) : currentRoute === 'create_post' ? (
+            <CreatePost
+              initialCommunity={activeCommunity}
+              availableCommunities={joinedCommunities}
+              currentUser={user}
+              onNavigate={handleNavigate}
+              onBack={() => setCurrentRoute(activeCommunity ? 'community' : 'feed')}
+              onPostCreated={(_newPost) => setCurrentRoute('feed')}
+            />
+          ) : currentRoute === 'channel' ? (
+            <ChannelChat
+              community={activeCommunity || joinedCommunities[0]}
+              channel={activeChannel}
+              currentUser={user}
+              onNavigate={handleNavigate}
+              onBack={() => setCurrentRoute(activeCommunity ? 'community' : 'feed')}
+            />
+          ) : currentRoute === 'profile' ? (
+            <Profile
+              username={activeProfileUsername}
+              currentUser={user}
+              onNavigate={handleNavigate}
+              onBack={() => setCurrentRoute('feed')}
+            />
+          ) : (
+            <Feed
+              currentUser={user}
+              onNavigate={handleNavigate}
+              onCreatePostClick={handleOpenCreatePost}
+            />
+          )}
+        </AppShell>
       )}
-    </AppShell>
+    </div>
   );
 }

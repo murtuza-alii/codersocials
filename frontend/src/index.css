@@ -13,41 +13,60 @@
   width: 100% !important;
   height: 100dvh !important;
   min-width: 0;
-  background: #000 !important;
+  background: transparent !important;
 }
 .sanctuary-shell-root > aside {
-  background: #050505 !important;
+  background: rgba(5, 5, 8, 0.85) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-color: #202020 !important;
   padding: 12px 0 !important;
   gap: 8px !important;
 }
 .sanctuary-shell-root > nav {
-  background: #050505 !important;
+  background: rgba(6, 7, 10, 0.82) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-color: #202020 !important;
 }
 .sanctuary-shell-root > nav > div:first-child {
-  background: #050505 !important;
+  background: rgba(6, 7, 10, 0.88) !important;
   border-color: #202020 !important;
   letter-spacing: -.01em !important;
 }
 .sanctuary-shell-root > nav > div:last-child {
   border-color: #202020 !important;
 }
-.sanctuary-shell-root > main { height: 100dvh !important; background: #000 !important; }
+.sanctuary-shell-root > main { height: 100dvh !important; background: transparent !important; }
 .sanctuary-shell-root > main > header {
-  background: #000 !important;
+  background: rgba(4, 5, 8, 0.82) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-color: #202020 !important;
   padding-inline: clamp(16px, 2.5vw, 36px) !important;
 }
 .sanctuary-shell-root > main > header h1 { text-transform: none !important; letter-spacing: -.025em !important; }
 .sanctuary-shell-root > main > header > div:last-child > div {
-  background: #070707 !important;
+  background: rgba(7, 7, 7, 0.85) !important;
   border-color: #292929 !important;
 }
 .sanctuary-shell-root[data-route="create_post"] > main > header .app-button { display: none !important; }
 .sanctuary-shell-root > main > section {
   padding: clamp(20px, 3vw, 40px) clamp(16px, 3vw, 44px) !important;
-  background: #000;
+  background: rgba(0, 0, 0, 0.22) !important;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 6px var(--neon-cyan);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.85);
+    box-shadow: 0 0 2px var(--neon-cyan);
+  }
 }
 
 /* The previous system used clipped corners and heavy neon on every element. */

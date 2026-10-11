@@ -1,7 +1,7 @@
 @echo off
 title Sanctuary OS - Launch Services
 echo ========================================================
-echo   SANCTUARY // OS - Starting Backend & Frontend
+echo   SANCTUARY // OS - Starting Backend ^& Frontend
 echo ========================================================
 
 echo [1/2] Starting Django API Backend on http://127.0.0.1:8000 ...

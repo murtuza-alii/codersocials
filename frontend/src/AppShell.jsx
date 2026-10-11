@@ -48,10 +48,11 @@ export default function AppShell({
         height: '100vh',
         overflow: 'hidden', // Strict global fix for horizontal overflow
         display: 'flex',
-        background: 'var(--bg-pitch)',
+        background: 'transparent',
         color: 'var(--text-primary)',
         fontFamily: 'var(--font-display)',
         position: 'relative',
+        zIndex: 10,
       }}
     >
       {/* ====================================================================
@@ -63,7 +64,9 @@ export default function AppShell({
           width: 'var(--rail-width)',
           minWidth: 'var(--rail-width)',
           height: '100vh',
-          background: 'var(--bg-pitch)',
+          background: 'rgba(5, 5, 8, 0.85)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
           borderRight: '1px solid var(--neon-cyan-border)',
           display: 'flex',
           flexDirection: 'column',
@@ -379,7 +382,9 @@ export default function AppShell({
           width: 'var(--channel-col-width)',
           minWidth: 'var(--channel-col-width)',
           height: '100vh',
-          background: 'var(--bg-surface)',
+          background: 'rgba(6, 7, 10, 0.82)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
           borderRight: '1px solid var(--neon-cyan-border)',
           display: 'flex',
           flexDirection: 'column',
@@ -562,7 +567,7 @@ export default function AppShell({
           height: '100vh',
           display: 'flex',
           flexDirection: 'column',
-          background: 'var(--bg-pitch)',
+          background: 'transparent',
           overflow: 'hidden',
         }}
       >
@@ -576,7 +581,9 @@ export default function AppShell({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'var(--bg-pitch)',
+            background: 'rgba(4, 5, 8, 0.82)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
             zIndex: 'var(--z-topbar)',
             userSelect: 'none',
           }}
@@ -624,6 +631,7 @@ export default function AppShell({
             overflowX: 'hidden', // Strict horizontal overflow elimination
             padding: '24px 20px',
             position: 'relative',
+            background: 'rgba(0, 0, 0, 0.22)',
           }}
         >
           {children}
