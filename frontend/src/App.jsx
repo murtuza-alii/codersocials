@@ -34,23 +34,26 @@ export default function App() {
   ];
 
   const handleNavigate = (route, payload) => {
-    const legacyRoutes = {
-      chat: '/chat/inbox/',
-      create_community: '/communities/create/',
-      edit_profile: '/accounts/edit-profile/',
-      logout: '/accounts/logout/',
-    };
-    if (route === 'channel' && payload?.id?.startsWith('dm-')) {
-      window.location.assign(`/chat/dm/${encodeURIComponent(payload.id.slice(3))}/`);
+    if (route === 'logout') {
+      window.location.assign('/accounts/logout/');
       return;
     }
-    if (legacyRoutes[route]) {
-      window.location.assign(legacyRoutes[route]);
+    if (route === 'create_community') {
+      setCurrentRoute('discover');
+      return;
+    }
+    if (route === 'edit_profile') {
+      setCurrentRoute('profile');
       return;
     }
 
     setCurrentRoute(route);
-    if (route === 'community') {
+    if (route === 'chat') {
+      const dmChannel = payload?.is_dm
+        ? payload
+        : { id: 'dm-alex_dev', name: 'alex_dev', is_dm: true, topic: 'Direct encrypted channel with @alex_dev' };
+      setActiveChannel(dmChannel);
+    } else if (route === 'community') {
       setActiveCommunity(payload);
       setActiveChannel({ id: 'general', name: 'general' });
     } else if (route === 'channel') {
@@ -139,6 +142,14 @@ export default function App() {
               currentUser={user}
               onNavigate={handleNavigate}
               onBack={() => setCurrentRoute(activeCommunity ? 'community' : 'feed')}
+            />
+          ) : currentRoute === 'chat' ? (
+            <ChannelChat
+              community={{ name: 'Direct Messages', slug: 'direct-messages' }}
+              channel={activeChannel?.is_dm ? activeChannel : { id: 'dm-alex_dev', name: 'alex_dev', is_dm: true, topic: 'Direct encrypted channel with @alex_dev' }}
+              currentUser={user}
+              onNavigate={handleNavigate}
+              onBack={() => setCurrentRoute('feed')}
             />
           ) : currentRoute === 'profile' ? (
             <Profile

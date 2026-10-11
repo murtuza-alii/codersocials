@@ -1,6 +1,6 @@
 /** Application navigation rail, space navigation, and page header. */
 
-import React from 'react';
+import React, { useState } from 'react';
 import Button from './Button';
 import { Tooltip } from './Popup';
 import {
@@ -14,6 +14,8 @@ import {
   SignOut,
   Gear,
   CaretDown,
+  Check,
+  Users,
 } from '@phosphor-icons/react';
 
 export default function AppShell({
@@ -27,16 +29,30 @@ export default function AppShell({
   onNavigate = () => {},
   onCreatePostClick = () => {},
 }) {
+  const [isSpacesOpen, setIsSpacesOpen] = useState(false);
+  const [isChannelsOpen, setIsChannelsOpen] = useState(true);
+  const [isDmsOpen, setIsDmsOpen] = useState(true);
+  const [isJoinedSpacesOpen, setIsJoinedSpacesOpen] = useState(false);
+
+  const directMessages = [
+    { id: 'dm-alex_dev', name: 'alex_dev', is_dm: true, status: 'online', role: 'Developer' },
+    { id: 'dm-code_ninja', name: 'code_ninja', is_dm: true, status: 'offline', role: 'Research' },
+  ];
+
   const routeTitle = currentRoute === 'channel'
     ? activeChannel?.name || 'Channel'
-    : currentRoute === 'community'
-      ? activeCommunity?.name || 'Community'
-      : ({ feed: 'Your feed', discover: 'Discover spaces', explore: 'Discover spaces', chat: 'Messages', profile: 'Profile', post_detail: 'Post', create_post: 'New post', login: 'Sign in', register: 'Create account' }[currentRoute] || currentRoute.replaceAll('_', ' '));
+    : currentRoute === 'chat'
+      ? activeChannel?.name ? `@${activeChannel.name}` : 'Direct Messages'
+      : currentRoute === 'community'
+        ? activeCommunity?.name || 'Community'
+        : ({ feed: 'Your feed', discover: 'Discover spaces', explore: 'Discover spaces', chat: 'Direct Messages', profile: 'Profile', post_detail: 'Post', create_post: 'New post', login: 'Sign in', register: 'Create account' }[currentRoute] || currentRoute.replaceAll('_', ' '));
   const routeIcon = currentRoute === 'channel'
     ? <Hash size={17} color="var(--text-secondary)" />
-    : currentRoute === 'discover' || currentRoute === 'explore'
-      ? <Compass size={17} color="var(--text-secondary)" />
-      : null;
+    : currentRoute === 'chat'
+      ? <ChatTeardropDots size={17} color="var(--neon-cyan)" />
+      : currentRoute === 'discover' || currentRoute === 'explore'
+        ? <Compass size={17} color="var(--text-secondary)" />
+        : null;
 
   return (
     <div
@@ -392,111 +408,438 @@ export default function AppShell({
           userSelect: 'none',
         }}
       >
-        {/* Space Title Header */}
-        <div
-          style={{
-            height: 'var(--topbar-height)',
-            borderBottom: '1px solid var(--neon-cyan-border)',
-            padding: '0 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'var(--bg-surface-elevated)',
-            fontWeight: 700,
-            fontSize: '0.95rem',
-            color: 'var(--text-pure)',
-            letterSpacing: '0.02em',
-          }}
-        >
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {activeCommunity ? activeCommunity.name : 'Your spaces'}
-          </span>
-          <CaretDown size={14} color="var(--neon-cyan)" weight="bold" />
+        {/* 1. Interactive Space Title Header with Dropdown Accordion */}
+        <div style={{ position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => setIsSpacesOpen((prev) => !prev)}
+            aria-expanded={isSpacesOpen}
+            style={{
+              width: '100%',
+              height: 'var(--topbar-height)',
+              padding: '0 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'var(--bg-surface-elevated)',
+              fontWeight: 700,
+              fontSize: '0.92rem',
+              color: 'var(--text-pure)',
+              letterSpacing: '0.02em',
+              cursor: 'pointer',
+              border: 'none',
+              borderBottom: '1px solid var(--neon-cyan-border)',
+              outline: 'none',
+              transition: 'background 0.2s ease',
+            }}
+            onPointerEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+            }}
+            onPointerLeave={(e) => {
+              e.currentTarget.style.background = 'var(--bg-surface-elevated)';
+            }}
+          >
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
+              {activeCommunity ? activeCommunity.name : (currentRoute === 'chat' ? 'Direct Messages' : 'Your spaces')}
+            </span>
+            <CaretDown
+              size={14}
+              color="var(--neon-cyan)"
+              weight="bold"
+              style={{
+                transform: isSpacesOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                flexShrink: 0,
+              }}
+            />
+          </button>
+
+          {/* Expandable Spaces Selector Dropdown */}
+          {isSpacesOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 'var(--topbar-height)',
+                left: 0,
+                width: '100%',
+                background: 'rgba(5, 8, 12, 0.96)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                borderBottom: '1px solid var(--neon-cyan)',
+                boxShadow: '0 12px 28px rgba(0, 0, 0, 0.85)',
+                zIndex: 80,
+                padding: '8px 10px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.64rem',
+                  fontWeight: 700,
+                  color: 'var(--text-dim)',
+                  padding: '4px 6px',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Switch Space
+              </div>
+
+              {joinedCommunities.map((comm) => {
+                const isActive = activeCommunity?.id === comm.id;
+                return (
+                  <button
+                    key={comm.id}
+                    type="button"
+                    onClick={() => {
+                      onNavigate('community', comm);
+                      setIsSpacesOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '7px 8px',
+                      background: isActive ? 'var(--neon-cyan-dim)' : 'transparent',
+                      color: isActive ? 'var(--neon-cyan)' : 'var(--text-primary)',
+                      border: `1px solid ${isActive ? 'var(--neon-cyan-border)' : 'transparent'}`,
+                      borderRadius: '2px',
+                      cursor: 'pointer',
+                      fontSize: '0.82rem',
+                      fontWeight: isActive ? 700 : 500,
+                      textAlign: 'left',
+                      outline: 'none',
+                    }}
+                  >
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {comm.name}
+                    </span>
+                    {isActive && <Check size={13} color="var(--neon-cyan)" weight="bold" />}
+                  </button>
+                );
+              })}
+
+              <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.08)', margin: '4px 0' }} />
+
+              <button
+                type="button"
+                onClick={() => {
+                  onNavigate('discover');
+                  setIsSpacesOpen(false);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 8px',
+                  background: 'transparent',
+                  color: 'var(--neon-cyan)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                  fontFamily: 'var(--font-mono)',
+                  textAlign: 'left',
+                }}
+              >
+                <Compass size={14} weight="bold" />
+                <span>Discover all spaces</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Channels & Categories Stream */}
+        {/* 2. Channels & Categories Stream with Accordions */}
         <div
           style={{
             flex: 1,
             overflowY: 'auto',
             overflowX: 'hidden',
-            padding: '14px 10px',
+            padding: '12px 10px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '16px',
+            gap: '14px',
           }}
         >
-          {/* Section 1: Standard Channels */}
+          {/* Section 1: Standard Channels (Collapsible Accordion) */}
           <div>
-            <div
+            <button
+              type="button"
+              onClick={() => setIsChannelsOpen((prev) => !prev)}
+              aria-expanded={isChannelsOpen}
               style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.68rem',
                 fontWeight: 700,
                 color: 'var(--text-dim)',
                 letterSpacing: '0.08em',
-                padding: '0 6px 6px',
+                padding: '4px 6px',
                 textTransform: 'uppercase',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                outline: 'none',
               }}
             >
-              Text Channels
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-              {(channels.length > 0
-                ? channels
-                : [
-                    { id: 'general', name: 'general', is_announcement: false },
-                    { id: 'announcements', name: 'announcements', is_announcement: true },
-                    { id: 'code-review', name: 'code-review', is_announcement: false },
-                  ]
-              ).map((ch) => {
-                const isChActive = activeChannel?.id === ch.id;
-                return (
-                  <button
-                    key={ch.id}
-                    type="button"
-                    onClick={() => onNavigate('channel', ch)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '7px 10px',
-                      background: isChActive ? 'var(--neon-cyan-dim)' : 'transparent',
-                      color: isChActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
-                      border: isChActive ? '1px solid var(--neon-cyan-border)' : '1px solid transparent',
-                      clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
-                      cursor: 'pointer',
-                      fontSize: '0.84rem',
-                      fontWeight: isChActive ? 600 : 500,
-                      textAlign: 'left',
-                      outline: 'none',
-                      transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease',
-                    }}
-                    onPointerEnter={(e) => {
-                      if (!isChActive) {
-                        e.currentTarget.style.color = 'var(--text-pure)';
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                      }
-                    }}
-                    onPointerLeave={(e) => {
-                      if (!isChActive) {
-                        e.currentTarget.style.color = 'var(--text-secondary)';
-                        e.currentTarget.style.background = 'transparent';
-                      }
-                    }}
-                  >
-                    {ch.is_announcement ? (
-                      <Megaphone size={16} color="var(--neon-warning)" weight="bold" />
-                    ) : (
-                      <Hash size={16} weight="bold" />
-                    )}
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {ch.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <CaretDown
+                  size={11}
+                  weight="bold"
+                  style={{
+                    transform: isChannelsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                    transition: 'transform 0.18s ease',
+                  }}
+                />
+                <span>Text Channels</span>
+              </div>
+              <span style={{ fontSize: '0.64rem', color: 'var(--text-dim)' }}>
+                {channels.length}
+              </span>
+            </button>
+
+            {isChannelsOpen && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
+                {(channels.length > 0
+                  ? channels
+                  : [
+                      { id: 'general', name: 'general', is_announcement: false },
+                      { id: 'announcements', name: 'announcements', is_announcement: true },
+                      { id: 'code-review', name: 'code-review', is_announcement: false },
+                    ]
+                ).map((ch) => {
+                  const isChActive = currentRoute === 'channel' && activeChannel?.id === ch.id;
+                  return (
+                    <button
+                      key={ch.id}
+                      type="button"
+                      onClick={() => onNavigate('channel', ch)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '7px 10px',
+                        background: isChActive ? 'var(--neon-cyan-dim)' : 'transparent',
+                        color: isChActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                        border: isChActive ? '1px solid var(--neon-cyan-border)' : '1px solid transparent',
+                        clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+                        cursor: 'pointer',
+                        fontSize: '0.84rem',
+                        fontWeight: isChActive ? 600 : 500,
+                        textAlign: 'left',
+                        outline: 'none',
+                        transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease',
+                      }}
+                      onPointerEnter={(e) => {
+                        if (!isChActive) {
+                          e.currentTarget.style.color = 'var(--text-pure)';
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                        }
+                      }}
+                      onPointerLeave={(e) => {
+                        if (!isChActive) {
+                          e.currentTarget.style.color = 'var(--text-secondary)';
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
+                    >
+                      {ch.is_announcement ? (
+                        <Megaphone size={16} color="var(--neon-warning)" weight="bold" />
+                      ) : (
+                        <Hash size={16} weight="bold" />
+                      )}
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {ch.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: Direct Messages (Collapsible Accordion) */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setIsDmsOpen((prev) => !prev)}
+              aria-expanded={isDmsOpen}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                color: 'var(--text-dim)',
+                letterSpacing: '0.08em',
+                padding: '4px 6px',
+                textTransform: 'uppercase',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <CaretDown
+                  size={11}
+                  weight="bold"
+                  style={{
+                    transform: isDmsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                    transition: 'transform 0.18s ease',
+                  }}
+                />
+                <span>Direct Messages</span>
+              </div>
+              <span style={{ fontSize: '0.64rem', color: 'var(--neon-cyan)', fontWeight: 600 }}>
+                1 ONLINE
+              </span>
+            </button>
+
+            {isDmsOpen && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
+                {directMessages.map((dm) => {
+                  const isDmActive = currentRoute === 'chat' && activeChannel?.name === dm.name;
+                  return (
+                    <button
+                      key={dm.id}
+                      type="button"
+                      onClick={() => onNavigate('chat', dm)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '7px 10px',
+                        background: isDmActive ? 'var(--neon-cyan-dim)' : 'transparent',
+                        color: isDmActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                        border: isDmActive ? '1px solid var(--neon-cyan-border)' : '1px solid transparent',
+                        clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+                        cursor: 'pointer',
+                        fontSize: '0.84rem',
+                        fontWeight: isDmActive ? 600 : 500,
+                        textAlign: 'left',
+                        outline: 'none',
+                        transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease',
+                      }}
+                      onPointerEnter={(e) => {
+                        if (!isDmActive) {
+                          e.currentTarget.style.color = 'var(--text-pure)';
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                        }
+                      }}
+                      onPointerLeave={(e) => {
+                        if (!isDmActive) {
+                          e.currentTarget.style.color = 'var(--text-secondary)';
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <span
+                          style={{
+                            width: '7px',
+                            height: '7px',
+                            borderRadius: '50%',
+                            background: dm.status === 'online' ? 'var(--neon-cyan)' : 'var(--text-dim)',
+                            boxShadow: dm.status === 'online' ? '0 0 6px var(--neon-cyan)' : 'none',
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          @{dm.name}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                        {dm.role}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: Joined Spaces Directory (Collapsible Accordion) */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setIsJoinedSpacesOpen((prev) => !prev)}
+              aria-expanded={isJoinedSpacesOpen}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                color: 'var(--text-dim)',
+                letterSpacing: '0.08em',
+                padding: '4px 6px',
+                textTransform: 'uppercase',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <CaretDown
+                  size={11}
+                  weight="bold"
+                  style={{
+                    transform: isJoinedSpacesOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                    transition: 'transform 0.18s ease',
+                  }}
+                />
+                <span>Joined Spaces</span>
+              </div>
+              <span style={{ fontSize: '0.64rem', color: 'var(--text-dim)' }}>
+                {joinedCommunities.length}
+              </span>
+            </button>
+
+            {isJoinedSpacesOpen && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
+                {joinedCommunities.map((comm) => {
+                  const isActive = activeCommunity?.id === comm.id;
+                  return (
+                    <button
+                      key={comm.id}
+                      type="button"
+                      onClick={() => onNavigate('community', comm)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '6px 8px',
+                        background: isActive ? 'var(--neon-cyan-dim)' : 'transparent',
+                        color: isActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                        border: isActive ? '1px solid var(--neon-cyan-border)' : '1px solid transparent',
+                        borderRadius: '2px',
+                        cursor: 'pointer',
+                        fontSize: '0.80rem',
+                        fontWeight: isActive ? 600 : 400,
+                        textAlign: 'left',
+                        outline: 'none',
+                      }}
+                    >
+                      <Users size={14} color={isActive ? 'var(--neon-cyan)' : 'var(--text-dim)'} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {comm.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
