@@ -10,6 +10,7 @@ import ChannelChat from './ChannelChat';
 import Profile from './Profile';
 import Auth from './Auth';
 import Creative3DBackground from './Creative3DBackground';
+import SmoothCursor from './SmoothCursor';
 
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState('feed');
@@ -79,6 +80,7 @@ export default function App() {
       }}
     >
       <Creative3DBackground currentRoute={currentRoute} />
+      <SmoothCursor />
 
       {currentRoute === 'login' || currentRoute === 'register' ? (
         <Auth
