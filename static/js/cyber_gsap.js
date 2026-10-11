@@ -459,6 +459,91 @@
         });
     }
 
+    // 8. Universal Smooth Kinetic Cursor
+    function initUniversalSmoothCursor() {
+        if (window.matchMedia('(hover: none) and (pointer: coarse)').matches || prefersReducedMotion) return;
+
+        let dot = document.getElementById('cyber-smooth-cursor-dot');
+        let ring = document.getElementById('cyber-smooth-cursor-ring');
+
+        if (!dot) {
+            dot = document.createElement('div');
+            dot.id = 'cyber-smooth-cursor-dot';
+            dot.style.cssText = 'position:fixed;top:0;left:0;width:5px;height:5px;margin-left:-2.5px;margin-top:-2.5px;border-radius:50%;background:#c4f36b;box-shadow:0 0 8px #c4f36b;pointer-events:none;z-index:9999999;opacity:0;transform:translate(-100px,-100px);will-change:transform;';
+            document.body.appendChild(dot);
+        }
+
+        if (!ring) {
+            ring = document.createElement('div');
+            ring.id = 'cyber-smooth-cursor-ring';
+            ring.style.cssText = 'position:fixed;top:0;left:0;width:28px;height:28px;margin-left:-14px;margin-top:-14px;border-radius:50%;border:1px solid rgba(196,243,107,0.5);background:transparent;pointer-events:none;z-index:9999998;opacity:0;transform:translate(-100px,-100px);will-change:transform;';
+            document.body.appendChild(ring);
+        }
+
+        const dotX = gsap.quickTo(dot, 'x', { duration: 0.07, ease: 'power2.out' });
+        const dotY = gsap.quickTo(dot, 'y', { duration: 0.07, ease: 'power2.out' });
+        const ringX = gsap.quickTo(ring, 'x', { duration: 0.34, ease: 'power3.out' });
+        const ringY = gsap.quickTo(ring, 'y', { duration: 0.34, ease: 'power3.out' });
+        const ringScale = gsap.quickTo(ring, 'scale', { duration: 0.22, ease: 'back.out(1.8)' });
+        const ringRot = gsap.quickTo(ring, 'rotation', { duration: 0.18, ease: 'power1.out' });
+
+        let prevX = -100, prevY = -100, isHovered = false, isVisible = false;
+
+        const setVisible = (v) => {
+            if (isVisible === v) return;
+            isVisible = v;
+            gsap.to([dot, ring], { opacity: v ? 1 : 0, duration: 0.2, overwrite: 'auto' });
+        };
+
+        const setHover = (h) => {
+            if (isHovered === h) return;
+            isHovered = h;
+            if (h) {
+                ringScale(1.55);
+                gsap.to(ring, { borderColor: '#c4f36b', backgroundColor: 'rgba(196,243,107,0.08)', boxShadow: '0 0 16px rgba(196,243,107,0.35)', duration: 0.2, overwrite: 'auto' });
+                gsap.to(dot, { backgroundColor: '#ffffff', boxShadow: '0 0 10px #ffffff', duration: 0.2, overwrite: 'auto' });
+            } else {
+                ringScale(1.0);
+                gsap.to(ring, { borderColor: 'rgba(196,243,107,0.5)', backgroundColor: 'transparent', boxShadow: 'none', duration: 0.2, overwrite: 'auto' });
+                gsap.to(dot, { backgroundColor: '#c4f36b', boxShadow: '0 0 8px #c4f36b', duration: 0.2, overwrite: 'auto' });
+            }
+        };
+
+        window.addEventListener('pointermove', (e) => {
+            setVisible(true);
+            const dx = e.clientX - prevX;
+            const dy = e.clientY - prevY;
+            const speed = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            prevX = e.clientX;
+            prevY = e.clientY;
+
+            dotX(e.clientX);
+            dotY(e.clientY);
+            ringX(e.clientX);
+            ringY(e.clientY);
+
+            if (!isHovered) {
+                const stretch = Math.min(1.4, 1 + speed * 0.01);
+                gsap.to(ring, { scaleX: stretch, scaleY: 1 / stretch, duration: 0.14, ease: 'power2.out', overwrite: 'auto' });
+                ringRot(angle);
+            }
+
+            const target = e.target;
+            if (target) {
+                const interactive = Boolean(
+                    target.closest('button, a, input, textarea, select, [role="button"], .surface-card, article, .rail-btn, .cyber-btn')
+                );
+                setHover(interactive);
+            }
+        }, { passive: true, capture: true });
+
+        window.addEventListener('pointerdown', () => ringScale(0.75), { passive: true, capture: true });
+        window.addEventListener('pointerup', () => ringScale(isHovered ? 1.55 : 1.0), { passive: true, capture: true });
+        document.documentElement.addEventListener('mouseleave', () => setVisible(false));
+        document.documentElement.addEventListener('mouseenter', () => setVisible(true));
+    }
+
     // Document Ready Initialization
     document.addEventListener('DOMContentLoaded', () => {
         initCyberModal();
@@ -467,6 +552,7 @@
         initLikePunch();
         initFeedStagger();
         initTactileClicks();
+        initUniversalSmoothCursor();
     });
 
 })();
