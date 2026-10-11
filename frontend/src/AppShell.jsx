@@ -14,6 +14,9 @@ import {
   SignOut,
   Gear,
   CaretDown,
+  CaretDoubleLeft,
+  CaretDoubleRight,
+  PushPin,
   Check,
   Users,
 } from '@phosphor-icons/react';
@@ -29,6 +32,11 @@ export default function AppShell({
   onNavigate = () => {},
   onCreatePostClick = () => {},
 }) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarPinned, setIsSidebarPinned] = useState(true);
+  const [isHoverPeek, setIsHoverPeek] = useState(false);
+  const effectiveSidebarOpen = isSidebarOpen || (!isSidebarPinned && isHoverPeek);
+
   const [isSpacesOpen, setIsSpacesOpen] = useState(false);
   const [isChannelsOpen, setIsChannelsOpen] = useState(true);
   const [isDmsOpen, setIsDmsOpen] = useState(true);
@@ -389,61 +397,164 @@ export default function AppShell({
         </div>
       </aside>
 
+      {/* Pop-up Accordion Sidebar Pull Handle (when collapsed) */}
+      {!effectiveSidebarOpen && (
+        <button
+          type="button"
+          onClick={() => setIsSidebarOpen(true)}
+          onPointerEnter={() => {
+            if (!isSidebarPinned) setIsHoverPeek(true);
+          }}
+          aria-label="Expand channels sidebar"
+          title="Expand Channels (>>)"
+          style={{
+            position: 'absolute',
+            left: 'var(--rail-width)',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 65,
+            width: '20px',
+            height: '72px',
+            background: 'rgba(6, 7, 10, 0.94)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid var(--neon-cyan)',
+            borderLeft: 'none',
+            borderTopRightRadius: '6px',
+            borderBottomRightRadius: '6px',
+            color: 'var(--neon-cyan)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            outline: 'none',
+            boxShadow: '0 0 16px rgba(0, 240, 255, 0.35)',
+            transition: 'background 0.2s ease, width 0.15s ease',
+          }}
+        >
+          <CaretDoubleRight size={13} weight="bold" />
+        </button>
+      )}
+
+      {/* Pop-up Overlay Backdrop (when in unpinned pop-up mode and open) */}
+      {!isSidebarPinned && effectiveSidebarOpen && (
+        <div
+          onClick={() => {
+            setIsSidebarOpen(false);
+            setIsHoverPeek(false);
+          }}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: 'calc(var(--rail-width) + var(--channel-col-width))',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(2px)',
+            WebkitBackdropFilter: 'blur(2px)',
+            zIndex: 65,
+            cursor: 'pointer',
+          }}
+        />
+      )}
+
       {/* ====================================================================
-          2. CHANNEL / SUBNAV COLUMN (240px, Discord Density)
+          2. CHANNEL / SUBNAV COLUMN (Accordion Pop-up / Docked Drawer)
           ==================================================================== */}
       <nav
         aria-label="Channels and Categories"
-        style={{
-          width: 'var(--channel-col-width)',
-          minWidth: 'var(--channel-col-width)',
-          height: '100vh',
-          background: 'rgba(6, 7, 10, 0.82)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderRight: '1px solid var(--neon-cyan-border)',
-          display: 'flex',
-          flexDirection: 'column',
-          zIndex: 30,
-          userSelect: 'none',
+        onPointerLeave={() => {
+          if (!isSidebarPinned && !isSidebarOpen) {
+            setIsHoverPeek(false);
+          }
         }}
+        style={
+          isSidebarPinned
+            ? {
+                width: effectiveSidebarOpen ? 'var(--channel-col-width)' : '0px',
+                minWidth: effectiveSidebarOpen ? 'var(--channel-col-width)' : '0px',
+                height: '100vh',
+                background: 'rgba(6, 7, 10, 0.84)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                borderRight: effectiveSidebarOpen ? '1px solid var(--neon-cyan-border)' : 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                zIndex: 30,
+                userSelect: 'none',
+                overflow: 'hidden',
+                transition: 'width 0.24s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.24s cubic-bezier(0.16, 1, 0.3, 1)',
+              }
+            : {
+                position: 'absolute',
+                left: 'var(--rail-width)',
+                top: 0,
+                bottom: 0,
+                width: 'var(--channel-col-width)',
+                minWidth: 'var(--channel-col-width)',
+                height: '100vh',
+                background: 'rgba(6, 7, 10, 0.95)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                borderRight: '1px solid var(--neon-cyan)',
+                display: 'flex',
+                flexDirection: 'column',
+                zIndex: 70,
+                userSelect: 'none',
+                transform: effectiveSidebarOpen ? 'translateX(0)' : 'translateX(-105%)',
+                opacity: effectiveSidebarOpen ? 1 : 0,
+                pointerEvents: effectiveSidebarOpen ? 'auto' : 'none',
+                boxShadow: effectiveSidebarOpen
+                  ? '16px 0 32px rgba(0, 0, 0, 0.85), 0 0 20px rgba(0, 240, 255, 0.2)'
+                  : 'none',
+                transition: 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease',
+              }
+        }
       >
-        {/* 1. Interactive Space Title Header with Dropdown Accordion */}
-        <div style={{ position: 'relative' }}>
+        {/* 1. Interactive Space Title Header with Dropdown Accordion + Pin & Collapse */}
+        <div
+          style={{
+            position: 'relative',
+            height: 'var(--topbar-height)',
+            background: 'var(--bg-surface-elevated)',
+            borderBottom: '1px solid var(--neon-cyan-border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0 8px 0 14px',
+            gap: '6px',
+            flexShrink: 0,
+          }}
+        >
           <button
             type="button"
             onClick={() => setIsSpacesOpen((prev) => !prev)}
             aria-expanded={isSpacesOpen}
             style={{
-              width: '100%',
-              height: 'var(--topbar-height)',
-              padding: '0 16px',
+              flex: 1,
+              height: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: 'var(--bg-surface-elevated)',
+              gap: '6px',
+              background: 'transparent',
               fontWeight: 700,
-              fontSize: '0.92rem',
+              fontSize: '0.90rem',
               color: 'var(--text-pure)',
               letterSpacing: '0.02em',
               cursor: 'pointer',
               border: 'none',
-              borderBottom: '1px solid var(--neon-cyan-border)',
+              padding: 0,
               outline: 'none',
-              transition: 'background 0.2s ease',
-            }}
-            onPointerEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-            }}
-            onPointerLeave={(e) => {
-              e.currentTarget.style.background = 'var(--bg-surface-elevated)';
+              minWidth: 0,
             }}
           >
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
               {activeCommunity ? activeCommunity.name : (currentRoute === 'chat' ? 'Direct Messages' : 'Your spaces')}
             </span>
             <CaretDown
-              size={14}
+              size={13}
               color="var(--neon-cyan)"
               weight="bold"
               style={{
@@ -453,6 +564,67 @@ export default function AppShell({
               }}
             />
           </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+            {/* Dock/Pin Toggle */}
+            <Tooltip text={isSidebarPinned ? 'Pop-up Mode' : 'Dock Sidebar'} position="bottom">
+              <button
+                type="button"
+                onClick={() => setIsSidebarPinned((p) => !p)}
+                aria-label={isSidebarPinned ? 'Switch to pop-up mode' : 'Dock sidebar'}
+                style={{
+                  background: isSidebarPinned ? 'var(--neon-cyan-dim)' : 'transparent',
+                  border: `1px solid ${isSidebarPinned ? 'var(--neon-cyan)' : 'transparent'}`,
+                  color: isSidebarPinned ? 'var(--neon-cyan)' : 'var(--text-dim)',
+                  padding: '5px',
+                  borderRadius: '2px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  outline: 'none',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <PushPin size={13} weight={isSidebarPinned ? 'fill' : 'regular'} />
+              </button>
+            </Tooltip>
+
+            {/* Collapse (<<) Button */}
+            <Tooltip text="Collapse (<<)" position="bottom">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSidebarOpen(false);
+                  setIsHoverPeek(false);
+                }}
+                aria-label="Collapse sidebar"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid transparent',
+                  color: 'var(--text-dim)',
+                  padding: '5px',
+                  borderRadius: '2px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  outline: 'none',
+                  transition: 'all 0.15s ease',
+                }}
+                onPointerEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--neon-cyan)';
+                  e.currentTarget.style.borderColor = 'var(--neon-cyan-border)';
+                }}
+                onPointerLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--text-dim)';
+                  e.currentTarget.style.borderColor = 'transparent';
+                }}
+              >
+                <CaretDoubleLeft size={13} weight="bold" />
+              </button>
+            </Tooltip>
+          </div>
 
           {/* Expandable Spaces Selector Dropdown */}
           {isSpacesOpen && (
@@ -932,7 +1104,34 @@ export default function AppShell({
           }}
         >
           {/* Header Left: Current Location & Description */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+            {!effectiveSidebarOpen && (
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(true)}
+                title="Expand channels sidebar (>>)"
+                style={{
+                  background: 'var(--neon-cyan-dim)',
+                  border: '1px solid var(--neon-cyan)',
+                  color: 'var(--neon-cyan)',
+                  padding: '4px 8px',
+                  borderRadius: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  fontSize: '0.74rem',
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  letterSpacing: '0.04em',
+                  outline: 'none',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <CaretDoubleRight size={13} weight="bold" />
+                <span>CHANNELS</span>
+              </button>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               {routeIcon}
               <h1
