@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from django.http import JsonResponse
 from .models import Community, CommunityMembership
 from .utils import user_can_access_community, is_community_admin, get_user_membership
 
@@ -24,6 +25,23 @@ def explore_communities(request):
                 joined_community_ids.add(m.community_id)
             elif m.status == 'PENDING':
                 pending_community_ids.add(m.community_id)
+
+    if request.headers.get('accept') == 'application/json' or request.GET.get('format') == 'json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        data = []
+        for c in communities:
+            channels_list = [{'id': str(ch.id), 'name': ch.name, 'slug': ch.slug, 'is_announcement': ch.is_announcement, 'topic': ch.topic} for ch in c.channels.all()]
+            data.append({
+                'id': str(c.id),
+                'name': c.name,
+                'slug': c.slug,
+                'description': c.description,
+                'privacy': c.privacy,
+                'member_count': c.member_count,
+                'is_member': c.id in joined_community_ids,
+                'is_pending': c.id in pending_community_ids,
+                'channels': channels_list,
+            })
+        return JsonResponse({'status': 'ok', 'communities': data})
 
     return render(request, 'communities/explore.html', {
         'communities': communities,
@@ -76,6 +94,22 @@ def community_detail(request, slug):
     can_access = user_can_access_community(request.user, community)
 
     if not can_access:
+        if request.headers.get('accept') == 'application/json' or request.GET.get('format') == 'json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({
+                'status': 'gated',
+                'community': {
+                    'id': str(community.id),
+                    'name': community.name,
+                    'slug': community.slug,
+                    'description': community.description,
+                    'privacy': community.privacy,
+                    'member_count': community.member_count,
+                },
+                'membership': {'status': membership.status if membership else None, 'role': membership.role if membership else None},
+                'is_admin': False,
+                'channels': [],
+                'posts': [],
+            })
         return render(request, 'communities/gated_landing.html', {
             'community': community,
             'membership': membership,
@@ -87,6 +121,34 @@ def community_detail(request, slug):
         'media_items', 'likes', 'comments', 'comments__author'
     )
     channels = community.channels.all()
+
+    if request.headers.get('accept') == 'application/json' or request.GET.get('format') == 'json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'status': 'ok',
+            'community': {
+                'id': str(community.id),
+                'name': community.name,
+                'slug': community.slug,
+                'description': community.description,
+                'privacy': community.privacy,
+                'member_count': community.member_count,
+            },
+            'channels': [{'id': str(ch.id), 'name': ch.name, 'slug': ch.slug, 'is_announcement': ch.is_announcement, 'topic': ch.topic} for ch in channels],
+            'membership': {'status': membership.status if membership else None, 'role': membership.role if membership else None},
+            'is_admin': is_admin,
+            'posts': [
+                {
+                    'id': p.id,
+                    'author': {'username': p.author.username},
+                    'caption': p.caption,
+                    'created_at': p.created_at.isoformat(),
+                    'like_count': p.like_count,
+                    'comment_count': p.comment_count,
+                    'user_has_liked': p.likes.filter(user=request.user).exists() if request.user.is_authenticated else False,
+                }
+                for p in posts[:30]
+            ],
+        })
 
     return render(request, 'communities/detail.html', {
         'community': community,

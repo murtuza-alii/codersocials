@@ -5,6 +5,7 @@ app_name = 'chat'
 
 urlpatterns = [
     path('inbox/', views.inbox_view, name='inbox'),
+    path('api/users/', views.api_users_list, name='api_users'),
     path('new-group/', views.create_group_chat_view, name='create_group'),
     path('dm/<str:username>/', views.start_dm_view, name='start_dm'),
     path('t/<uuid:conversation_id>/', views.conversation_detail_view, name='conversation_detail'),

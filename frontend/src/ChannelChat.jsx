@@ -22,6 +22,8 @@ import {
   ArrowLeft,
   X,
   FileText,
+  UsersThree,
+  ChatTeardropDots,
 } from '@phosphor-icons/react';
 
 // ============================================================================
@@ -82,7 +84,14 @@ export default function ChannelChat({
 
     async function loadChat() {
       try {
-        const response = await fetch(`/chat/c/${community.slug}/${channel.name}/`, {
+        let endpoint = `/chat/c/${community.slug}/${channel.name}/`;
+        if (channel.conversation_id) {
+          endpoint = `/chat/t/${channel.conversation_id}/`;
+        } else if (channel.is_dm && channel.name) {
+          endpoint = `/chat/dm/${channel.name}/`;
+        }
+
+        const response = await fetch(endpoint, {
           headers: { Accept: 'application/json' },
           credentials: 'same-origin',
         });
@@ -101,7 +110,7 @@ export default function ChannelChat({
     return () => {
       isCancelled = true;
     };
-  }, [community.slug, channel.name]);
+  }, [community.slug, channel.name, channel.conversation_id, channel.is_dm]);
 
   // Can post check
   const isAdmin = currentUser.is_admin || currentUser.username === 'sarah_creator';
@@ -132,6 +141,13 @@ export default function ChannelChat({
     const attachmentToSend = stagedAttachment;
     setStagedAttachment(null);
 
+    let endpoint = `/chat/c/${community.slug}/${channel.name}/`;
+    if (channel.conversation_id) {
+      endpoint = `/chat/t/${channel.conversation_id}/`;
+    } else if (channel.is_dm && channel.name) {
+      endpoint = `/chat/dm/${channel.name}/`;
+    }
+
     // Send to Django endpoint
     const formData = new FormData();
     formData.append('message', trimmed);
@@ -140,7 +156,7 @@ export default function ChannelChat({
     }
 
     try {
-      await fetch(`/chat/c/${community.slug}/${channel.name}/`, {
+      await fetch(endpoint, {
         method: 'POST',
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
@@ -201,7 +217,7 @@ export default function ChannelChat({
             onPointerLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
           >
             <ArrowLeft size={16} weight="bold" />
-              <span>Back to space</span>
+              <span>Back</span>
           </button>
 
           <div style={{ width: '1px', height: '16px', background: 'var(--neon-cyan-border)' }} />
@@ -214,14 +230,22 @@ export default function ChannelChat({
                 alignItems: 'center',
               }}
             >
-              {channel.is_announcement ? <Megaphone size={18} weight="bold" /> : <Hash size={18} weight="bold" />}
+              {channel.is_group ? (
+                <UsersThree size={18} weight="bold" />
+              ) : channel.is_dm ? (
+                <ChatTeardropDots size={18} weight="bold" />
+              ) : channel.is_announcement ? (
+                <Megaphone size={18} weight="bold" />
+              ) : (
+                <Hash size={18} weight="bold" />
+              )}
             </span>
 
             <div>
               <span style={{ fontWeight: 800, fontSize: '0.96rem', color: '#ffffff' }}>
-                {channel.name}
+                {channel.is_dm ? `@${channel.name}` : (channel.title || channel.name)}
               </span>
-              {channel.topic && (
+              {(channel.topic || channel.member_count) && (
                 <span
                   style={{
                     fontSize: '0.78rem',
@@ -230,7 +254,7 @@ export default function ChannelChat({
                     fontFamily: 'var(--font-mono)',
                   }}
                 >
-                  {channel.topic}
+                  {channel.is_group ? `${channel.member_count} members` : channel.topic}
                 </span>
               )}
             </div>

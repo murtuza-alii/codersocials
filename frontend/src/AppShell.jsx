@@ -19,6 +19,10 @@ import {
   PushPin,
   Check,
   Users,
+  UsersThree,
+  UserPlus,
+  MagnifyingGlass,
+  X,
 } from '@phosphor-icons/react';
 
 export default function AppShell({
@@ -28,9 +32,14 @@ export default function AppShell({
   activeChannel = null,
   joinedCommunities = [],
   channels = [],
+  conversations = [],
+  allUsers = [],
   user = { username: 'cybernaut', is_authenticated: true },
   onNavigate = () => {},
   onCreatePostClick = () => {},
+  onStartDm = () => {},
+  onCreateGroup = () => {},
+  onCreateChannel = () => {},
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSidebarPinned, setIsSidebarPinned] = useState(true);
@@ -40,12 +49,24 @@ export default function AppShell({
   const [isSpacesOpen, setIsSpacesOpen] = useState(false);
   const [isChannelsOpen, setIsChannelsOpen] = useState(true);
   const [isDmsOpen, setIsDmsOpen] = useState(true);
+  const [isGroupsOpen, setIsGroupsOpen] = useState(true);
   const [isJoinedSpacesOpen, setIsJoinedSpacesOpen] = useState(false);
+  const [isAllUsersOpen, setIsAllUsersOpen] = useState(false);
 
-  const directMessages = [
-    { id: 'dm-alex_dev', name: 'alex_dev', is_dm: true, status: 'online', role: 'Developer' },
-    { id: 'dm-code_ninja', name: 'code_ninja', is_dm: true, status: 'offline', role: 'Research' },
-  ];
+  // Search & Modal states
+  const [dmSearchQuery, setDmSearchQuery] = useState('');
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
+  const [newGroupTitle, setNewGroupTitle] = useState('');
+  const [selectedGroupMembers, setSelectedGroupMembers] = useState([]);
+
+  const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
+  const [newChannelName, setNewChannelName] = useState('');
+  const [newChannelTopic, setNewChannelTopic] = useState('');
+  const [newChannelIsAnnouncement, setNewChannelIsAnnouncement] = useState(false);
+
+  // Derived 1-on-1 and Group conversations
+  const dmConversations = conversations.filter((c) => !c.is_group);
+  const groupConversations = conversations.filter((c) => c.is_group);
 
   const routeTitle = currentRoute === 'channel'
     ? activeChannel?.name || 'Channel'
@@ -527,43 +548,52 @@ export default function AppShell({
             flexShrink: 0,
           }}
         >
-          <button
-            type="button"
-            onClick={() => setIsSpacesOpen((prev) => !prev)}
-            aria-expanded={isSpacesOpen}
-            style={{
-              flex: 1,
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '6px',
-              background: 'transparent',
-              fontWeight: 700,
-              fontSize: '0.90rem',
-              color: 'var(--text-pure)',
-              letterSpacing: '0.02em',
-              cursor: 'pointer',
-              border: 'none',
-              padding: 0,
-              outline: 'none',
-              minWidth: 0,
-            }}
-          >
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
-              {activeCommunity ? activeCommunity.name : (currentRoute === 'chat' ? 'Direct Messages' : 'Your spaces')}
-            </span>
-            <CaretDown
-              size={13}
-              color="var(--neon-cyan)"
-              weight="bold"
+          {currentRoute === 'chat' ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+              <ChatTeardropDots size={18} color="var(--neon-cyan)" weight="fill" />
+              <span style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--text-pure)', letterSpacing: '0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                Direct Messages
+              </span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsSpacesOpen((prev) => !prev)}
+              aria-expanded={isSpacesOpen}
               style={{
-                transform: isSpacesOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
-                flexShrink: 0,
+                flex: 1,
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '6px',
+                background: 'transparent',
+                fontWeight: 700,
+                fontSize: '0.90rem',
+                color: 'var(--text-pure)',
+                letterSpacing: '0.02em',
+                cursor: 'pointer',
+                border: 'none',
+                padding: 0,
+                outline: 'none',
+                minWidth: 0,
               }}
-            />
-          </button>
+            >
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
+                {activeCommunity ? activeCommunity.name : 'Your spaces'}
+              </span>
+              <CaretDown
+                size={13}
+                color="var(--neon-cyan)"
+                weight="bold"
+                style={{
+                  transform: isSpacesOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                  flexShrink: 0,
+                }}
+              />
+            </button>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
             {/* Dock/Pin Toggle */}
@@ -723,7 +753,122 @@ export default function AppShell({
           )}
         </div>
 
-        {/* 2. Channels & Categories Stream with Accordions */}
+        {/* DM Mode Search Bar & Action Buttons */}
+        {currentRoute === 'chat' && (
+          <div
+            style={{
+              padding: '10px 10px 6px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              borderBottom: '1px solid var(--neon-cyan-border)',
+              background: 'rgba(0, 0, 0, 0.45)',
+              flexShrink: 0,
+            }}
+          >
+            {/* Search Input */}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <MagnifyingGlass
+                size={14}
+                color="var(--text-dim)"
+                style={{ position: 'absolute', left: '10px', pointerEvents: 'none' }}
+              />
+              <input
+                type="text"
+                placeholder="Find user or group..."
+                value={dmSearchQuery}
+                onChange={(e) => setDmSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '32px',
+                  padding: '0 26px 0 30px',
+                  background: 'rgba(0, 0, 0, 0.65)',
+                  border: '1px solid var(--neon-cyan-border)',
+                  borderRadius: '2px',
+                  color: 'var(--text-pure)',
+                  fontSize: '0.80rem',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  transition: 'border-color 0.2s ease',
+                }}
+                onFocus={(e) => (e.target.style.borderColor = 'var(--neon-cyan)')}
+                onBlur={(e) => (e.target.style.borderColor = 'var(--neon-cyan-border)')}
+              />
+              {dmSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setDmSearchQuery('')}
+                  style={{
+                    position: 'absolute',
+                    right: '6px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-dim)',
+                    cursor: 'pointer',
+                    padding: '2px',
+                  }}
+                >
+                  <X size={12} weight="bold" />
+                </button>
+              )}
+            </div>
+
+            {/* Action Buttons: New Group & Directory */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={() => setIsCreateGroupOpen(true)}
+                style={{
+                  flex: 1,
+                  height: '28px',
+                  background: 'var(--neon-cyan-dim)',
+                  border: '1px solid var(--neon-cyan)',
+                  borderRadius: '2px',
+                  color: 'var(--neon-cyan)',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-mono)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  cursor: 'pointer',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                <UsersThree size={13} weight="bold" />
+                <span>NEW GROUP</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsAllUsersOpen((prev) => !prev)}
+                style={{
+                  flex: 1,
+                  height: '28px',
+                  background: isAllUsersOpen ? 'rgba(0, 240, 255, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+                  border: `1px solid ${isAllUsersOpen ? 'var(--neon-cyan)' : 'var(--neon-cyan-border)'}`,
+                  borderRadius: '2px',
+                  color: isAllUsersOpen ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-mono)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  cursor: 'pointer',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                <UserPlus size={13} weight="bold" />
+                <span>DIRECTORY</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 2. Channels, DMs & Groups Stream with Accordions */}
         <div
           style={{
             flex: 1,
@@ -735,284 +880,635 @@ export default function AppShell({
             gap: '14px',
           }}
         >
-          {/* Section 1: Standard Channels (Collapsible Accordion) */}
-          <div>
-            <button
-              type="button"
-              onClick={() => setIsChannelsOpen((prev) => !prev)}
-              aria-expanded={isChannelsOpen}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                color: 'var(--text-dim)',
-                letterSpacing: '0.08em',
-                padding: '4px 6px',
-                textTransform: 'uppercase',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                outline: 'none',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <CaretDown
-                  size={11}
-                  weight="bold"
+          {currentRoute === 'chat' ? (
+            /* ====================================================================
+               DIRECT MESSAGING MODE (Group Chats, 1-on-1 DMs, Network Directory)
+               ==================================================================== */
+            <>
+              {/* DM Section 1: GROUP CHATS Accordion */}
+              <div>
+                <div
                   style={{
-                    transform: isChannelsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
-                    transition: 'transform 0.18s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '4px 6px',
                   }}
-                />
-                <span>Text Channels</span>
-              </div>
-              <span style={{ fontSize: '0.64rem', color: 'var(--text-dim)' }}>
-                {channels.length}
-              </span>
-            </button>
-
-            {isChannelsOpen && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
-                {(channels.length > 0
-                  ? channels
-                  : [
-                      { id: 'general', name: 'general', is_announcement: false },
-                      { id: 'announcements', name: 'announcements', is_announcement: true },
-                      { id: 'code-review', name: 'code-review', is_announcement: false },
-                    ]
-                ).map((ch) => {
-                  const isChActive = currentRoute === 'channel' && activeChannel?.id === ch.id;
-                  return (
-                    <button
-                      key={ch.id}
-                      type="button"
-                      onClick={() => onNavigate('channel', ch)}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setIsGroupsOpen((prev) => !prev)}
+                    aria-expanded={isGroupsOpen}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      color: 'var(--text-dim)',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      padding: 0,
+                    }}
+                  >
+                    <CaretDown
+                      size={11}
+                      weight="bold"
                       style={{
+                        transform: isGroupsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                        transition: 'transform 0.18s ease',
+                      }}
+                    />
+                    <span>Group Chats</span>
+                    <span style={{ fontSize: '0.64rem', color: 'var(--neon-cyan)', marginLeft: '4px' }}>
+                      {groupConversations.filter((g) => !dmSearchQuery || g.title?.toLowerCase().includes(dmSearchQuery.toLowerCase())).length}
+                    </span>
+                  </button>
+
+                  <Tooltip text="Create Group Chat" position="left">
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateGroupOpen(true)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-dim)',
+                        cursor: 'pointer',
+                        padding: '2px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px',
-                        padding: '7px 10px',
-                        background: isChActive ? 'var(--neon-cyan-dim)' : 'transparent',
-                        color: isChActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
-                        border: isChActive ? '1px solid var(--neon-cyan-border)' : '1px solid transparent',
-                        clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
-                        cursor: 'pointer',
-                        fontSize: '0.84rem',
-                        fontWeight: isChActive ? 600 : 500,
-                        textAlign: 'left',
-                        outline: 'none',
-                        transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease',
                       }}
-                      onPointerEnter={(e) => {
-                        if (!isChActive) {
-                          e.currentTarget.style.color = 'var(--text-pure)';
-                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                        }
-                      }}
-                      onPointerLeave={(e) => {
-                        if (!isChActive) {
-                          e.currentTarget.style.color = 'var(--text-secondary)';
-                          e.currentTarget.style.background = 'transparent';
-                        }
-                      }}
+                      onPointerEnter={(e) => (e.currentTarget.style.color = 'var(--neon-cyan)')}
+                      onPointerLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
                     >
-                      {ch.is_announcement ? (
-                        <Megaphone size={16} color="var(--neon-warning)" weight="bold" />
-                      ) : (
-                        <Hash size={16} weight="bold" />
-                      )}
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {ch.name}
-                      </span>
+                      <Plus size={13} weight="bold" />
                     </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                  </Tooltip>
+                </div>
 
-          {/* Section 2: Direct Messages (Collapsible Accordion) */}
-          <div>
-            <button
-              type="button"
-              onClick={() => setIsDmsOpen((prev) => !prev)}
-              aria-expanded={isDmsOpen}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                color: 'var(--text-dim)',
-                letterSpacing: '0.08em',
-                padding: '4px 6px',
-                textTransform: 'uppercase',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                outline: 'none',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <CaretDown
-                  size={11}
-                  weight="bold"
-                  style={{
-                    transform: isDmsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
-                    transition: 'transform 0.18s ease',
-                  }}
-                />
-                <span>Direct Messages</span>
-              </div>
-              <span style={{ fontSize: '0.64rem', color: 'var(--neon-cyan)', fontWeight: 600 }}>
-                1 ONLINE
-              </span>
-            </button>
-
-            {isDmsOpen && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
-                {directMessages.map((dm) => {
-                  const isDmActive = currentRoute === 'chat' && activeChannel?.name === dm.name;
-                  return (
-                    <button
-                      key={dm.id}
-                      type="button"
-                      onClick={() => onNavigate('chat', dm)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '7px 10px',
-                        background: isDmActive ? 'var(--neon-cyan-dim)' : 'transparent',
-                        color: isDmActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
-                        border: isDmActive ? '1px solid var(--neon-cyan-border)' : '1px solid transparent',
-                        clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
-                        cursor: 'pointer',
-                        fontSize: '0.84rem',
-                        fontWeight: isDmActive ? 600 : 500,
-                        textAlign: 'left',
-                        outline: 'none',
-                        transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease',
-                      }}
-                      onPointerEnter={(e) => {
-                        if (!isDmActive) {
-                          e.currentTarget.style.color = 'var(--text-pure)';
-                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                        }
-                      }}
-                      onPointerLeave={(e) => {
-                        if (!isDmActive) {
-                          e.currentTarget.style.color = 'var(--text-secondary)';
-                          e.currentTarget.style.background = 'transparent';
-                        }
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                        <span
-                          style={{
-                            width: '7px',
-                            height: '7px',
-                            borderRadius: '50%',
-                            background: dm.status === 'online' ? 'var(--neon-cyan)' : 'var(--text-dim)',
-                            boxShadow: dm.status === 'online' ? '0 0 6px var(--neon-cyan)' : 'none',
-                            flexShrink: 0,
-                          }}
-                        />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          @{dm.name}
-                        </span>
+                {isGroupsOpen && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
+                    {groupConversations
+                      .filter((g) => !dmSearchQuery || g.title?.toLowerCase().includes(dmSearchQuery.toLowerCase()))
+                      .map((grp) => {
+                        const isGrpActive = activeChannel?.is_group && (activeChannel?.id === grp.id || activeChannel?.conversation_id === grp.id);
+                        return (
+                          <button
+                            key={grp.id}
+                            type="button"
+                            onClick={() => onNavigate('chat', grp)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '7px 9px',
+                              background: isGrpActive ? 'var(--neon-cyan-dim)' : 'transparent',
+                              color: isGrpActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                              border: isGrpActive ? '1px solid var(--neon-cyan-border)' : '1px solid transparent',
+                              clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+                              cursor: 'pointer',
+                              fontSize: '0.84rem',
+                              fontWeight: isGrpActive ? 600 : 500,
+                              textAlign: 'left',
+                              outline: 'none',
+                              transition: 'all 0.15s ease',
+                              gap: '8px',
+                            }}
+                            onPointerEnter={(e) => {
+                              if (!isGrpActive) {
+                                e.currentTarget.style.color = 'var(--text-pure)';
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                              }
+                            }}
+                            onPointerLeave={(e) => {
+                              if (!isGrpActive) {
+                                e.currentTarget.style.color = 'var(--text-secondary)';
+                                e.currentTarget.style.background = 'transparent';
+                              }
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                              <div
+                                style={{
+                                  width: '20px',
+                                  height: '20px',
+                                  background: 'rgba(0, 240, 255, 0.15)',
+                                  border: '1px solid var(--neon-cyan)',
+                                  borderRadius: '2px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <UsersThree size={12} color="var(--neon-cyan)" weight="bold" />
+                              </div>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {grp.title}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', flexShrink: 0 }}>
+                              {grp.member_count || grp.participants?.length || 3}m
+                            </span>
+                          </button>
+                        );
+                      })}
+                    {groupConversations.length === 0 && (
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', padding: '6px 8px', fontStyle: 'italic' }}>
+                        No groups yet. Click + to create one!
                       </div>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
-                        {dm.role}
-                      </span>
-                    </button>
-                  );
-                })}
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          {/* Section 3: Joined Spaces Directory (Collapsible Accordion) */}
-          <div>
-            <button
-              type="button"
-              onClick={() => setIsJoinedSpacesOpen((prev) => !prev)}
-              aria-expanded={isJoinedSpacesOpen}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                color: 'var(--text-dim)',
-                letterSpacing: '0.08em',
-                padding: '4px 6px',
-                textTransform: 'uppercase',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                outline: 'none',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <CaretDown
-                  size={11}
-                  weight="bold"
+              {/* DM Section 2: DIRECT MESSAGES (1-on-1) Accordion */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setIsDmsOpen((prev) => !prev)}
+                  aria-expanded={isDmsOpen}
                   style={{
-                    transform: isJoinedSpacesOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
-                    transition: 'transform 0.18s ease',
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    color: 'var(--text-dim)',
+                    letterSpacing: '0.08em',
+                    padding: '4px 6px',
+                    textTransform: 'uppercase',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    outline: 'none',
                   }}
-                />
-                <span>Joined Spaces</span>
-              </div>
-              <span style={{ fontSize: '0.64rem', color: 'var(--text-dim)' }}>
-                {joinedCommunities.length}
-              </span>
-            </button>
-
-            {isJoinedSpacesOpen && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
-                {joinedCommunities.map((comm) => {
-                  const isActive = activeCommunity?.id === comm.id;
-                  return (
-                    <button
-                      key={comm.id}
-                      type="button"
-                      onClick={() => onNavigate('community', comm)}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <CaretDown
+                      size={11}
+                      weight="bold"
                       style={{
+                        transform: isDmsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                        transition: 'transform 0.18s ease',
+                      }}
+                    />
+                    <span>Direct Messages</span>
+                  </div>
+                  <span style={{ fontSize: '0.64rem', color: 'var(--neon-cyan)', fontWeight: 600 }}>
+                    {dmConversations.filter((d) => !dmSearchQuery || (d.recipient || d.title)?.toLowerCase().includes(dmSearchQuery.toLowerCase())).length}
+                  </span>
+                </button>
+
+                {isDmsOpen && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
+                    {dmConversations
+                      .filter((d) => !dmSearchQuery || (d.recipient || d.title)?.toLowerCase().includes(dmSearchQuery.toLowerCase()))
+                      .map((dm) => {
+                        const targetUser = dm.recipient || dm.title;
+                        const isDmActive = !activeChannel?.is_group && (activeChannel?.name === targetUser || activeChannel?.name === `@${targetUser}`);
+                        const matchingUserInfo = allUsers.find((u) => u.username === targetUser);
+                        const isOnline = matchingUserInfo?.status === 'online' || targetUser === 'alex_dev';
+
+                        return (
+                          <button
+                            key={dm.id}
+                            type="button"
+                            onClick={() => onNavigate('chat', dm)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '7px 9px',
+                              background: isDmActive ? 'var(--neon-cyan-dim)' : 'transparent',
+                              color: isDmActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                              border: isDmActive ? '1px solid var(--neon-cyan-border)' : '1px solid transparent',
+                              clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+                              cursor: 'pointer',
+                              fontSize: '0.84rem',
+                              fontWeight: isDmActive ? 600 : 500,
+                              textAlign: 'left',
+                              outline: 'none',
+                              transition: 'all 0.15s ease',
+                            }}
+                            onPointerEnter={(e) => {
+                              if (!isDmActive) {
+                                e.currentTarget.style.color = 'var(--text-pure)';
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                              }
+                            }}
+                            onPointerLeave={(e) => {
+                              if (!isDmActive) {
+                                e.currentTarget.style.color = 'var(--text-secondary)';
+                                e.currentTarget.style.background = 'transparent';
+                              }
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                              <span
+                                style={{
+                                  width: '7px',
+                                  height: '7px',
+                                  borderRadius: '50%',
+                                  background: isOnline ? 'var(--neon-cyan)' : 'var(--text-dim)',
+                                  boxShadow: isOnline ? '0 0 6px var(--neon-cyan)' : 'none',
+                                  flexShrink: 0,
+                                }}
+                              />
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                @{targetUser}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                              {matchingUserInfo?.role || 'Member'}
+                            </span>
+                          </button>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+
+              {/* DM Section 3: NETWORK DIRECTORY / FIND USER Accordion */}
+              {(isAllUsersOpen || dmSearchQuery.trim().length > 0) && (
+                <div>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      color: 'var(--neon-cyan)',
+                      letterSpacing: '0.08em',
+                      padding: '4px 6px',
+                      textTransform: 'uppercase',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <span>Network Users</span>
+                    <span>{allUsers.filter((u) => u.username !== user.username).length}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                    {allUsers
+                      .filter((u) => u.username !== user.username)
+                      .filter((u) => !dmSearchQuery || u.username.toLowerCase().includes(dmSearchQuery.toLowerCase()))
+                      .map((u) => (
+                        <div
+                          key={u.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '6px 8px',
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            border: '1px solid rgba(255, 255, 255, 0.06)',
+                            borderRadius: '2px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+                            <span
+                              style={{
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
+                                background: u.status === 'online' ? 'var(--neon-cyan)' : 'var(--text-dim)',
+                              }}
+                            />
+                            <span style={{ fontSize: '0.80rem', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              @{u.username}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onStartDm(u.username);
+                              setDmSearchQuery('');
+                            }}
+                            style={{
+                              background: 'var(--neon-cyan-dim)',
+                              border: '1px solid var(--neon-cyan)',
+                              color: 'var(--neon-cyan)',
+                              fontSize: '0.68rem',
+                              fontFamily: 'var(--font-mono)',
+                              padding: '2px 7px',
+                              borderRadius: '2px',
+                              cursor: 'pointer',
+                              fontWeight: 700,
+                            }}
+                          >
+                            + CHAT
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            /* ====================================================================
+               SPACE / COMMUNITY MODE (Text Channels, DMs, Joined Spaces)
+               ==================================================================== */
+            <>
+              {/* Section 1: Standard Channels (Collapsible Accordion with Create Button) */}
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '4px 6px',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setIsChannelsOpen((prev) => !prev)}
+                    aria-expanded={isChannelsOpen}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      color: 'var(--text-dim)',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      padding: 0,
+                    }}
+                  >
+                    <CaretDown
+                      size={11}
+                      weight="bold"
+                      style={{
+                        transform: isChannelsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                        transition: 'transform 0.18s ease',
+                      }}
+                    />
+                    <span>Text Channels</span>
+                    <span style={{ fontSize: '0.64rem', color: 'var(--text-dim)', marginLeft: '4px' }}>
+                      {channels.length}
+                    </span>
+                  </button>
+
+                  <Tooltip text={`Create Channel in ${activeCommunity?.name || 'Space'}`} position="left">
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateChannelOpen(true)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-dim)',
+                        cursor: 'pointer',
+                        padding: '2px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px',
-                        padding: '6px 8px',
-                        background: isActive ? 'var(--neon-cyan-dim)' : 'transparent',
-                        color: isActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
-                        border: isActive ? '1px solid var(--neon-cyan-border)' : '1px solid transparent',
-                        borderRadius: '2px',
-                        cursor: 'pointer',
-                        fontSize: '0.80rem',
-                        fontWeight: isActive ? 600 : 400,
-                        textAlign: 'left',
-                        outline: 'none',
                       }}
+                      onPointerEnter={(e) => (e.currentTarget.style.color = 'var(--neon-cyan)')}
+                      onPointerLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
                     >
-                      <Users size={14} color={isActive ? 'var(--neon-cyan)' : 'var(--text-dim)'} />
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {comm.name}
-                      </span>
+                      <Plus size={13} weight="bold" />
                     </button>
-                  );
-                })}
+                  </Tooltip>
+                </div>
+
+                {isChannelsOpen && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
+                    {channels.map((ch) => {
+                      const isChActive = currentRoute === 'channel' && activeChannel?.name === ch.name;
+                      return (
+                        <button
+                          key={ch.id || ch.name}
+                          type="button"
+                          onClick={() => onNavigate('channel', ch)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '7px 10px',
+                            background: isChActive ? 'var(--neon-cyan-dim)' : 'transparent',
+                            color: isChActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                            border: isChActive ? '1px solid var(--neon-cyan-border)' : '1px solid transparent',
+                            clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+                            cursor: 'pointer',
+                            fontSize: '0.84rem',
+                            fontWeight: isChActive ? 600 : 500,
+                            textAlign: 'left',
+                            outline: 'none',
+                            transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease',
+                          }}
+                          onPointerEnter={(e) => {
+                            if (!isChActive) {
+                              e.currentTarget.style.color = 'var(--text-pure)';
+                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                            }
+                          }}
+                          onPointerLeave={(e) => {
+                            if (!isChActive) {
+                              e.currentTarget.style.color = 'var(--text-secondary)';
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        >
+                          {ch.is_announcement ? (
+                            <Megaphone size={16} color="var(--neon-warning)" weight="bold" />
+                          ) : (
+                            <Hash size={16} weight="bold" />
+                          )}
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {ch.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+
+              {/* Section 2: Quick Direct Messages (Collapsible Accordion) */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setIsDmsOpen((prev) => !prev)}
+                  aria-expanded={isDmsOpen}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    color: 'var(--text-dim)',
+                    letterSpacing: '0.08em',
+                    padding: '4px 6px',
+                    textTransform: 'uppercase',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <CaretDown
+                      size={11}
+                      weight="bold"
+                      style={{
+                        transform: isDmsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                        transition: 'transform 0.18s ease',
+                      }}
+                    />
+                    <span>Direct Messages</span>
+                  </div>
+                  <span style={{ fontSize: '0.64rem', color: 'var(--neon-cyan)', fontWeight: 600 }}>
+                    1 ONLINE
+                  </span>
+                </button>
+
+                {isDmsOpen && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
+                    {dmConversations.slice(0, 4).map((dm) => {
+                      const targetUser = dm.recipient || dm.title;
+                      const isDmActive = currentRoute === 'chat' && activeChannel?.name === targetUser;
+                      const matchingUserInfo = allUsers.find((u) => u.username === targetUser);
+                      const isOnline = matchingUserInfo?.status === 'online' || targetUser === 'alex_dev';
+
+                      return (
+                        <button
+                          key={dm.id}
+                          type="button"
+                          onClick={() => onNavigate('chat', dm)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '7px 10px',
+                            background: isDmActive ? 'var(--neon-cyan-dim)' : 'transparent',
+                            color: isDmActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                            border: isDmActive ? '1px solid var(--neon-cyan-border)' : '1px solid transparent',
+                            clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
+                            cursor: 'pointer',
+                            fontSize: '0.84rem',
+                            fontWeight: isDmActive ? 600 : 500,
+                            textAlign: 'left',
+                            outline: 'none',
+                            transition: 'background 0.2s ease, color 0.2s ease, border-color 0.2s ease',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                            <span
+                              style={{
+                                width: '7px',
+                                height: '7px',
+                                borderRadius: '50%',
+                                background: isOnline ? 'var(--neon-cyan)' : 'var(--text-dim)',
+                                boxShadow: isOnline ? '0 0 6px var(--neon-cyan)' : 'none',
+                                flexShrink: 0,
+                              }}
+                            />
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              @{targetUser}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                            {matchingUserInfo?.role || 'Member'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Section 3: Joined Spaces Directory (Collapsible Accordion) */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setIsJoinedSpacesOpen((prev) => !prev)}
+                  aria-expanded={isJoinedSpacesOpen}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    color: 'var(--text-dim)',
+                    letterSpacing: '0.08em',
+                    padding: '4px 6px',
+                    textTransform: 'uppercase',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <CaretDown
+                      size={11}
+                      weight="bold"
+                      style={{
+                        transform: isJoinedSpacesOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                        transition: 'transform 0.18s ease',
+                      }}
+                    />
+                    <span>Joined Spaces</span>
+                  </div>
+                  <span style={{ fontSize: '0.64rem', color: 'var(--text-dim)' }}>
+                    {joinedCommunities.length}
+                  </span>
+                </button>
+
+                {isJoinedSpacesOpen && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
+                    {joinedCommunities.map((comm) => {
+                      const isActive = activeCommunity?.slug === comm.slug || activeCommunity?.id === comm.id;
+                      return (
+                        <button
+                          key={comm.id || comm.slug}
+                          type="button"
+                          onClick={() => onNavigate('community', comm)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '6px 8px',
+                            background: isActive ? 'var(--neon-cyan-dim)' : 'transparent',
+                            color: isActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                            border: isActive ? '1px solid var(--neon-cyan-border)' : '1px solid transparent',
+                            borderRadius: '2px',
+                            cursor: 'pointer',
+                            fontSize: '0.80rem',
+                            fontWeight: isActive ? 600 : 400,
+                            textAlign: 'left',
+                            outline: 'none',
+                          }}
+                        >
+                          <Users size={14} color={isActive ? 'var(--neon-cyan)' : 'var(--text-dim)'} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {comm.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* User Identity Bottom Bar */}
@@ -1179,6 +1675,343 @@ export default function AppShell({
           {children}
         </section>
       </main>
+
+      {/* ====================================================================
+          4. CREATE GROUP CHAT MODAL
+          ==================================================================== */}
+      {isCreateGroupOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0, 0, 0, 0.78)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+          onClick={() => setIsCreateGroupOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '440px',
+              background: 'rgba(8, 10, 15, 0.96)',
+              border: '1px solid var(--neon-cyan)',
+              boxShadow: '0 0 30px rgba(0, 240, 255, 0.25)',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--neon-cyan-border)', paddingBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <UsersThree size={18} color="var(--neon-cyan)" weight="bold" />
+                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
+                  CREATE GROUP CHAT
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateGroupOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={16} weight="bold" />
+              </button>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '6px', letterSpacing: '0.06em' }}>
+                GROUP TITLE
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Weekend Hackers, Frontend Crew"
+                value={newGroupTitle}
+                onChange={(e) => setNewGroupTitle(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '38px',
+                  background: 'rgba(0,0,0,0.6)',
+                  border: '1px solid var(--neon-cyan-border)',
+                  color: '#fff',
+                  padding: '0 12px',
+                  fontSize: '0.86rem',
+                  outline: 'none',
+                }}
+                onFocus={(e) => (e.target.style.borderColor = 'var(--neon-cyan)')}
+                onBlur={(e) => (e.target.style.borderColor = 'var(--neon-cyan-border)')}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '8px', letterSpacing: '0.06em' }}>
+                SELECT PARTICIPANTS
+              </label>
+              <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {allUsers
+                  .filter((u) => u.username !== user.username)
+                  .map((u) => {
+                    const isSelected = selectedGroupMembers.includes(u.username);
+                    return (
+                      <label
+                        key={u.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '7px 10px',
+                          background: isSelected ? 'var(--neon-cyan-dim)' : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${isSelected ? 'var(--neon-cyan)' : 'transparent'}`,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {
+                              setSelectedGroupMembers((prev) =>
+                                isSelected ? prev.filter((m) => m !== u.username) : [...prev, u.username]
+                              );
+                            }}
+                            style={{ accentColor: 'var(--neon-cyan)' }}
+                          />
+                          <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#fff' }}>
+                            @{u.username}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                          {u.role || 'Member'}
+                        </span>
+                      </label>
+                    );
+                  })}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '6px' }}>
+              <button
+                type="button"
+                onClick={() => setIsCreateGroupOpen(false)}
+                style={{
+                  padding: '8px 16px',
+                  background: 'transparent',
+                  border: '1px solid var(--text-dim)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                CANCEL
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (newGroupTitle.trim()) {
+                    onCreateGroup({ title: newGroupTitle.trim(), members: selectedGroupMembers });
+                    setNewGroupTitle('');
+                    setSelectedGroupMembers([]);
+                    setIsCreateGroupOpen(false);
+                  }
+                }}
+                disabled={!newGroupTitle.trim()}
+                style={{
+                  padding: '8px 18px',
+                  background: newGroupTitle.trim() ? 'var(--neon-cyan)' : 'var(--text-dim)',
+                  border: 'none',
+                  color: '#000',
+                  fontWeight: 800,
+                  fontSize: '0.78rem',
+                  cursor: newGroupTitle.trim() ? 'pointer' : 'not-allowed',
+                  fontFamily: 'var(--font-mono)',
+                  boxShadow: newGroupTitle.trim() ? '0 0 12px var(--neon-cyan)' : 'none',
+                }}
+              >
+                CREATE GROUP
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          5. CREATE CHANNEL MODAL
+          ==================================================================== */}
+      {isCreateChannelOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0, 0, 0, 0.78)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+          onClick={() => setIsCreateChannelOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '440px',
+              background: 'rgba(8, 10, 15, 0.96)',
+              border: '1px solid var(--neon-cyan)',
+              boxShadow: '0 0 30px rgba(0, 240, 255, 0.25)',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--neon-cyan-border)', paddingBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Hash size={18} color="var(--neon-cyan)" weight="bold" />
+                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
+                  NEW CHANNEL
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateChannelOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={16} weight="bold" />
+              </button>
+            </div>
+
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              Target Space:{' '}
+              <span style={{ color: 'var(--neon-cyan)', fontWeight: 700 }}>
+                {activeCommunity?.name || 'General Space'}
+              </span>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '6px', letterSpacing: '0.06em' }}>
+                CHANNEL NAME
+              </label>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <span style={{ position: 'absolute', left: '10px', color: 'var(--text-dim)', fontWeight: 700 }}>#</span>
+                <input
+                  type="text"
+                  placeholder="e.g. dev-discussions, resources"
+                  value={newChannelName}
+                  onChange={(e) => setNewChannelName(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                  style={{
+                    width: '100%',
+                    height: '38px',
+                    background: 'rgba(0,0,0,0.6)',
+                    border: '1px solid var(--neon-cyan-border)',
+                    color: '#fff',
+                    padding: '0 12px 0 24px',
+                    fontSize: '0.86rem',
+                    outline: 'none',
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = 'var(--neon-cyan)')}
+                  onBlur={(e) => (e.target.style.borderColor = 'var(--neon-cyan-border)')}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '6px', letterSpacing: '0.06em' }}>
+                TOPIC / DESCRIPTION
+              </label>
+              <input
+                type="text"
+                placeholder="What is this channel about?"
+                value={newChannelTopic}
+                onChange={(e) => setNewChannelTopic(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '38px',
+                  background: 'rgba(0,0,0,0.6)',
+                  border: '1px solid var(--neon-cyan-border)',
+                  color: '#fff',
+                  padding: '0 12px',
+                  fontSize: '0.86rem',
+                  outline: 'none',
+                }}
+                onFocus={(e) => (e.target.style.borderColor = 'var(--neon-cyan)')}
+                onBlur={(e) => (e.target.style.borderColor = 'var(--neon-cyan-border)')}
+              />
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.80rem', color: 'var(--text-secondary)' }}>
+              <input
+                type="checkbox"
+                checked={newChannelIsAnnouncement}
+                onChange={(e) => setNewChannelIsAnnouncement(e.target.checked)}
+                style={{ accentColor: 'var(--neon-cyan)' }}
+              />
+              <span>Announcement Channel (Only admins can post)</span>
+            </label>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '6px' }}>
+              <button
+                type="button"
+                onClick={() => setIsCreateChannelOpen(false)}
+                style={{
+                  padding: '8px 16px',
+                  background: 'transparent',
+                  border: '1px solid var(--text-dim)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                CANCEL
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (newChannelName.trim()) {
+                    onCreateChannel({
+                      name: newChannelName.trim(),
+                      topic: newChannelTopic.trim(),
+                      is_announcement: newChannelIsAnnouncement,
+                    });
+                    setNewChannelName('');
+                    setNewChannelTopic('');
+                    setNewChannelIsAnnouncement(false);
+                    setIsCreateChannelOpen(false);
+                  }
+                }}
+                disabled={!newChannelName.trim()}
+                style={{
+                  padding: '8px 18px',
+                  background: newChannelName.trim() ? 'var(--neon-cyan)' : 'var(--text-dim)',
+                  border: 'none',
+                  color: '#000',
+                  fontWeight: 800,
+                  fontSize: '0.78rem',
+                  cursor: newChannelName.trim() ? 'pointer' : 'not-allowed',
+                  fontFamily: 'var(--font-mono)',
+                  boxShadow: newChannelName.trim() ? '0 0 12px var(--neon-cyan)' : 'none',
+                }}
+              >
+                CREATE CHANNEL
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
