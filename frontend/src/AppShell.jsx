@@ -57,6 +57,7 @@ export default function AppShell({
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [newGroupTitle, setNewGroupTitle] = useState('');
   const [selectedGroupMembers, setSelectedGroupMembers] = useState([]);
+  const [groupParticipantQuery, setGroupParticipantQuery] = useState('');
 
   const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
   const [newChannelName, setNewChannelName] = useState('');
@@ -73,14 +74,16 @@ export default function AppShell({
       ? activeChannel?.name ? `@${activeChannel.name}` : 'Direct Messages'
       : currentRoute === 'community'
         ? activeCommunity?.name || 'Community'
-        : ({ feed: 'Your feed', discover: 'Discover spaces', explore: 'Discover spaces', chat: 'Direct Messages', profile: 'Profile', post_detail: 'Post', create_post: 'New post', login: 'Sign in', register: 'Create account' }[currentRoute] || currentRoute.replaceAll('_', ' '));
+        : ({ feed: 'Your feed', discover: 'Discover spaces', explore: 'Discover spaces', chat: 'Direct Messages', profile: 'Profile', post_detail: 'Post', create_post: 'New post', settings: 'App Settings', login: 'Sign in', register: 'Create account' }[currentRoute] || currentRoute.replaceAll('_', ' '));
   const routeIcon = currentRoute === 'channel'
     ? <Hash size={17} color="var(--text-secondary)" />
     : currentRoute === 'chat'
       ? <ChatTeardropDots size={17} color="var(--neon-cyan)" />
       : currentRoute === 'discover' || currentRoute === 'explore'
         ? <Compass size={17} color="var(--text-secondary)" />
-        : null;
+        : currentRoute === 'settings'
+          ? <Gear size={17} color="var(--neon-cyan)" weight="bold" />
+          : null;
 
   return (
     <div
@@ -774,7 +777,7 @@ export default function AppShell({
               />
               <input
                 type="text"
-                placeholder="Find user or group..."
+                placeholder="Search people by name, handle..."
                 value={dmSearchQuery}
                 onChange={(e) => setDmSearchQuery(e.target.value)}
                 style={{
@@ -925,7 +928,7 @@ export default function AppShell({
                     />
                     <span>Group Chats</span>
                     <span style={{ fontSize: '0.64rem', color: 'var(--neon-cyan)', marginLeft: '4px' }}>
-                      {groupConversations.filter((g) => !dmSearchQuery || g.title?.toLowerCase().includes(dmSearchQuery.toLowerCase())).length}
+                      {groupConversations.filter((g) => !dmSearchQuery.trim() || g.title?.toLowerCase().includes(dmSearchQuery.trim().toLowerCase())).length}
                     </span>
                   </button>
 
@@ -953,7 +956,7 @@ export default function AppShell({
                 {isGroupsOpen && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
                     {groupConversations
-                      .filter((g) => !dmSearchQuery || g.title?.toLowerCase().includes(dmSearchQuery.toLowerCase()))
+                      .filter((g) => !dmSearchQuery.trim() || g.title?.toLowerCase().includes(dmSearchQuery.trim().toLowerCase()))
                       .map((grp) => {
                         const isGrpActive = activeChannel?.is_group && (activeChannel?.id === grp.id || activeChannel?.conversation_id === grp.id);
                         return (
@@ -1062,14 +1065,38 @@ export default function AppShell({
                     <span>Direct Messages</span>
                   </div>
                   <span style={{ fontSize: '0.64rem', color: 'var(--neon-cyan)', fontWeight: 600 }}>
-                    {dmConversations.filter((d) => !dmSearchQuery || (d.recipient || d.title)?.toLowerCase().includes(dmSearchQuery.toLowerCase())).length}
+                    {dmConversations.filter((d) => {
+                      if (!dmSearchQuery.trim()) return true;
+                      const q = dmSearchQuery.trim().toLowerCase();
+                      const targetUser = d.recipient || d.title || '';
+                      if (targetUser.toLowerCase().includes(q)) return true;
+                      const u = allUsers.find((usr) => usr.username === targetUser);
+                      if (u) {
+                        if (u.name && u.name.toLowerCase().includes(q)) return true;
+                        if (u.first_name && u.first_name.toLowerCase().includes(q)) return true;
+                        if (u.last_name && u.last_name.toLowerCase().includes(q)) return true;
+                      }
+                      return false;
+                    }).length}
                   </span>
                 </button>
 
                 {isDmsOpen && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
                     {dmConversations
-                      .filter((d) => !dmSearchQuery || (d.recipient || d.title)?.toLowerCase().includes(dmSearchQuery.toLowerCase()))
+                      .filter((d) => {
+                        if (!dmSearchQuery.trim()) return true;
+                        const q = dmSearchQuery.trim().toLowerCase();
+                        const targetUser = d.recipient || d.title || '';
+                        if (targetUser.toLowerCase().includes(q)) return true;
+                        const u = allUsers.find((usr) => usr.username === targetUser);
+                        if (u) {
+                          if (u.name && u.name.toLowerCase().includes(q)) return true;
+                          if (u.first_name && u.first_name.toLowerCase().includes(q)) return true;
+                          if (u.last_name && u.last_name.toLowerCase().includes(q)) return true;
+                        }
+                        return false;
+                      })
                       .map((dm) => {
                         const targetUser = dm.recipient || dm.title;
                         const isDmActive = !activeChannel?.is_group && (activeChannel?.name === targetUser || activeChannel?.name === `@${targetUser}`);
@@ -1121,11 +1148,18 @@ export default function AppShell({
                                   flexShrink: 0,
                                 }}
                               />
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                @{targetUser}
-                              </span>
+                              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600, color: isDmActive ? 'var(--neon-cyan)' : 'var(--text-pure)' }}>
+                                  {matchingUserInfo?.name && matchingUserInfo.name !== targetUser ? matchingUserInfo.name : `@${targetUser}`}
+                                </div>
+                                {matchingUserInfo?.name && matchingUserInfo.name !== targetUser && (
+                                  <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                                    @{targetUser}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <span style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                            <span style={{ fontSize: '0.64rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', flexShrink: 0, marginLeft: '4px' }}>
                               {matchingUserInfo?.role || 'Member'}
                             </span>
                           </button>
@@ -1153,13 +1187,37 @@ export default function AppShell({
                     }}
                   >
                     <span>Network Users</span>
-                    <span>{allUsers.filter((u) => u.username !== user.username).length}</span>
+                    <span>
+                      {allUsers
+                        .filter((u) => u.username !== user.username)
+                        .filter((u) => {
+                          if (!dmSearchQuery.trim()) return true;
+                          const q = dmSearchQuery.trim().toLowerCase();
+                          return (
+                            u.username?.toLowerCase().includes(q) ||
+                            (u.name && u.name.toLowerCase().includes(q)) ||
+                            (u.first_name && u.first_name.toLowerCase().includes(q)) ||
+                            (u.last_name && u.last_name.toLowerCase().includes(q)) ||
+                            (u.role && u.role.toLowerCase().includes(q))
+                          );
+                        }).length}
+                    </span>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
                     {allUsers
                       .filter((u) => u.username !== user.username)
-                      .filter((u) => !dmSearchQuery || u.username.toLowerCase().includes(dmSearchQuery.toLowerCase()))
+                      .filter((u) => {
+                        if (!dmSearchQuery.trim()) return true;
+                        const q = dmSearchQuery.trim().toLowerCase();
+                        return (
+                          u.username?.toLowerCase().includes(q) ||
+                          (u.name && u.name.toLowerCase().includes(q)) ||
+                          (u.first_name && u.first_name.toLowerCase().includes(q)) ||
+                          (u.last_name && u.last_name.toLowerCase().includes(q)) ||
+                          (u.role && u.role.toLowerCase().includes(q))
+                        );
+                      })
                       .map((u) => (
                         <div
                           key={u.id}
@@ -1180,11 +1238,19 @@ export default function AppShell({
                                 height: '6px',
                                 borderRadius: '50%',
                                 background: u.status === 'online' ? 'var(--neon-cyan)' : 'var(--text-dim)',
+                                flexShrink: 0,
                               }}
                             />
-                            <span style={{ fontSize: '0.80rem', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              @{u.username}
-                            </span>
+                            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                              <div style={{ fontSize: '0.80rem', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {u.name || u.username}
+                              </div>
+                              {u.name && u.name !== u.username && (
+                                <div style={{ fontSize: '0.66rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                                  @{u.username}
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <button
                             type="button"
@@ -1202,6 +1268,7 @@ export default function AppShell({
                               borderRadius: '2px',
                               cursor: 'pointer',
                               fontWeight: 700,
+                              flexShrink: 0,
                             }}
                           >
                             + CHAT
@@ -1351,7 +1418,22 @@ export default function AppShell({
             background: 'var(--bg-pitch)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div
+            onClick={() => onNavigate('profile', { username: user.username })}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              padding: '4px 6px',
+              borderRadius: '2px',
+              transition: 'background 0.15s ease',
+              minWidth: 0,
+            }}
+            onPointerEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)')}
+            onPointerLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            title="View Your Profile"
+          >
             <div
               style={{
                 width: '30px',
@@ -1366,33 +1448,47 @@ export default function AppShell({
                 fontFamily: 'var(--font-mono)',
                 fontWeight: 700,
                 color: 'var(--neon-cyan)',
+                flexShrink: 0,
               }}
             >
               {user.username.slice(0, 2).toUpperCase()}
             </div>
-            <div>
-              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-pure)' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-pure)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 @{user.username}
               </div>
-              <div style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)' }}>
-                Member
+              <div style={{ fontSize: '0.66rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)' }}>
+                View Profile
               </div>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('edit_profile')}
-            aria-label="User settings"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              padding: '4px',
-            }}
-          >
-            <Gear size={18} />
-          </button>
+          <Tooltip text="App Settings" position="top">
+            <button
+              type="button"
+              onClick={() => onNavigate('settings')}
+              aria-label="App Settings"
+              style={{
+                background: currentRoute === 'settings' ? 'var(--neon-cyan-dim)' : 'transparent',
+                border: currentRoute === 'settings' ? '1px solid var(--neon-cyan)' : '1px solid transparent',
+                borderRadius: '2px',
+                color: currentRoute === 'settings' ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                padding: '5px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease',
+              }}
+              onPointerEnter={(e) => {
+                if (currentRoute !== 'settings') e.currentTarget.style.color = 'var(--text-pure)';
+              }}
+              onPointerLeave={(e) => {
+                if (currentRoute !== 'settings') e.currentTarget.style.color = 'var(--text-secondary)';
+              }}
+            >
+              <Gear size={18} weight={currentRoute === 'settings' ? 'fill' : 'regular'} />
+            </button>
+          </Tooltip>
         </div>
       </nav>
 
@@ -1580,12 +1676,72 @@ export default function AppShell({
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '8px', letterSpacing: '0.06em' }}>
-                SELECT PARTICIPANTS
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <label style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', letterSpacing: '0.06em' }}>
+                  SELECT PARTICIPANTS ({selectedGroupMembers.length} selected)
+                </label>
+              </div>
+
+              {/* Search participants by name or username */}
+              <div style={{ position: 'relative', marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
+                <MagnifyingGlass
+                  size={13}
+                  color="var(--text-dim)"
+                  style={{ position: 'absolute', left: '10px', pointerEvents: 'none' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search people by name or handle..."
+                  value={groupParticipantQuery}
+                  onChange={(e) => setGroupParticipantQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '32px',
+                    padding: '0 26px 0 28px',
+                    background: 'rgba(0,0,0,0.6)',
+                    border: '1px solid var(--neon-cyan-border)',
+                    borderRadius: '2px',
+                    color: '#fff',
+                    fontSize: '0.78rem',
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = 'var(--neon-cyan)')}
+                  onBlur={(e) => (e.target.style.borderColor = 'var(--neon-cyan-border)')}
+                />
+                {groupParticipantQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setGroupParticipantQuery('')}
+                    style={{
+                      position: 'absolute',
+                      right: '6px',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text-dim)',
+                      cursor: 'pointer',
+                      padding: '2px',
+                    }}
+                  >
+                    <X size={12} weight="bold" />
+                  </button>
+                )}
+              </div>
+
               <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {allUsers
                   .filter((u) => u.username !== user.username)
+                  .filter((u) => {
+                    if (!groupParticipantQuery.trim()) return true;
+                    const q = groupParticipantQuery.trim().toLowerCase();
+                    return (
+                      u.username?.toLowerCase().includes(q) ||
+                      (u.name && u.name.toLowerCase().includes(q)) ||
+                      (u.first_name && u.first_name.toLowerCase().includes(q)) ||
+                      (u.last_name && u.last_name.toLowerCase().includes(q)) ||
+                      (u.role && u.role.toLowerCase().includes(q))
+                    );
+                  })
                   .map((u) => {
                     const isSelected = selectedGroupMembers.includes(u.username);
                     return (
@@ -1601,7 +1757,7 @@ export default function AppShell({
                           cursor: 'pointer',
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -1612,16 +1768,40 @@ export default function AppShell({
                             }}
                             style={{ accentColor: 'var(--neon-cyan)' }}
                           />
-                          <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#fff' }}>
-                            @{u.username}
-                          </span>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {u.name || u.username}
+                            </div>
+                            {u.name && u.name !== u.username && (
+                              <div style={{ fontSize: '0.66rem', color: 'var(--neon-cyan)', fontFamily: 'var(--font-mono)' }}>
+                                @{u.username}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                        <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', flexShrink: 0 }}>
                           {u.role || 'Member'}
                         </span>
                       </label>
                     );
                   })}
+                {allUsers
+                  .filter((u) => u.username !== user.username)
+                  .filter((u) => {
+                    if (!groupParticipantQuery.trim()) return true;
+                    const q = groupParticipantQuery.trim().toLowerCase();
+                    return (
+                      u.username?.toLowerCase().includes(q) ||
+                      (u.name && u.name.toLowerCase().includes(q)) ||
+                      (u.first_name && u.first_name.toLowerCase().includes(q)) ||
+                      (u.last_name && u.last_name.toLowerCase().includes(q)) ||
+                      (u.role && u.role.toLowerCase().includes(q))
+                    );
+                  }).length === 0 && (
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', padding: '12px', textAlign: 'center', fontStyle: 'italic' }}>
+                    No users found matching "{groupParticipantQuery}"
+                  </div>
+                )}
               </div>
             </div>
 

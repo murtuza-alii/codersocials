@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from communities.models import Community
@@ -400,18 +401,30 @@ def create_group_chat_view(request):
 
 
 def api_users_list(request):
-    """API endpoint to list and search users on the platform."""
+    """API endpoint to list and search users on the platform by username or real name."""
     q = request.GET.get('q', '').strip()
-    users = User.objects.all().order_by('username')
+    users = User.objects.all().select_related('profile').order_by('username')
     if q:
-        users = users.filter(username__icontains=q)
+        users = users.filter(
+            Q(username__icontains=q) |
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(profile__bio__icontains=q)
+        )
     results = []
-    for u in users[:40]:
+    for u in users[:50]:
+        profile = getattr(u, 'profile', None)
+        full_name = f"{u.first_name} {u.last_name}".strip()
         results.append({
             'id': u.id,
             'username': u.username,
+            'name': full_name or u.username,
+            'first_name': u.first_name,
+            'last_name': u.last_name,
+            'bio': profile.bio if profile else '',
+            'avatar': profile.avatar.url if profile and profile.avatar else None,
             'is_self': request.user.is_authenticated and u == request.user,
-            'role': 'Developer' if u.username == 'alex_dev' else ('Research' if u.username == 'code_ninja' else 'Member'),
+            'role': 'Developer' if u.username == 'alex_dev' else ('Research' if u.username == 'code_ninja' else ('Admin' if u.is_superuser else 'Member')),
             'status': 'online' if u.username in ['alex_dev', 'sarah_creator'] else 'offline',
         })
     return JsonResponse({'status': 'ok', 'users': results})

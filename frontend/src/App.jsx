@@ -9,6 +9,7 @@ import CreatePost from './CreatePost';
 import ChannelChat from './ChannelChat';
 import Profile from './Profile';
 import Auth from './Auth';
+import AppSettings from './AppSettings';
 import Creative3DBackground from './Creative3DBackground';
 import SmoothCursor from './SmoothCursor';
 import Button from './Button';
@@ -118,6 +119,31 @@ export default function App() {
   const [activeProfileUsername, setActiveProfileUsername] = useState('sarah_creator');
   const [user, setUser] = useState({ username: 'sarah_creator', is_authenticated: true });
   const [feedPosts, setFeedPosts] = useState([]);
+
+  // App-wide Display, Graphics & System Settings
+  const [appSettings, setAppSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('sanctuary_settings');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      enable3dBg: true,
+      enableSmoothCursor: true,
+      crtScanlines: false,
+      autoplayVideo: true,
+      highContrast: false,
+    };
+  });
+
+  const handleUpdateSettings = (newSettings) => {
+    setAppSettings((prev) => {
+      const updated = { ...prev, ...newSettings };
+      try {
+        localStorage.setItem('sanctuary_settings', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
 
   // Create Space Modal State
   const [isCreateSpaceOpen, setIsCreateSpaceOpen] = useState(false);
@@ -423,6 +449,10 @@ export default function App() {
       setCurrentRoute('profile');
       return;
     }
+    if (route === 'settings') {
+      setCurrentRoute('settings');
+      return;
+    }
 
     setCurrentRoute(route);
 
@@ -647,8 +677,21 @@ export default function App() {
         background: '#000000',
       }}
     >
-      <Creative3DBackground currentRoute={currentRoute} />
-      <SmoothCursor />
+      {appSettings.enable3dBg && <Creative3DBackground currentRoute={currentRoute} />}
+      {appSettings.enableSmoothCursor && <SmoothCursor />}
+      {appSettings.crtScanlines && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            pointerEvents: 'none',
+            zIndex: 9998,
+            background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%)',
+            backgroundSize: '100% 4px',
+            opacity: 0.35,
+          }}
+        />
+      )}
 
       {currentRoute === 'login' || currentRoute === 'register' ? (
         <Auth
@@ -737,6 +780,13 @@ export default function App() {
                 currentUser={user}
                 onNavigate={handleNavigate}
                 onBack={() => setCurrentRoute('feed')}
+              />
+            ) : currentRoute === 'settings' ? (
+              <AppSettings
+                user={user}
+                onNavigate={handleNavigate}
+                appSettings={appSettings}
+                onUpdateSettings={handleUpdateSettings}
               />
             ) : (
               <Feed
