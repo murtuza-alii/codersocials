@@ -37,6 +37,7 @@ import {
   Key,
   ShieldCheck,
   Plus,
+  SignOut,
 } from '@phosphor-icons/react';
 
 // ============================================================================
@@ -610,11 +611,14 @@ export default function CommunityDetail({
   currentUser = { username: 'sarah_creator' },
   onNavigate = () => {},
   onCreatePostClick = () => {},
+  onCommunityJoined = null,
+  onCommunityLeft = null,
 }) {
   const [community, setCommunity] = useState(initialCommunity || DEFAULT_COMMUNITY);
   const [posts, setPosts] = useState(Array.isArray(initialCommunity?.posts) ? initialCommunity.posts : DEFAULT_COMMUNITY.posts);
   const [isPendingRequest, setIsPendingRequest] = useState(initialCommunity?.is_pending || false);
   const [isRequesting, setIsRequesting] = useState(false);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   // Sync state if initialCommunity prop changes
   useEffect(() => {
@@ -678,6 +682,21 @@ export default function CommunityDetail({
   };
 
   const handleJoinSpace = async () => {
+    if (isActionLoading) return;
+    setIsActionLoading(true);
+
+    const updatedCommunity = {
+      ...community,
+      is_joined: true,
+      is_member: true,
+      is_pending: false,
+      member_count: (community.member_count || 0) + 1,
+    };
+    setCommunity(updatedCommunity);
+    if (onCommunityJoined) {
+      onCommunityJoined(updatedCommunity);
+    }
+
     try {
       const res = await fetch(`/communities/c/${community.slug}/join/`, {
         method: 'POST',
@@ -688,25 +707,42 @@ export default function CommunityDetail({
         credentials: 'same-origin',
       });
       if (res.ok) {
-        setCommunity((prev) => ({
-          ...prev,
-          is_joined: true,
-          is_member: true,
-          member_count: (prev.member_count || 0) + 1,
-        }));
+        const data = await res.json();
+        const finalCommunity = {
+          ...community,
+          is_joined: Boolean(data.is_joined),
+          is_member: Boolean(data.is_member),
+          is_pending: Boolean(data.is_pending),
+          member_count: typeof data.member_count === 'number' ? data.member_count : updatedCommunity.member_count,
+        };
+        setCommunity(finalCommunity);
+        if (onCommunityJoined && finalCommunity.is_joined) {
+          onCommunityJoined(finalCommunity);
+        }
       }
     } catch {
-      // Optimistic
-      setCommunity((prev) => ({
-        ...prev,
-        is_joined: true,
-        is_member: true,
-        member_count: (prev.member_count || 0) + 1,
-      }));
+      // Keep optimistic update
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
   const handleLeaveSpace = async () => {
+    if (isActionLoading) return;
+    setIsActionLoading(true);
+
+    const updatedCommunity = {
+      ...community,
+      is_joined: false,
+      is_member: false,
+      is_pending: false,
+      member_count: Math.max(0, (community.member_count || 1) - 1),
+    };
+    setCommunity(updatedCommunity);
+    if (onCommunityLeft) {
+      onCommunityLeft(updatedCommunity);
+    }
+
     try {
       const res = await fetch(`/communities/c/${community.slug}/leave/`, {
         method: 'POST',
@@ -717,21 +753,20 @@ export default function CommunityDetail({
         credentials: 'same-origin',
       });
       if (res.ok) {
-        setCommunity((prev) => ({
-          ...prev,
-          is_joined: false,
-          is_member: false,
-          member_count: Math.max(0, (prev.member_count || 1) - 1),
-        }));
+        const data = await res.json();
+        const finalCommunity = {
+          ...community,
+          is_joined: Boolean(data.is_joined),
+          is_member: Boolean(data.is_member),
+          is_pending: Boolean(data.is_pending),
+          member_count: typeof data.member_count === 'number' ? data.member_count : updatedCommunity.member_count,
+        };
+        setCommunity(finalCommunity);
       }
     } catch {
-      // Optimistic
-      setCommunity((prev) => ({
-        ...prev,
-        is_joined: false,
-        is_member: false,
-        member_count: Math.max(0, (prev.member_count || 1) - 1),
-      }));
+      // Keep optimistic update
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -1032,26 +1067,44 @@ export default function CommunityDetail({
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              {!community.is_joined && (
+              {!community.is_joined && !community.is_pending && (
                 <Button
                   variant="primary"
                   size="sm"
                   onClick={handleJoinSpace}
+                  disabled={isActionLoading}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Plus size={14} weight="bold" />
-                    <span>JOIN SPACE</span>
+                    <span>{isActionLoading ? 'JOINING...' : 'JOIN SPACE'}</span>
                   </div>
                 </Button>
               )}
 
-              {community.is_joined && !community.is_admin && (
+              {!community.is_joined && community.is_pending && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={true}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Clock size={14} weight="bold" />
+                    <span>REQUEST PENDING</span>
+                  </div>
+                </Button>
+              )}
+
+              {community.is_joined && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleLeaveSpace}
+                  disabled={isActionLoading}
                 >
-                  <span>LEAVE SPACE</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <SignOut size={14} weight="bold" />
+                    <span>{isActionLoading ? 'LEAVING...' : 'LEAVE SPACE'}</span>
+                  </div>
                 </Button>
               )}
 

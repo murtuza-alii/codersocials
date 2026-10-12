@@ -21,6 +21,7 @@ const DEFAULT_COMMUNITIES = [
     id: 'systems-infrastructure',
     name: 'Systems & Infrastructure',
     slug: 'systems-infrastructure',
+    is_joined: true,
     channels: [
       { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Infrastructure announcements' },
       { id: 'general', name: 'general', is_announcement: false, topic: 'General systems discussion' },
@@ -32,6 +33,7 @@ const DEFAULT_COMMUNITIES = [
     id: 'creative-technology',
     name: 'Creative Technology',
     slug: 'creative-technology',
+    is_joined: true,
     channels: [
       { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Creative Tech announcements' },
       { id: 'general', name: 'general', is_announcement: false, topic: 'General creative talk' },
@@ -43,6 +45,7 @@ const DEFAULT_COMMUNITIES = [
     id: 'applied-ai-research',
     name: 'Applied AI Research',
     slug: 'applied-ai-research',
+    is_joined: true,
     channels: [
       { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'AI Research announcements' },
       { id: 'general', name: 'general', is_announcement: false, topic: 'General neural discussions' },
@@ -54,6 +57,7 @@ const DEFAULT_COMMUNITIES = [
     id: 'campus-code-sanctuary',
     name: 'Campus Code Sanctuary',
     slug: 'campus-code-sanctuary',
+    is_joined: true,
     channels: [
       { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Official verified updates and hackathons' },
       { id: 'general', name: 'general', is_announcement: false, topic: 'General campus chats and peer Q&A' },
@@ -64,6 +68,7 @@ const DEFAULT_COMMUNITIES = [
     id: 'silicon-tech-vault',
     name: 'Silicon Tech Vault',
     slug: 'silicon-tech-vault',
+    is_joined: true,
     channels: [
       { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Official Silicon announcements' },
       { id: 'hardware-lab', name: 'hardware-lab', is_announcement: false, topic: 'Silicon & hardware architecture' },
@@ -680,6 +685,18 @@ export default function App() {
     handleNavigate('channel', fallbackCh);
   };
 
+  const handleCommunityJoined = (joinedComm) => {
+    if (!joinedComm) return;
+    setJoinedCommunities((prev) => deduplicateCommunities([joinedComm, ...prev]));
+    setActiveCommunity((prev) => (prev?.slug === joinedComm.slug ? { ...prev, ...joinedComm } : prev));
+  };
+
+  const handleCommunityLeft = (leftComm) => {
+    if (!leftComm) return;
+    setJoinedCommunities((prev) => prev.filter((c) => c.slug !== leftComm.slug && c.id !== leftComm.id));
+    setActiveCommunity((prev) => (prev?.slug === leftComm.slug ? { ...prev, ...leftComm, is_joined: false, is_member: false } : prev));
+  };
+
   const handleOpenCreatePost = (opts) => {
     if (opts?.community) {
       setActiveCommunity(opts.community);
@@ -763,6 +780,8 @@ export default function App() {
                 currentUser={user}
                 onNavigate={handleNavigate}
                 onCreatePostClick={handleOpenCreatePost}
+                onCommunityJoined={handleCommunityJoined}
+                onCommunityLeft={handleCommunityLeft}
               />
             ) : currentRoute === 'create_post' ? (
               <CreatePost

@@ -370,12 +370,6 @@ def leave_community(request, slug):
             return JsonResponse({'status': 'error', 'error': 'Authentication required.'}, status=401)
         return redirect('login')
 
-    if community.creator == curr_user:
-        if is_json:
-            return JsonResponse({'status': 'error', 'error': 'Creator cannot leave community.'}, status=400)
-        messages.error(request, "The community creator cannot leave their own community.")
-        return redirect('communities:detail', slug=slug)
-
     membership = get_user_membership(curr_user, community)
     if membership:
         membership.delete()
