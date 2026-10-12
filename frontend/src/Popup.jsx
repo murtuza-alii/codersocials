@@ -364,59 +364,117 @@ export function MenuItem({ icon, children, onClick, variant = 'default', danger 
 }
 
 // ============================================================================
-// 3. Discord-Density Tactical Tooltip
+// 3. Discord-Density Tactical Tooltip (Portal-based, Overflow-proof)
 // ============================================================================
 
-export function Tooltip({ text, children, position = 'right' }) {
+export function Tooltip({ text, children, position = 'right', style = {} }) {
   const [visible, setVisible] = useState(false);
-  const tooltipRef = useRef(null);
+  const [coords, setCoords] = useState(null);
+  const triggerRef = useRef(null);
+
+  const updatePosition = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    let top = 0;
+    let left = 0;
+    let transform = '';
+
+    if (position === 'right') {
+      top = rect.top + rect.height / 2;
+      left = rect.right + 10;
+      transform = 'translateY(-50%)';
+    } else if (position === 'left') {
+      top = rect.top + rect.height / 2;
+      left = rect.left - 10;
+      transform = 'translate(-100%, -50%)';
+    } else if (position === 'top') {
+      top = rect.top - 8;
+      if (rect.right > window.innerWidth - 60) {
+        left = rect.right;
+        transform = 'translate(-100%, -100%)';
+      } else if (rect.left < 60) {
+        left = rect.left;
+        transform = 'translate(0, -100%)';
+      } else {
+        left = rect.left + rect.width / 2;
+        transform = 'translate(-50%, -100%)';
+      }
+    } else if (position === 'bottom') {
+      top = rect.bottom + 8;
+      if (rect.right > window.innerWidth - 60) {
+        left = rect.right;
+        transform = 'translate(-100%, 0)';
+      } else if (rect.left < 60) {
+        left = rect.left;
+        transform = 'translate(0, 0)';
+      } else {
+        left = rect.left + rect.width / 2;
+        transform = 'translateX(-50%)';
+      }
+    }
+
+    setCoords({ top, left, transform });
+  };
+
+  const handlePointerEnter = () => {
+    updatePosition();
+    setVisible(true);
+  };
+
+  const handlePointerLeave = () => {
+    setVisible(false);
+  };
+
+  useEffect(() => {
+    if (!visible) return;
+    const handleScrollOrResize = () => updatePosition();
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [visible, position]);
 
   return (
-    <div
-      style={{ position: 'relative', display: 'inline-flex' }}
-      onPointerEnter={() => setVisible(true)}
-      onPointerLeave={() => setVisible(false)}
-    >
-      {children}
-      {visible && text && (
-        <div
-          ref={tooltipRef}
-          role="tooltip"
-          style={{
-            position: 'absolute',
-            ...(position === 'right' && {
-              left: 'calc(100% + 10px)',
-              top: '50%',
-              transform: 'translateY(-50%)',
-            }),
-            ...(position === 'top' && {
-              bottom: 'calc(100% + 8px)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }),
-            ...(position === 'bottom' && {
-              top: 'calc(100% + 8px)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }),
-            background: 'var(--bg-pitch)',
-            color: 'var(--neon-cyan)',
-            border: '1px solid var(--neon-cyan)',
-            boxShadow: '2px 2px 0px rgba(0, 240, 255, 0.4)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.72rem',
-            fontWeight: 600,
-            letterSpacing: '0.04em',
-            padding: '4px 8px',
-            whiteSpace: 'nowrap',
-            pointerEvents: 'none',
-            zIndex: 9999,
-          }}
-        >
-          {text}
-        </div>
-      )}
-    </div>
+    <>
+      <div
+        ref={triggerRef}
+        style={{ display: 'inline-flex', ...style }}
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
+      >
+        {children}
+      </div>
+      {visible && text && coords && typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            role="tooltip"
+            style={{
+              position: 'fixed',
+              top: `${coords.top}px`,
+              left: `${coords.left}px`,
+              transform: coords.transform,
+              background: '#000000',
+              color: 'var(--neon-cyan)',
+              border: '1px solid var(--neon-cyan)',
+              boxShadow: '0 0 10px rgba(0, 240, 255, 0.4), 2px 2px 0px rgba(0, 240, 255, 0.3)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              padding: '5px 9px',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+              zIndex: 99999,
+              clipPath: 'polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px)',
+            }}
+          >
+            {text}
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
 
