@@ -12,6 +12,7 @@ import Auth from './Auth';
 import Creative3DBackground from './Creative3DBackground';
 import SmoothCursor from './SmoothCursor';
 import Button from './Button';
+import ErrorBoundary from './ErrorBoundary';
 import { X, Globe, Lock } from '@phosphor-icons/react';
 
 const DEFAULT_COMMUNITIES = [
@@ -470,7 +471,15 @@ export default function App() {
         }
       }
     } else if (route === 'community') {
-      const comm = payload || joinedCommunities[0];
+      let comm = payload || joinedCommunities[0];
+      if (typeof comm === 'string') {
+        comm = joinedCommunities.find((c) => c.slug === comm || c.id === comm) || { slug: comm, name: comm };
+      } else if (comm && joinedCommunities.length) {
+        const matched = joinedCommunities.find((c) => c.slug === comm.slug || c.id === comm.id);
+        if (matched) {
+          comm = { ...matched, ...comm };
+        }
+      }
       setActiveCommunity(comm);
       const firstCh = comm?.channels?.[0] || { id: 'general', name: 'general' };
       setActiveChannel(firstCh);
@@ -665,84 +674,87 @@ export default function App() {
           onCreateGroup={handleCreateGroup}
           onCreateChannel={handleCreateChannel}
         >
-          {currentRoute === 'post_detail' ? (
-            <PostDetail
-              postId={activePost?.id}
-              initialPost={activePost?.post || null}
-              currentUser={user}
-              onNavigate={handleNavigate}
-              onBack={() => setCurrentRoute('feed')}
-              onPostDeleted={(deletedId) => {
-                handleFeedTakedown(deletedId);
-                setCurrentRoute('feed');
-              }}
-            />
-          ) : currentRoute === 'explore' || currentRoute === 'discover' ? (
-            <DiscoverSpaces
-              onNavigate={handleNavigate}
-              onCreateSpaceClick={() => setIsCreateSpaceOpen(true)}
-            />
-          ) : currentRoute === 'community' ? (
-            <CommunityDetail
-              communitySlug={activeCommunity?.slug}
-              initialCommunity={activeCommunity}
-              currentUser={user}
-              onNavigate={handleNavigate}
-              onCreatePostClick={handleOpenCreatePost}
-            />
-          ) : currentRoute === 'create_post' ? (
-            <CreatePost
-              initialCommunity={activeCommunity}
-              availableCommunities={joinedCommunities}
-              currentUser={user}
-              onNavigate={handleNavigate}
-              onBack={() => setCurrentRoute(activeCommunity ? 'community' : 'feed')}
-              onPostCreated={handlePostCreated}
-            />
-          ) : currentRoute === 'channel' ? (
-            <ChannelChat
-              community={activeCommunity || joinedCommunities[0]}
-              channel={activeChannel}
-              currentUser={user}
-              onNavigate={handleNavigate}
-              onBack={() => setCurrentRoute(activeCommunity ? 'community' : 'feed')}
-            />
-          ) : currentRoute === 'chat' ? (
-            <ChannelChat
-              community={{
-                name: activeChannel?.is_group
-                  ? activeChannel.title
-                  : (activeChannel?.name ? `@${activeChannel.name}` : 'Direct Messages'),
-                slug: 'direct-messages',
-              }}
-              channel={activeChannel}
-              currentUser={user}
-              onNavigate={handleNavigate}
-              onBack={() => setCurrentRoute('feed')}
-            />
-          ) : currentRoute === 'profile' ? (
-            <Profile
-              username={activeProfileUsername}
-              currentUser={user}
-              onNavigate={handleNavigate}
-              onBack={() => setCurrentRoute('feed')}
-            />
-          ) : (
-            <Feed
-              posts={feedPosts}
-              currentUser={user}
-              onLikeToggle={handleFeedLike}
-              onAddComment={handleFeedComment}
-              onTakedown={handleFeedTakedown}
-              onShare={(postId) => {
-                const url = `${window.location.origin}/post/${postId}/`;
-                navigator.clipboard?.writeText(url);
-                alert('Post link copied to clipboard!');
-              }}
-              onNavigate={handleNavigate}
-              onCreatePostClick={handleOpenCreatePost}
-            />
-          )}
+          <ErrorBoundary onNavigateHome={() => setCurrentRoute('feed')} onReset={() => setCurrentRoute('feed')}>
+            {currentRoute === 'post_detail' ? (
+              <PostDetail
+                postId={activePost?.id}
+                initialPost={activePost?.post || null}
+                currentUser={user}
+                onNavigate={handleNavigate}
+                onBack={() => setCurrentRoute('feed')}
+                onPostDeleted={(deletedId) => {
+                  handleFeedTakedown(deletedId);
+                  setCurrentRoute('feed');
+                }}
+              />
+            ) : currentRoute === 'explore' || currentRoute === 'discover' ? (
+              <DiscoverSpaces
+                onNavigate={handleNavigate}
+                onCreateSpaceClick={() => setIsCreateSpaceOpen(true)}
+              />
+            ) : currentRoute === 'community' ? (
+              <CommunityDetail
+                key={activeCommunity?.slug || activeCommunity?.id || 'community-view'}
+                communitySlug={activeCommunity?.slug}
+                initialCommunity={activeCommunity}
+                currentUser={user}
+                onNavigate={handleNavigate}
+                onCreatePostClick={handleOpenCreatePost}
+              />
+            ) : currentRoute === 'create_post' ? (
+              <CreatePost
+                initialCommunity={activeCommunity}
+                availableCommunities={joinedCommunities}
+                currentUser={user}
+                onNavigate={handleNavigate}
+                onBack={() => setCurrentRoute(activeCommunity ? 'community' : 'feed')}
+                onPostCreated={handlePostCreated}
+              />
+            ) : currentRoute === 'channel' ? (
+              <ChannelChat
+                community={activeCommunity || joinedCommunities[0]}
+                channel={activeChannel}
+                currentUser={user}
+                onNavigate={handleNavigate}
+                onBack={() => setCurrentRoute(activeCommunity ? 'community' : 'feed')}
+              />
+            ) : currentRoute === 'chat' ? (
+              <ChannelChat
+                community={{
+                  name: activeChannel?.is_group
+                    ? activeChannel.title
+                    : (activeChannel?.name ? `@${activeChannel.name}` : 'Direct Messages'),
+                  slug: 'direct-messages',
+                }}
+                channel={activeChannel}
+                currentUser={user}
+                onNavigate={handleNavigate}
+                onBack={() => setCurrentRoute('feed')}
+              />
+            ) : currentRoute === 'profile' ? (
+              <Profile
+                username={activeProfileUsername}
+                currentUser={user}
+                onNavigate={handleNavigate}
+                onBack={() => setCurrentRoute('feed')}
+              />
+            ) : (
+              <Feed
+                posts={feedPosts}
+                currentUser={user}
+                onLikeToggle={handleFeedLike}
+                onAddComment={handleFeedComment}
+                onTakedown={handleFeedTakedown}
+                onShare={(postId) => {
+                  const url = `${window.location.origin}/post/${postId}/`;
+                  navigator.clipboard?.writeText(url);
+                  alert('Post link copied to clipboard!');
+                }}
+                onNavigate={handleNavigate}
+                onCreatePostClick={handleOpenCreatePost}
+              />
+            )}
+          </ErrorBoundary>
         </AppShell>
       )}
 

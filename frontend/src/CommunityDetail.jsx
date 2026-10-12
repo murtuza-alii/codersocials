@@ -36,6 +36,7 @@ import {
   PaperPlaneTilt,
   Key,
   ShieldCheck,
+  Plus,
 } from '@phosphor-icons/react';
 
 // ============================================================================
@@ -611,16 +612,30 @@ export default function CommunityDetail({
   onCreatePostClick = () => {},
 }) {
   const [community, setCommunity] = useState(initialCommunity || DEFAULT_COMMUNITY);
-  const [posts, setPosts] = useState(initialCommunity?.posts || DEFAULT_COMMUNITY.posts);
+  const [posts, setPosts] = useState(Array.isArray(initialCommunity?.posts) ? initialCommunity.posts : DEFAULT_COMMUNITY.posts);
   const [isPendingRequest, setIsPendingRequest] = useState(initialCommunity?.is_pending || false);
   const [isRequesting, setIsRequesting] = useState(false);
 
+  // Sync state if initialCommunity prop changes
+  useEffect(() => {
+    if (initialCommunity) {
+      setCommunity((prev) => ({ ...prev, ...initialCommunity }));
+      if (Array.isArray(initialCommunity.posts)) {
+        setPosts(initialCommunity.posts);
+      }
+      setIsPendingRequest(Boolean(initialCommunity.is_pending));
+    }
+  }, [initialCommunity]);
+
   // Fetch community details from Django
   useEffect(() => {
+    const slugToFetch = communitySlug || initialCommunity?.slug;
+    if (!slugToFetch) return;
+
     let isCancelled = false;
     async function loadCommunity() {
       try {
-        const response = await fetch(`/communities/c/${communitySlug}/`, {
+        const response = await fetch(`/communities/c/${slugToFetch}/`, {
           headers: { Accept: 'application/json' },
           credentials: 'same-origin',
         });
@@ -628,8 +643,8 @@ export default function CommunityDetail({
           const data = await response.json();
           if (!isCancelled && data.community) {
             setCommunity(data.community);
-            if (data.posts) setPosts(data.posts);
-            setIsPendingRequest(!!data.membership?.status && data.membership.status === 'PENDING');
+            if (Array.isArray(data.posts)) setPosts(data.posts);
+            setIsPendingRequest(Boolean(data.membership?.status === 'PENDING' || data.community?.is_pending));
           }
         }
       } catch {
@@ -640,7 +655,7 @@ export default function CommunityDetail({
     return () => {
       isCancelled = true;
     };
-  }, [communitySlug]);
+  }, [communitySlug, initialCommunity?.slug]);
 
   // Handle Request Access on Gated View
   const handleRequestAccess = async () => {
@@ -841,11 +856,11 @@ export default function CommunityDetail({
                 boxShadow: '0 0 16px rgba(255, 0, 85, 0.35)',
               }}
             >
-              {community.name.slice(0, 2).toUpperCase()}
+              {(community?.name || 'Space').slice(0, 2).toUpperCase()}
             </div>
 
             <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fff', margin: '0 0 8px 0' }}>
-              {community.name}
+              {community?.name || 'Community Space'}
             </h1>
 
             <div
@@ -1004,14 +1019,14 @@ export default function CommunityDetail({
                 boxShadow: '0 0 18px rgba(0, 240, 255, 0.35)',
               }}
             >
-              {community.avatar ? (
+              {community?.avatar ? (
                 <img
                   src={community.avatar}
-                  alt={community.name}
+                  alt={community?.name || 'Space'}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (
-                community.name.slice(0, 2).toUpperCase()
+                (community?.name || 'Space').slice(0, 2).toUpperCase()
               )}
             </div>
 
@@ -1075,7 +1090,7 @@ export default function CommunityDetail({
               letterSpacing: '-0.02em',
             }}
           >
-            {community.name}
+            {community?.name || 'Community Space'}
           </h1>
 
           <div
@@ -1102,13 +1117,13 @@ export default function CommunityDetail({
               }}
             >
               {isPrivate ? <Lock size={12} weight="bold" /> : <Globe size={12} weight="bold" />}
-              <span>{community.privacy}</span>
+              <span>{community?.privacy || 'PUBLIC'}</span>
             </span>
 
             <span>•</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <Users size={14} weight="bold" />
-              <span>{community.member_count} members</span>
+              <span>{community?.member_count ?? 0} members</span>
             </span>
 
             <span>•</span>
