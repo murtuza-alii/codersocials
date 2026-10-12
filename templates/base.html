@@ -15,6 +15,9 @@
     <!-- GSAP 3 Core Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
+    <!-- Three.js 3D WebGL Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <!-- App & Sanctuary Stylesheets -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link rel="stylesheet" href="{% static 'css/sanctuary_layout.css' %}">
@@ -22,6 +25,11 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
+    <!-- Fixed Fullscreen Three.js WebGL Canvas Stage -->
+    <div class="creative-3d-director-stage" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; overflow: hidden; background: radial-gradient(ellipse at 50% 20%, #061118 0%, #000000 80%);" aria-hidden="true">
+        <canvas id="sanctuary-3d-canvas" style="display: block; width: 100%; height: 100%;"></canvas>
+    </div>
+
     <div class="sanctuary-app">
         {% if user.is_authenticated %}
         <!-- 1. Primary Slim Icon Rail (Discord Style) -->
@@ -354,6 +362,7 @@
     <!-- Global Cyber Toast Stack -->
     <div id="cyber-toast-stack" class="cyber-toast-stack"></div>
     <!-- Scripts -->
+    <script src="{% static 'js/creative_3d_bg.js' %}"></script>
     <script src="{% static 'js/cyber_gsap.js' %}"></script>
     <script src="{% static 'js/carousel_player.js' %}"></script>
     <script src="{% static 'js/accordion_sidebar.js' %}"></script>

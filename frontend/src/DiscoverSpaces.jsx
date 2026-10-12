@@ -110,12 +110,77 @@ const DEFAULT_COMMUNITIES = [
 export default function DiscoverSpaces({
   initialCommunities = null,
   onNavigate = () => {},
-  onCreateSpaceClick = () => {},
+  onCreateSpaceClick = null,
 }) {
   const [communities, setCommunities] = useState(initialCommunities || DEFAULT_COMMUNITIES);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'PUBLIC' | 'PRIVATE' | 'JOINED'
   const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  // Create Space Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newSpaceName, setNewSpaceName] = useState('');
+  const [newSpaceDescription, setNewSpaceDescription] = useState('');
+  const [newSpaceRules, setNewSpaceRules] = useState('');
+  const [newSpacePrivacy, setNewSpacePrivacy] = useState('PUBLIC');
+  const [isCreatingSpace, setIsCreatingSpace] = useState(false);
+  const [createError, setCreateError] = useState(null);
+
+  const handleOpenCreateModal = () => {
+    if (onCreateSpaceClick) {
+      onCreateSpaceClick();
+    }
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreateSpaceSubmit = async (e) => {
+    e.preventDefault();
+    if (!newSpaceName.trim()) {
+      setCreateError('Space name is required.');
+      return;
+    }
+
+    setIsCreatingSpace(true);
+    setCreateError(null);
+
+    try {
+      const response = await fetch('/communities/create/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          name: newSpaceName.trim(),
+          description: newSpaceDescription.trim(),
+          rules: newSpaceRules.trim(),
+          privacy: newSpacePrivacy,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const created = data?.community;
+        if (created) {
+          setCommunities((prev) => [created, ...prev]);
+          setIsCreateModalOpen(false);
+          setNewSpaceName('');
+          setNewSpaceDescription('');
+          setNewSpaceRules('');
+          onNavigate('community', created);
+        }
+      } else {
+        const err = await response.json().catch(() => null);
+        setCreateError(err?.error || 'Failed to create space.');
+      }
+    } catch {
+      setCreateError('Network error connecting to backend.');
+    } finally {
+      setIsCreatingSpace(false);
+    }
+  };
 
   // Fetch live communities from Django if available
   useEffect(() => {
@@ -292,7 +357,7 @@ export default function DiscoverSpaces({
             type="button"
             variant="primary"
             size="md"
-            onClick={onCreateSpaceClick}
+            onClick={handleOpenCreateModal}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Plus size={16} weight="bold" />
@@ -681,13 +746,218 @@ export default function DiscoverSpaces({
               <Button type="button" variant="ghost" size="sm" onClick={() => setSearchQuery('')}>
                 CLEAR SEARCH
               </Button>
-              <Button type="button" variant="primary" size="sm" onClick={onCreateSpaceClick}>
+              <Button type="button" variant="primary" size="sm" onClick={handleOpenCreateModal}>
                 CREATE SPACE
               </Button>
             </div>
           </div>
         )}
       </div>
+
+      {/* CREATE SPACE MODAL */}
+      {isCreateModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+          onClick={() => setIsCreateModalOpen(false)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '520px',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--neon-cyan)',
+              boxShadow: '0 0 30px rgba(0, 240, 255, 0.25)',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '18px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#ffffff' }}>
+                  Create a new space
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  Launch a dedicated community hub saved directly to the database.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {createError && (
+              <div
+                style={{
+                  background: 'rgba(255, 0, 85, 0.1)',
+                  border: '1px solid var(--neon-magenta)',
+                  color: 'var(--neon-magenta)',
+                  padding: '8px 12px',
+                  fontSize: '0.82rem',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                {createError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateSpaceSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '6px' }}>
+                  SPACE NAME *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Distributed Systems Lab"
+                  value={newSpaceName}
+                  onChange={(e) => setNewSpaceName(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    background: '#000000',
+                    border: '1px solid var(--neon-cyan-border)',
+                    color: 'var(--text-primary)',
+                    padding: '9px 12px',
+                    fontSize: '0.88rem',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '6px' }}>
+                  DESCRIPTION
+                </label>
+                <textarea
+                  placeholder="What is this community about?"
+                  value={newSpaceDescription}
+                  onChange={(e) => setNewSpaceDescription(e.target.value)}
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    background: '#000000',
+                    border: '1px solid var(--neon-cyan-border)',
+                    color: 'var(--text-primary)',
+                    padding: '9px 12px',
+                    fontSize: '0.88rem',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '6px' }}>
+                  COMMUNITY CHARTER / RULES
+                </label>
+                <textarea
+                  placeholder="e.g. 1. Respect peers. 2. Post verified benchmarks."
+                  value={newSpaceRules}
+                  onChange={(e) => setNewSpaceRules(e.target.value)}
+                  rows={2}
+                  style={{
+                    width: '100%',
+                    background: '#000000',
+                    border: '1px solid var(--neon-cyan-border)',
+                    color: 'var(--text-primary)',
+                    padding: '9px 12px',
+                    fontSize: '0.88rem',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '6px' }}>
+                  PRIVACY SETTING
+                </label>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <label
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 14px',
+                      background: newSpacePrivacy === 'PUBLIC' ? 'var(--neon-cyan-dim)' : '#000000',
+                      border: `1px solid ${newSpacePrivacy === 'PUBLIC' ? 'var(--neon-cyan)' : 'var(--neon-cyan-border)'}`,
+                      cursor: 'pointer',
+                      fontSize: '0.84rem',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="privacy"
+                      value="PUBLIC"
+                      checked={newSpacePrivacy === 'PUBLIC'}
+                      onChange={() => setNewSpacePrivacy('PUBLIC')}
+                      style={{ accentColor: 'var(--neon-cyan)' }}
+                    />
+                    <Globe size={16} />
+                    <span>Public Space</span>
+                  </label>
+
+                  <label
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 14px',
+                      background: newSpacePrivacy === 'PRIVATE' ? 'var(--neon-magenta-dim)' : '#000000',
+                      border: `1px solid ${newSpacePrivacy === 'PRIVATE' ? 'var(--neon-magenta)' : 'var(--neon-cyan-border)'}`,
+                      cursor: 'pointer',
+                      fontSize: '0.84rem',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="privacy"
+                      value="PRIVATE"
+                      checked={newSpacePrivacy === 'PRIVATE'}
+                      onChange={() => setNewSpacePrivacy('PRIVATE')}
+                      style={{ accentColor: 'var(--neon-magenta)' }}
+                    />
+                    <Lock size={16} />
+                    <span>Private (Gated)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setIsCreateModalOpen(false)}>
+                  CANCEL
+                </Button>
+                <Button type="submit" variant="primary" size="sm" disabled={isCreatingSpace || !newSpaceName.trim()}>
+                  {isCreatingSpace ? 'CREATING...' : 'CREATE SPACE'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

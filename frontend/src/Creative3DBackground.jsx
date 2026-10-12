@@ -43,6 +43,8 @@ export default function Creative3DBackground({ currentRoute = 'feed' }) {
     innerCore: null,
     ring1: null,
     ring2: null,
+    satellites: null,
+    satGeo: null,
     terrainMesh: null,
     particles: null,
     constellationPoints: null,
@@ -64,7 +66,8 @@ export default function Creative3DBackground({ currentRoute = 'feed' }) {
   // Handle route-specific camera and scene targets
   useEffect(() => {
     const s = stateRef.current;
-    if (!s.camera || isReducedMotion()) return;
+    if (!s.camera) return;
+    const reduced = isReducedMotion();
 
     // Define choreographed camera perspectives per route
     const routePresets = {
@@ -358,11 +361,29 @@ export default function Creative3DBackground({ currentRoute = 'feed' }) {
     coreGroup.add(ring2);
     s.ring2 = ring2;
 
-    // --- 4. Undulating Cybernetic Topographical Grid (Wave Terrain) ---
-    const terrainWidth = 52;
-    const terrainHeight = 44;
-    const terrainSegmentsW = 68;
-    const terrainSegmentsH = 58;
+    // Orbiting Telemetry Micro-Satellites
+    const satGeo = new THREE.OctahedronGeometry(0.14, 0);
+    const satellites = [
+      { radius: 2.8, speed: 0.7, offset: 0, color: 0xc4f36b },
+      { radius: 3.3, speed: -0.5, offset: Math.PI * 0.7, color: 0x00f0ff },
+      { radius: 2.5, speed: 1.0, offset: Math.PI * 1.4, color: 0xdf7d78 },
+    ].map((cfg) => {
+      const mat = new THREE.MeshBasicMaterial({
+        color: cfg.color,
+        wireframe: true,
+      });
+      const mesh = new THREE.Mesh(satGeo, mat);
+      coreGroup.add(mesh);
+      return { ...cfg, mesh, mat };
+    });
+    s.satellites = satellites;
+    s.satGeo = satGeo;
+
+    // --- 4. Undulating Cybernetic Topographical Grid (Smooth Wave Matrix) ---
+    const terrainWidth = 56;
+    const terrainHeight = 48;
+    const terrainSegmentsW = 44;
+    const terrainSegmentsH = 38;
     const terrainGeometry = new THREE.PlaneGeometry(
       terrainWidth,
       terrainHeight,
@@ -370,21 +391,21 @@ export default function Creative3DBackground({ currentRoute = 'feed' }) {
       terrainSegmentsH
     );
     terrainGeometry.rotateX(-Math.PI / 2);
-    terrainGeometry.translate(0, -2.8, -4);
+    terrainGeometry.translate(0, -2.6, -2);
 
     // Save initial plane coordinates for procedural displacement
     const posAttribute = terrainGeometry.attributes.position;
     const initialPositions = posAttribute.array.slice();
 
     const terrainMaterial = new THREE.MeshStandardMaterial({
-      color: 0x07111b,
+      color: 0x051d18,
       wireframe: true,
       transparent: true,
-      opacity: 0.42,
-      metalness: 0.8,
-      roughness: 0.3,
-      emissive: 0x0f362a,
-      emissiveIntensity: 0.3,
+      opacity: 0.35,
+      metalness: 0.85,
+      roughness: 0.2,
+      emissive: 0x00f0ff,
+      emissiveIntensity: 0.25,
     });
     const terrainMesh = new THREE.Mesh(terrainGeometry, terrainMaterial);
     scene.add(terrainMesh);
@@ -523,121 +544,139 @@ export default function Creative3DBackground({ currentRoute = 'feed' }) {
 
       if (!isPageVisible) return;
 
-      const delta = (now - s.lastFrameTime) * 0.001;
+      const delta = Math.min((now - s.lastFrameTime) * 0.001, 0.1);
       s.lastFrameTime = now;
-      s.time += delta * s.waveSpeed;
-
       const reduced = isReducedMotion();
+      const speedMult = reduced ? 0.3 : 1.0;
+      s.time += delta * s.waveSpeed * speedMult;
 
       // Mouse Lerp (Smooth camera damping)
       s.mouse.x += (s.mouse.targetX - s.mouse.x) * 0.05;
       s.mouse.y += (s.mouse.targetY - s.mouse.y) * 0.05;
 
-      if (!reduced) {
-        // Camera Parallax
-        s.camera.position.x = s.cameraBase.x + s.mouse.x * 1.4;
-        s.camera.position.y = s.cameraBase.y + s.mouse.y * 0.9;
-        s.camera.position.z = s.cameraBase.z;
+      // Camera Parallax
+      const mouseFactor = reduced ? 0.3 : 1.0;
+      s.camera.position.x = s.cameraBase.x + s.mouse.x * (1.2 * mouseFactor);
+      s.camera.position.y = s.cameraBase.y + s.mouse.y * (0.8 * mouseFactor);
+      s.camera.position.z = s.cameraBase.z;
 
-        s.camera.rotation.x = s.cameraBase.rotX + s.mouse.y * 0.06;
-        s.camera.rotation.y = s.cameraBase.rotY - s.mouse.x * 0.08;
+      s.camera.rotation.x = s.cameraBase.rotX + s.mouse.y * (0.05 * mouseFactor);
+      s.camera.rotation.y = s.cameraBase.rotY - s.mouse.x * (0.07 * mouseFactor);
 
-        // Animate Holographic Polyhedral Core
-        if (s.coreGroup) {
-          s.outerIcosahedron.rotation.x += 0.004;
-          s.outerIcosahedron.rotation.y += 0.007;
+      // Animate Holographic Polyhedral Core
+      if (s.coreGroup) {
+        s.outerIcosahedron.rotation.x += 0.003 * speedMult;
+        s.outerIcosahedron.rotation.y += 0.006 * speedMult;
 
-          s.innerCore.rotation.y -= 0.005;
+        s.innerCore.rotation.y -= 0.004 * speedMult;
 
-          s.ring1.rotation.z += 0.012;
-          s.ring1.rotation.x = Math.PI / 3 + Math.sin(s.time * 0.6) * 0.15;
+        s.ring1.rotation.z += 0.010 * speedMult;
+        s.ring1.rotation.x = Math.PI / 3 + Math.sin(s.time * 0.6) * 0.15;
 
-          s.ring2.rotation.y -= 0.014;
-          s.ring2.rotation.z = Math.PI / 6 + Math.cos(s.time * 0.5) * 0.18;
+        s.ring2.rotation.y -= 0.012 * speedMult;
+        s.ring2.rotation.z = Math.PI / 6 + Math.cos(s.time * 0.5) * 0.18;
 
-          // Core subtle breathing float
-          s.coreGroup.position.y += Math.sin(s.time * 1.2) * 0.003;
+        // Core subtle breathing float
+        s.coreGroup.position.y += Math.sin(s.time * 1.2) * (0.0025 * speedMult);
+
+        // Animate Orbiting Telemetry Micro-Satellites
+        if (s.satellites) {
+          s.satellites.forEach((sat) => {
+            const angle = s.time * sat.speed * speedMult + sat.offset;
+            sat.mesh.position.x = Math.cos(angle) * sat.radius;
+            sat.mesh.position.y = Math.sin(angle * 1.4) * (sat.radius * 0.35);
+            sat.mesh.position.z = Math.sin(angle) * sat.radius;
+            sat.mesh.rotation.x += 0.02 * speedMult;
+            sat.mesh.rotation.y += 0.03 * speedMult;
+          });
         }
+      }
 
-        // Procedural Wave Displacement on Topographical Grid
-        if (s.terrainMesh) {
-          const positions = s.terrainMesh.geometry.attributes.position;
-          const pArr = positions.array;
-          const count = pArr.length / 3;
-          const t = s.time * 1.4;
-          const wh = s.waveHeight;
+      // Procedural Smooth Wave Displacement on Topographical Grid (with Pointer Ripple)
+      if (s.terrainMesh) {
+        const positions = s.terrainMesh.geometry.attributes.position;
+        const pArr = positions.array;
+        const count = pArr.length / 3;
+        const t = s.time * 1.2;
+        const wh = s.waveHeight;
 
-          for (let i = 0; i < count; i++) {
-            const idx = i * 3;
-            const ox = initialPositions[idx];
-            const oz = initialPositions[idx + 2];
+        // Pointer coords projected onto terrain plane
+        const mx = s.mouse.x * 16;
+        const mz = -s.mouse.y * 12;
 
-            // Harmonic wave calculation
-            const wave1 = Math.sin(ox * 0.22 + t * 0.8) * Math.cos(oz * 0.24 + t * 0.6);
-            const wave2 = Math.sin((ox + oz) * 0.12 + t * 0.4) * 0.6;
-            const wave3 = Math.cos(ox * 0.08 - oz * 0.08 + t * 0.3) * 0.4;
+        for (let i = 0; i < count; i++) {
+          const idx = i * 3;
+          const ox = initialPositions[idx];
+          const oz = initialPositions[idx + 2];
 
-            pArr[idx + 1] = (wave1 + wave2 + wave3) * wh;
-          }
-          positions.needsUpdate = true;
+          // Harmonic smooth organic cyber-wave
+          const wave1 = Math.sin(ox * 0.18 + t * 0.7) * Math.cos(oz * 0.20 + t * 0.5);
+          const wave2 = Math.sin((ox + oz) * 0.10 + t * 0.35) * 0.5;
+
+          // Tactile pointer energy ripple (attenuated with distance)
+          const distSq = (ox - mx) * (ox - mx) + (oz - mz) * (oz - mz);
+          const ripple = Math.exp(-distSq * 0.03) * 0.65 * Math.sin(t * 3.2 - Math.sqrt(distSq) * 1.3);
+
+          pArr[idx + 1] = (wave1 + wave2 + ripple) * wh;
         }
+        positions.needsUpdate = true;
+      }
 
-        // Drift Atmospheric Particles
-        if (s.particles) {
-          s.particles.rotation.y += 0.0006;
-          s.particles.rotation.x = Math.sin(s.time * 0.2) * 0.04;
+      // Drift Atmospheric Particles
+      if (s.particles) {
+        s.particles.rotation.y += 0.0005 * speedMult;
+        s.particles.rotation.x = Math.sin(s.time * 0.2) * 0.03;
+      }
+
+      // Update Constellation Nodes & Dynamic Connecting Links
+      if (s.constellationPositions && s.constellationVelocities) {
+        const p = s.constellationPositions;
+        const v = s.constellationVelocities;
+        const n = nodeCount;
+
+        for (let i = 0; i < n; i++) {
+          const idx = i * 3;
+          p[idx] += v[i].vx * speedMult;
+          p[idx + 1] += v[i].vy * speedMult;
+          p[idx + 2] += v[i].vz * speedMult;
+
+          // Soft boundary bounds bounce
+          if (p[idx] < -12 || p[idx] > 12) v[i].vx *= -1;
+          if (p[idx + 1] < -2 || p[idx + 1] > 8) v[i].vy *= -1;
+          if (p[idx + 2] < -10 || p[idx + 2] > 6) v[i].vz *= -1;
         }
+        s.constellationPoints.geometry.attributes.position.needsUpdate = true;
 
-        // Update Constellation Nodes & Dynamic Connecting Links
-        if (s.constellationPositions && s.constellationVelocities) {
-          const p = s.constellationPositions;
-          const v = s.constellationVelocities;
-          const n = nodeCount;
+        // Connect nearby nodes with lines
+        let lineIdx = 0;
+        const lp = s.constellationLines.geometry.attributes.position.array;
+        const maxDistSq = 14.0;
 
-          for (let i = 0; i < n; i++) {
-            const idx = i * 3;
-            p[idx] += v[i].vx;
-            p[idx + 1] += v[i].vy;
-            p[idx + 2] += v[i].vz;
+        for (let i = 0; i < n && lineIdx < maxLines * 6; i++) {
+          const i3 = i * 3;
+          for (let j = i + 1; j < n && lineIdx < maxLines * 6; j++) {
+            const j3 = j * 3;
+            const dx = p[i3] - p[j3];
+            const dy = p[i3 + 1] - p[j3 + 1];
+            const dz = p[i3 + 2] - p[j3 + 2];
+            const distSq = dx * dx + dy * dy + dz * dz;
 
-            // Soft boundary bounds bounce
-            if (p[idx] < -12 || p[idx] > 12) v[i].vx *= -1;
-            if (p[idx + 1] < -2 || p[idx + 1] > 8) v[i].vy *= -1;
-            if (p[idx + 2] < -10 || p[idx + 2] > 6) v[i].vz *= -1;
-          }
-          s.constellationPoints.geometry.attributes.position.needsUpdate = true;
-
-          // Connect nearby nodes with lines
-          let lineIdx = 0;
-          const lp = s.constellationLines.geometry.attributes.position.array;
-          const maxDistSq = 14.0;
-
-          for (let i = 0; i < n && lineIdx < maxLines * 6; i++) {
-            const i3 = i * 3;
-            for (let j = i + 1; j < n && lineIdx < maxLines * 6; j++) {
-              const j3 = j * 3;
-              const dx = p[i3] - p[j3];
-              const dy = p[i3 + 1] - p[j3 + 1];
-              const dz = p[i3 + 2] - p[j3 + 2];
-              const distSq = dx * dx + dy * dy + dz * dz;
-
-              if (distSq < maxDistSq) {
-                lp[lineIdx++] = p[i3];
-                lp[lineIdx++] = p[i3 + 1];
-                lp[lineIdx++] = p[i3 + 2];
-                lp[lineIdx++] = p[j3];
-                lp[lineIdx++] = p[j3 + 1];
-                lp[lineIdx++] = p[j3 + 2];
-              }
+            if (distSq < maxDistSq) {
+              lp[lineIdx++] = p[i3];
+              lp[lineIdx++] = p[i3 + 1];
+              lp[lineIdx++] = p[i3 + 2];
+              lp[lineIdx++] = p[j3];
+              lp[lineIdx++] = p[j3 + 1];
+              lp[lineIdx++] = p[j3 + 2];
             }
           }
-
-          // Clear remaining line coordinates
-          for (let k = lineIdx; k < maxLines * 6; k++) {
-            lp[k] = 0;
-          }
-          s.constellationLines.geometry.attributes.position.needsUpdate = true;
         }
+
+        // Clear remaining line coordinates
+        for (let k = lineIdx; k < maxLines * 6; k++) {
+          lp[k] = 0;
+        }
+        s.constellationLines.geometry.attributes.position.needsUpdate = true;
       }
 
       s.renderer.render(s.scene, s.camera);
@@ -660,11 +699,16 @@ export default function Creative3DBackground({ currentRoute = 'feed' }) {
         sphereGeometry,
         ringGeo1,
         ringGeo2,
+        s.satGeo,
         terrainGeometry,
         particleGeometry,
         constellationGeo,
         lineGeometry,
       ].forEach((g) => g && g.dispose());
+
+      if (s.satellites) {
+        s.satellites.forEach((sat) => sat.mat && sat.mat.dispose());
+      }
 
       [
         icoMaterial,
@@ -677,7 +721,7 @@ export default function Creative3DBackground({ currentRoute = 'feed' }) {
         lineMaterial,
       ].forEach((m) => m && m.dispose());
 
-      if (s.renderer) {
+      if (s.renderer && !container.isConnected) {
         s.renderer.dispose();
       }
     };
@@ -760,6 +804,38 @@ export default function Creative3DBackground({ currentRoute = 'feed' }) {
             </div>
 
             <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
+
+            {/* Live Choreography Telemetry */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '6px',
+                fontSize: '0.64rem',
+                color: 'var(--text-secondary)',
+                padding: '4px 6px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                borderRadius: '2px',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+              }}
+            >
+              <div>
+                <span style={{ color: 'var(--text-dim)' }}>LOC: </span>
+                <span style={{ color: 'var(--neon-cyan)', fontWeight: 600 }}>{currentRoute.toUpperCase()}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-dim)' }}>GRID: </span>
+                <span style={{ color: '#c4f36b', fontWeight: 600 }}>REACTIVE</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-dim)' }}>NODES: </span>
+                <span style={{ color: '#ededed' }}>42 LINKED</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-dim)' }}>DRONES: </span>
+                <span style={{ color: '#df7d78' }}>3 ACTIVE</span>
+              </div>
+            </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.68rem' }}>MOTION PRESET</span>

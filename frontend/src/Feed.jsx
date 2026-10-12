@@ -2,7 +2,7 @@
  * Feed and post interactions.
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Button from './Button';
 import { Modal } from './Popup';
 import {
@@ -313,33 +313,98 @@ function PostCard({
   const canTakedown =
     currentUser && (currentUser.username === post.author?.username || post.can_takedown);
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikeCount((prev) => (isLiked ? prev - 1 : prev + 1));
-    if (onLikeToggle) onLikeToggle(post.id);
+  const handleLike = async () => {
+    const nextLiked = !isLiked;
+    setIsLiked(nextLiked);
+    setLikeCount((prev) => (nextLiked ? prev + 1 : Math.max(0, prev - 1)));
+    if (onLikeToggle) {
+      onLikeToggle(post.id);
+    }
+    try {
+      const res = await fetch(`/post/${post.id}/like/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && typeof data.total_likes === 'number') {
+          setLikeCount(data.total_likes);
+          setIsLiked(Boolean(data.is_liked));
+        }
+      }
+    } catch {
+      // Retain optimistic state
+    }
   };
 
-  const handleCommentSubmit = (e) => {
+  const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    if (!commentText.trim()) return;
-    const newComment = {
+    const trimmed = commentText.trim();
+    if (!trimmed) return;
+
+    const optimisticComment = {
       id: Date.now(),
       author: { username: currentUser?.username || 'you' },
-      text: commentText.trim(),
+      text: trimmed,
       created_at: 'Just now',
     };
-    setComments((prev) => [...prev, newComment]);
-    if (onAddComment) onAddComment(post.id, commentText.trim());
+    setComments((prev) => [...prev, optimisticComment]);
     setCommentText('');
+
+    if (onAddComment) {
+      onAddComment(post.id, trimmed);
+    }
+
+    try {
+      const res = await fetch(`/post/${post.id}/comment/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: new URLSearchParams({ text: trimmed }).toString(),
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.comment) {
+          setComments((prev) =>
+            prev.map((c) => (c.id === optimisticComment.id ? data.comment : c))
+          );
+        }
+      }
+    } catch {
+      // Keep optimistic
+    }
+  };
+
+  const handleTakedownConfirm = async () => {
+    setTakedownModalOpen(false);
+    if (onTakedown) {
+      onTakedown(post.id);
+    }
+    try {
+      await fetch(`/post/${post.id}/takedown/`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin',
+      });
+    } catch {
+      // Handled
+    }
   };
 
   const handleShareClick = () => {
     if (onShare) {
       onShare(post.id);
     } else {
-      const url = window.location.origin + `/post/${post.id}/`;
+      const url = `${window.location.origin}/post/${post.id}/`;
       navigator.clipboard?.writeText(url);
-      alert('Post URL copied to clipboard.');
+      alert('Post link copied to clipboard!');
     }
   };
 
@@ -708,9 +773,7 @@ function PostCard({
         title="Remove Post"
         subtitle="MODERATION ACTION"
         confirmLabel="Remove"
-        onConfirm={() => {
-          if (onTakedown) onTakedown(post.id);
-        }}
+        onConfirm={handleTakedownConfirm}
       >
         <p style={{ margin: 0 }}>
           Are you sure you want to remove this post from the feed? This action is permanent and cannot be undone.
@@ -725,7 +788,7 @@ function PostCard({
 // ============================================================================
 
 export default function Feed({
-  posts = [],
+  posts = null,
   currentUser = { username: 'cybernaut' },
   onLikeToggle,
   onAddComment,
@@ -734,7 +797,42 @@ export default function Feed({
   onNavigate = () => {},
   onCreatePostClick = () => {},
 }) {
-  const displayPosts = posts;
+  const [internalPosts, setInternalPosts] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let isCancelled = false;
+    async function loadFeed() {
+      setLoading(true);
+      try {
+        const res = await fetch('/?format=json', {
+          headers: { Accept: 'application/json' },
+          credentials: 'same-origin',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (!isCancelled && data.posts) {
+            setInternalPosts(data.posts);
+          }
+        }
+      } catch {
+        // Fallback
+      } finally {
+        if (!isCancelled) setLoading(false);
+      }
+    }
+    loadFeed();
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  const handleInternalTakedown = (postId) => {
+    setInternalPosts((prev) => prev.filter((p) => p.id !== postId));
+    if (onTakedown) onTakedown(postId);
+  };
+
+  const displayPosts = (posts && posts.length > 0) ? posts : internalPosts;
 
   return (
     <div
@@ -800,7 +898,7 @@ export default function Feed({
             currentUser={currentUser}
             onLikeToggle={onLikeToggle}
             onAddComment={onAddComment}
-            onTakedown={onTakedown}
+            onTakedown={handleInternalTakedown}
             onShare={onShare}
             onNavigate={onNavigate}
           />

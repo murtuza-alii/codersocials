@@ -105,6 +105,8 @@ export default function Button({
     });
   });
 
+  const [isHovered, setIsHovered] = React.useState(false);
+
   return (
     <button
       ref={btnRef}
@@ -113,21 +115,27 @@ export default function Button({
       onClick={onClick}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerUp}
-      className={`app-button ${className}`}
+      onPointerEnter={() => !disabled && setIsHovered(true)}
+      onPointerLeave={() => {
+        handlePointerUp();
+        setIsHovered(false);
+      }}
+      className={`app-button app-button--${variant} ${className}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
         gap: '8px',
-        background: '#000000',
-        color: cfg.color,
-        border: `1px solid ${cfg.borderColor}`,
+        background: isHovered && !disabled ? cfg.hoverBg : '#000000',
+        color: isHovered && !disabled ? cfg.hoverColor : cfg.color,
+        border: `1px solid ${isHovered && !disabled ? cfg.hoverBg : cfg.borderColor}`,
         borderRadius: 0,
         clipPath: chamfer ? sz.chamfer : 'none',
         padding: sz.padding,
         width: size === 'icon' ? sz.width : undefined,
         height: size === 'icon' ? sz.height : undefined,
+        maxWidth: '100%',
+        boxSizing: 'border-box',
         fontFamily: 'var(--font-display)',
         fontSize: sz.fontSize,
         fontWeight: 600,
@@ -138,27 +146,26 @@ export default function Button({
         opacity: disabled ? 0.45 : 1,
         outline: 'none',
         userSelect: 'none',
-        transition: 'background 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.15s ease',
+        flexShrink: 0,
+        transition: 'background 0.18s cubic-bezier(0.16, 1, 0.3, 1), color 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, box-shadow 0.15s ease',
         ...style,
       }}
       {...props}
     >
-      <style>{`
-        .app-button:hover:not(:disabled) {
-          background: ${cfg.hoverBg} !important;
-          color: ${cfg.hoverColor} !important;
-          border-color: ${cfg.hoverBg} !important;
-        }
-        .app-button:active:not(:disabled) {
-          box-shadow: 2px 2px 0px ${cfg.shadowColor};
-        }
-        .app-button:focus-visible {
-          outline: 1px dashed var(--neon-cyan);
-          outline-offset: 3px;
-        }
-      `}</style>
-      {icon && <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span>}
-      {children && <span>{children}</span>}
+      {icon && <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>{icon}</span>}
+      {children && (
+        <span
+          style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '100%',
+            display: 'inline-block',
+          }}
+        >
+          {children}
+        </span>
+      )}
     </button>
   );
 }

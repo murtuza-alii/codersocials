@@ -31,6 +31,22 @@ export default defineConfig({
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
+      '/post': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/create': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/explore': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/feed': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
     },
   },
 });

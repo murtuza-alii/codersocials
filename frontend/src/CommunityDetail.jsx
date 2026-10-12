@@ -662,6 +662,64 @@ export default function CommunityDetail({
     }
   };
 
+  const handleJoinSpace = async () => {
+    try {
+      const res = await fetch(`/communities/c/${community.slug}/join/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        setCommunity((prev) => ({
+          ...prev,
+          is_joined: true,
+          is_member: true,
+          member_count: (prev.member_count || 0) + 1,
+        }));
+      }
+    } catch {
+      // Optimistic
+      setCommunity((prev) => ({
+        ...prev,
+        is_joined: true,
+        is_member: true,
+        member_count: (prev.member_count || 0) + 1,
+      }));
+    }
+  };
+
+  const handleLeaveSpace = async () => {
+    try {
+      const res = await fetch(`/communities/c/${community.slug}/leave/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        setCommunity((prev) => ({
+          ...prev,
+          is_joined: false,
+          is_member: false,
+          member_count: Math.max(0, (prev.member_count || 1) - 1),
+        }));
+      }
+    } catch {
+      // Optimistic
+      setCommunity((prev) => ({
+        ...prev,
+        is_joined: false,
+        is_member: false,
+        member_count: Math.max(0, (prev.member_count || 1) - 1),
+      }));
+    }
+  };
+
   // Handle Post Like
   const handleLikeToggle = (postId) => {
     setPosts((prev) =>
@@ -958,7 +1016,30 @@ export default function CommunityDetail({
             </div>
 
             {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              {!community.is_joined && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleJoinSpace}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Plus size={14} weight="bold" />
+                    <span>JOIN SPACE</span>
+                  </div>
+                </Button>
+              )}
+
+              {community.is_joined && !community.is_admin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLeaveSpace}
+                >
+                  <span>LEAVE SPACE</span>
+                </Button>
+              )}
+
               {community.is_admin && (
                 <Button
                   variant="ghost"

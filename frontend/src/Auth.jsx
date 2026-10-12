@@ -72,23 +72,17 @@ export default function Auth({
       });
 
       if (response.ok) {
+        const data = await response.json().catch(() => null);
         setSuccessMsg(mode === 'login' ? 'Authentication successful.' : 'Registration successful.');
         setTimeout(() => {
-          onAuthSuccess({ username: username.trim(), is_authenticated: true });
-        }, 600);
+          onAuthSuccess(data?.user || { username: username.trim(), is_authenticated: true });
+        }, 500);
       } else {
-        // Fallback for standalone Vite development
-        setSuccessMsg(mode === 'login' ? 'Authentication verified.' : 'Node registered.');
-        setTimeout(() => {
-          onAuthSuccess({ username: username.trim() || 'sarah_creator', is_authenticated: true });
-        }, 600);
+        const data = await response.json().catch(() => null);
+        setErrorMsg(data?.error || (mode === 'login' ? 'Invalid username or password.' : 'Registration failed.'));
       }
     } catch {
-      // Local development fallback
-      setSuccessMsg(mode === 'login' ? 'Authentication verified.' : 'Node registered.');
-      setTimeout(() => {
-        onAuthSuccess({ username: username.trim() || 'sarah_creator', is_authenticated: true });
-      }, 600);
+      setErrorMsg('Network error connecting to authentication server.');
     } finally {
       setIsSubmitting(false);
     }

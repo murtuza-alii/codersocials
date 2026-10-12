@@ -11,6 +11,8 @@ import Profile from './Profile';
 import Auth from './Auth';
 import Creative3DBackground from './Creative3DBackground';
 import SmoothCursor from './SmoothCursor';
+import Button from './Button';
+import { X, Globe, Lock } from '@phosphor-icons/react';
 
 const DEFAULT_COMMUNITIES = [
   {
@@ -114,12 +116,75 @@ export default function App() {
   const [activePost, setActivePost] = useState(null);
   const [activeProfileUsername, setActiveProfileUsername] = useState('sarah_creator');
   const [user, setUser] = useState({ username: 'sarah_creator', is_authenticated: true });
+  const [feedPosts, setFeedPosts] = useState([]);
 
-  // Fetch live communities, conversations, and users from backend
+  // Create Space Modal State
+  const [isCreateSpaceOpen, setIsCreateSpaceOpen] = useState(false);
+  const [newSpaceName, setNewSpaceName] = useState('');
+  const [newSpaceDescription, setNewSpaceDescription] = useState('');
+  const [newSpaceRules, setNewSpaceRules] = useState('');
+  const [newSpacePrivacy, setNewSpacePrivacy] = useState('PUBLIC');
+  const [isCreatingSpace, setIsCreatingSpace] = useState(false);
+  const [createSpaceError, setCreateSpaceError] = useState(null);
+
+  const loadFeedPosts = async () => {
+    try {
+      const res = await fetch('/?format=json', {
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.posts) {
+          setFeedPosts(data.posts);
+        }
+      }
+    } catch {
+      // Retain existing posts
+    }
+  };
+
+  // Fetch live communities, conversations, users, and me from backend
   useEffect(() => {
     let isCancelled = false;
 
     async function loadBackendData() {
+      // 1. Current authenticated user
+      try {
+        const meRes = await fetch('/accounts/me/', {
+          headers: { Accept: 'application/json' },
+          credentials: 'same-origin',
+        });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          if (!isCancelled && meData.user) {
+            setUser(meData.user);
+            if (meData.user.username) {
+              setActiveProfileUsername(meData.user.username);
+            }
+          }
+        }
+      } catch {
+        // Fallback already in state
+      }
+
+      // 2. Feed Posts
+      try {
+        const res = await fetch('/?format=json', {
+          headers: { Accept: 'application/json' },
+          credentials: 'same-origin',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (!isCancelled && data.posts) {
+            setFeedPosts(data.posts);
+          }
+        }
+      } catch {
+        // Fallback
+      }
+
+      // 3. Communities
       try {
         const commRes = await fetch('/communities/explore/', {
           headers: { Accept: 'application/json' },
@@ -129,7 +194,6 @@ export default function App() {
           const commData = await commRes.json();
           if (!isCancelled && commData.communities?.length) {
             setJoinedCommunities(commData.communities);
-            // Keep active community in sync
             const matched = commData.communities.find((c) => c.slug === activeCommunity?.slug) || commData.communities[0];
             setActiveCommunity(matched);
           }
@@ -138,6 +202,7 @@ export default function App() {
         // Fallback already in state
       }
 
+      // 4. Conversations
       try {
         const inboxRes = await fetch('/chat/inbox/', {
           headers: { Accept: 'application/json' },
@@ -153,6 +218,7 @@ export default function App() {
         // Fallback already in state
       }
 
+      // 5. Users
       try {
         const usersRes = await fetch('/chat/api/users/', {
           headers: { Accept: 'application/json' },
@@ -175,6 +241,158 @@ export default function App() {
     };
   }, []);
 
+  const handleFeedLike = async (postId) => {
+    setFeedPosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        const nextLiked = !p.is_liked;
+        return {
+          ...p,
+          is_liked: nextLiked,
+          total_likes: nextLiked ? p.total_likes + 1 : Math.max(0, p.total_likes - 1),
+        };
+      })
+    );
+    try {
+      const res = await fetch(`/post/${postId}/like/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && typeof data.total_likes === 'number') {
+          setFeedPosts((prev) =>
+            prev.map((p) =>
+              p.id === postId
+                ? { ...p, total_likes: data.total_likes, is_liked: Boolean(data.is_liked) }
+                : p
+            )
+          );
+        }
+      }
+    } catch {}
+  };
+
+  const handleFeedComment = async (postId, text) => {
+    const optimisticComment = {
+      id: Date.now(),
+      author: { username: user?.username || 'you' },
+      text,
+      created_at: new Date().toISOString(),
+    };
+    setFeedPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? { ...p, comments: [...(p.comments || []), optimisticComment], total_comments: (p.total_comments || 0) + 1 }
+          : p
+      )
+    );
+    try {
+      const res = await fetch(`/post/${postId}/comment/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: new URLSearchParams({ text }).toString(),
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.comment) {
+          setFeedPosts((prev) =>
+            prev.map((p) =>
+              p.id === postId
+                ? {
+                    ...p,
+                    comments: p.comments.map((c) =>
+                      c.id === optimisticComment.id ? data.comment : c
+                    ),
+                  }
+                : p
+            )
+          );
+        }
+      }
+    } catch {}
+  };
+
+  const handleFeedTakedown = async (postId) => {
+    setFeedPosts((prev) => prev.filter((p) => p.id !== postId));
+    try {
+      await fetch(`/post/${postId}/takedown/`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin',
+      });
+    } catch {}
+  };
+
+  const handlePostCreated = (newPost) => {
+    setFeedPosts((prev) => [newPost, ...prev]);
+    loadFeedPosts();
+    if (newPost.community) {
+      setActiveCommunity(newPost.community);
+      setCurrentRoute('community');
+    } else {
+      setCurrentRoute('feed');
+    }
+  };
+
+  const handleCreateSpaceSubmit = async (e) => {
+    e.preventDefault();
+    if (!newSpaceName.trim()) {
+      setCreateSpaceError('Space name is required.');
+      return;
+    }
+    setIsCreatingSpace(true);
+    setCreateSpaceError(null);
+    try {
+      const response = await fetch('/communities/create/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          name: newSpaceName.trim(),
+          description: newSpaceDescription.trim(),
+          rules: newSpaceRules.trim(),
+          privacy: newSpacePrivacy,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const created = data?.community;
+        if (created) {
+          setJoinedCommunities((prev) => [created, ...prev]);
+          setActiveCommunity(created);
+          if (created.channels?.length) {
+            setActiveChannel(created.channels[0]);
+          }
+          setIsCreateSpaceOpen(false);
+          setNewSpaceName('');
+          setNewSpaceDescription('');
+          setNewSpaceRules('');
+          setCurrentRoute('community');
+        }
+      } else {
+        const err = await response.json().catch(() => null);
+        setCreateSpaceError(err?.error || 'Failed to create space.');
+      }
+    } catch {
+      setCreateSpaceError('Network error connecting to backend.');
+    } finally {
+      setIsCreatingSpace(false);
+    }
+  };
+
   // Compute channels for active community
   const currentChannels = activeCommunity?.channels?.length
     ? activeCommunity.channels
@@ -183,13 +401,21 @@ export default function App() {
         { id: 'general', name: 'general', is_announcement: false },
       ];
 
-  const handleNavigate = (route, payload) => {
+  const handleNavigate = async (route, payload) => {
     if (route === 'logout') {
-      window.location.assign('/accounts/logout/');
+      try {
+        await fetch('/accounts/logout/', {
+          method: 'POST',
+          headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          credentials: 'same-origin',
+        });
+      } catch {}
+      setUser({ username: 'guest', is_authenticated: false });
+      setCurrentRoute('login');
       return;
     }
     if (route === 'create_community') {
-      setCurrentRoute('discover');
+      setIsCreateSpaceOpen(true);
       return;
     }
     if (route === 'edit_profile') {
@@ -446,12 +672,15 @@ export default function App() {
               currentUser={user}
               onNavigate={handleNavigate}
               onBack={() => setCurrentRoute('feed')}
-              onPostDeleted={() => setCurrentRoute('feed')}
+              onPostDeleted={(deletedId) => {
+                handleFeedTakedown(deletedId);
+                setCurrentRoute('feed');
+              }}
             />
           ) : currentRoute === 'explore' || currentRoute === 'discover' ? (
             <DiscoverSpaces
               onNavigate={handleNavigate}
-              onCreateSpaceClick={() => handleNavigate('create_community')}
+              onCreateSpaceClick={() => setIsCreateSpaceOpen(true)}
             />
           ) : currentRoute === 'community' ? (
             <CommunityDetail
@@ -468,7 +697,7 @@ export default function App() {
               currentUser={user}
               onNavigate={handleNavigate}
               onBack={() => setCurrentRoute(activeCommunity ? 'community' : 'feed')}
-              onPostCreated={(_newPost) => setCurrentRoute('feed')}
+              onPostCreated={handlePostCreated}
             />
           ) : currentRoute === 'channel' ? (
             <ChannelChat
@@ -500,12 +729,226 @@ export default function App() {
             />
           ) : (
             <Feed
+              posts={feedPosts}
               currentUser={user}
+              onLikeToggle={handleFeedLike}
+              onAddComment={handleFeedComment}
+              onTakedown={handleFeedTakedown}
+              onShare={(postId) => {
+                const url = `${window.location.origin}/post/${postId}/`;
+                navigator.clipboard?.writeText(url);
+                alert('Post link copied to clipboard!');
+              }}
               onNavigate={handleNavigate}
               onCreatePostClick={handleOpenCreatePost}
             />
           )}
         </AppShell>
+      )}
+
+      {/* GLOBAL CREATE SPACE MODAL */}
+      {isCreateSpaceOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+          onClick={() => setIsCreateSpaceOpen(false)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '520px',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--neon-cyan)',
+              boxShadow: '0 0 30px rgba(0, 240, 255, 0.25)',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '18px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#ffffff' }}>
+                  Create a new space
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  Launch a dedicated community hub saved directly to the database.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateSpaceOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {createSpaceError && (
+              <div
+                style={{
+                  background: 'rgba(255, 0, 85, 0.1)',
+                  border: '1px solid var(--neon-magenta)',
+                  color: 'var(--neon-magenta)',
+                  padding: '8px 12px',
+                  fontSize: '0.82rem',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                {createSpaceError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateSpaceSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '6px' }}>
+                  SPACE NAME *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Distributed Systems Lab"
+                  value={newSpaceName}
+                  onChange={(e) => setNewSpaceName(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    background: '#000000',
+                    border: '1px solid var(--neon-cyan-border)',
+                    color: 'var(--text-primary)',
+                    padding: '9px 12px',
+                    fontSize: '0.88rem',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '6px' }}>
+                  DESCRIPTION
+                </label>
+                <textarea
+                  placeholder="What is this community about?"
+                  value={newSpaceDescription}
+                  onChange={(e) => setNewSpaceDescription(e.target.value)}
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    background: '#000000',
+                    border: '1px solid var(--neon-cyan-border)',
+                    color: 'var(--text-primary)',
+                    padding: '9px 12px',
+                    fontSize: '0.88rem',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '6px' }}>
+                  COMMUNITY CHARTER / RULES
+                </label>
+                <textarea
+                  placeholder="e.g. 1. Respect peers. 2. Post verified benchmarks."
+                  value={newSpaceRules}
+                  onChange={(e) => setNewSpaceRules(e.target.value)}
+                  rows={2}
+                  style={{
+                    width: '100%',
+                    background: '#000000',
+                    border: '1px solid var(--neon-cyan-border)',
+                    color: 'var(--text-primary)',
+                    padding: '9px 12px',
+                    fontSize: '0.88rem',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', marginBottom: '6px' }}>
+                  PRIVACY SETTING
+                </label>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <label
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 14px',
+                      background: newSpacePrivacy === 'PUBLIC' ? 'var(--neon-cyan-dim)' : '#000000',
+                      border: `1px solid ${newSpacePrivacy === 'PUBLIC' ? 'var(--neon-cyan)' : 'var(--neon-cyan-border)'}`,
+                      cursor: 'pointer',
+                      fontSize: '0.84rem',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="space_privacy"
+                      value="PUBLIC"
+                      checked={newSpacePrivacy === 'PUBLIC'}
+                      onChange={() => setNewSpacePrivacy('PUBLIC')}
+                      style={{ accentColor: 'var(--neon-cyan)' }}
+                    />
+                    <Globe size={16} />
+                    <span>Public Space</span>
+                  </label>
+
+                  <label
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 14px',
+                      background: newSpacePrivacy === 'PRIVATE' ? 'var(--neon-magenta-dim)' : '#000000',
+                      border: `1px solid ${newSpacePrivacy === 'PRIVATE' ? 'var(--neon-magenta)' : 'var(--neon-cyan-border)'}`,
+                      cursor: 'pointer',
+                      fontSize: '0.84rem',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="space_privacy"
+                      value="PRIVATE"
+                      checked={newSpacePrivacy === 'PRIVATE'}
+                      onChange={() => setNewSpacePrivacy('PRIVATE')}
+                      style={{ accentColor: 'var(--neon-magenta)' }}
+                    />
+                    <Lock size={16} />
+                    <span>Private (Gated)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setIsCreateSpaceOpen(false)}>
+                  CANCEL
+                </Button>
+                <Button type="submit" variant="primary" size="sm" disabled={isCreatingSpace || !newSpaceName.trim()}>
+                  {isCreatingSpace ? 'CREATING...' : 'CREATE SPACE'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

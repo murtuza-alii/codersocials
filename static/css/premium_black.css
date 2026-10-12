@@ -59,12 +59,22 @@
   --shadow-card: none;
 }
 
-html, body { background: #000 !important; color: #e7e7e7; }
+html, body { background: #000; color: #e7e7e7; }
 body { font-family: var(--font-family) !important; }
-.sanctuary-app, .sanctuary-main { background: #000 !important; }
+.sanctuary-app, .sanctuary-main { background: transparent !important; }
 .sanctuary-app { height: 100dvh !important; background-image: none !important; }
-.primary-rail, .secondary-accordion { background: #030303 !important; border-color: #202020 !important; }
-.sanctuary-topbar { background: #000 !important; backdrop-filter: none !important; border-color: #202020 !important; }
+.primary-rail, .secondary-accordion {
+  background: rgba(4, 6, 9, 0.85) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.sanctuary-topbar {
+  background: rgba(4, 6, 9, 0.82) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
 .sanctuary-content { max-width: 1180px; padding: clamp(20px, 3vw, 38px) clamp(16px, 3vw, 36px) !important; }
 .topbar-brand { font-size: 1rem !important; letter-spacing: -.03em !important; }
 .topbar-brand i { color: #c4f36b !important; filter: none !important; }
@@ -75,8 +85,7 @@ button, input, textarea, select, .cyber-btn, .rail-btn,
 .sanctuary-post-card, .cyber-modal-card, .conversation-card,
 .community-card, .profile-panel, .post-detail-sidebar,
 .avatar-img, .rail-btn img {
-  border-radius: 3px !important;
-  box-shadow: none !important;
+  border-radius: 4px;
 }
 button, .cyber-btn { font-family: var(--font-family) !important; text-transform: none !important; letter-spacing: 0 !important; }
 button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
@@ -88,8 +97,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .rail-btn[href*="logout"]:hover { color: #df7d78 !important; }
 .rail-pill { background: #c4f36b !important; box-shadow: none !important; }
 .accordion-header, .sanctuary-content [class*="card"], .sanctuary-content [class*="panel"] {
-  background-color: #050505 !important;
-  border-color: #222 !important;
+  background-color: rgba(6, 9, 14, 0.78) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow: none !important;
 }
 .accordion-nav-item { color: #969696 !important; border-radius: 3px !important; }
