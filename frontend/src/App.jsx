@@ -108,9 +108,28 @@ const DEFAULT_USERS = [
   { id: 5, username: 'sarah_creator', role: 'Member', status: 'online' },
 ];
 
+export const deduplicateCommunities = (list) => {
+  const seenIds = new Set();
+  const seenSlugs = new Set();
+  const seenNames = new Set();
+  return (list || []).filter((c) => {
+    if (!c) return false;
+    const idKey = c.id ? String(c.id).toLowerCase() : null;
+    const slugKey = c.slug ? String(c.slug).toLowerCase() : null;
+    const nameKey = c.name ? String(c.name).toLowerCase().trim() : null;
+    if (idKey && seenIds.has(idKey)) return false;
+    if (slugKey && seenSlugs.has(slugKey)) return false;
+    if (nameKey && seenNames.has(nameKey)) return false;
+    if (idKey) seenIds.add(idKey);
+    if (slugKey) seenSlugs.add(slugKey);
+    if (nameKey) seenNames.add(nameKey);
+    return true;
+  });
+};
+
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState('feed');
-  const [joinedCommunities, setJoinedCommunities] = useState(DEFAULT_COMMUNITIES);
+  const [joinedCommunities, setJoinedCommunities] = useState(() => deduplicateCommunities(DEFAULT_COMMUNITIES));
   const [activeCommunity, setActiveCommunity] = useState(DEFAULT_COMMUNITIES[0]);
   const [activeChannel, setActiveChannel] = useState(DEFAULT_COMMUNITIES[0].channels[1]); // #general
   const [conversations, setConversations] = useState(DEFAULT_CONVERSATIONS);
@@ -220,8 +239,9 @@ export default function App() {
         if (commRes.ok) {
           const commData = await commRes.json();
           if (!isCancelled && commData.communities?.length) {
-            setJoinedCommunities(commData.communities);
-            const matched = commData.communities.find((c) => c.slug === activeCommunity?.slug) || commData.communities[0];
+            const cleanList = deduplicateCommunities(commData.communities);
+            setJoinedCommunities(cleanList);
+            const matched = cleanList.find((c) => c.slug === activeCommunity?.slug) || cleanList[0];
             setActiveCommunity(matched);
           }
         }
@@ -398,7 +418,7 @@ export default function App() {
         const data = await response.json();
         const created = data?.community;
         if (created) {
-          setJoinedCommunities((prev) => [created, ...prev]);
+          setJoinedCommunities((prev) => deduplicateCommunities([created, ...prev]));
           setActiveCommunity(created);
           if (created.channels?.length) {
             setActiveChannel(created.channels[0]);

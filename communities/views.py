@@ -114,6 +114,12 @@ def create_community(request):
             messages.error(request, "Community name is required.")
             return render(request, 'communities/create.html')
 
+        if Community.objects.filter(name__iexact=name).exists():
+            if is_json:
+                return JsonResponse({'status': 'error', 'error': f'A space named "{name}" already exists.'}, status=400)
+            messages.error(request, f'A space named "{name}" already exists.')
+            return render(request, 'communities/create.html')
+
         if privacy not in ['PUBLIC', 'PRIVATE']:
             privacy = 'PUBLIC'
 
@@ -437,3 +443,21 @@ def reject_request(request, slug, membership_id):
 
     messages.info(request, f"Declined join request from {membership.user.username}.")
     return redirect('communities:manage_members', slug=slug)
+
+
+@csrf_exempt
+def delete_community(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    curr_user = get_current_user(request)
+    if not curr_user or (community.creator != curr_user and not curr_user.is_superuser):
+        raise PermissionDenied("Only the community creator can delete this space.")
+
+    if request.method == 'POST':
+        name = community.name
+        community.delete()
+        if request.headers.get('accept') == 'application/json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'ok', 'message': f'Space "{name}" deleted successfully.'})
+        messages.success(request, f'Space "{name}" was deleted.')
+        return redirect('communities:explore')
+
+    return JsonResponse({'status': 'error', 'error': 'POST method required.'}, status=405)

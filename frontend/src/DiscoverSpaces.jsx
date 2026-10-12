@@ -194,7 +194,14 @@ export default function DiscoverSpaces({
         if (response.ok) {
           const data = await response.json();
           if (!isCancelled && data.communities) {
-            setCommunities(data.communities);
+            const seen = new Set();
+            const clean = data.communities.filter((c) => {
+              const key = (c.slug || c.id || c.name || '').toLowerCase();
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+            setCommunities(clean);
           }
         }
       } catch {

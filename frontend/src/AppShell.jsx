@@ -68,6 +68,17 @@ export default function AppShell({
   const dmConversations = conversations.filter((c) => !c.is_group);
   const groupConversations = conversations.filter((c) => c.is_group);
 
+  // Guarantee deduplicated communities in rail and space switcher
+  const uniqueJoinedCommunities = (joinedCommunities || []).filter(
+    (comm, idx, arr) =>
+      arr.findIndex(
+        (c) =>
+          (c.id && c.id === comm.id) ||
+          (c.slug && c.slug === comm.slug) ||
+          (c.name && c.name.trim().toLowerCase() === comm.name?.trim().toLowerCase())
+      ) === idx
+  );
+
   const routeTitle = currentRoute === 'channel'
     ? activeChannel?.name || 'Channel'
     : currentRoute === 'chat'
@@ -186,7 +197,7 @@ export default function AppShell({
             alignItems: 'center',
           }}
         >
-          {joinedCommunities.map((comm) => {
+          {uniqueJoinedCommunities.map((comm) => {
             const isActive = activeCommunity?.id === comm.id;
             return (
               <Tooltip key={comm.id || comm.slug} text={comm.name} position="right">
@@ -692,7 +703,7 @@ export default function AppShell({
                 Switch Space
               </div>
 
-              {joinedCommunities.map((comm) => {
+              {uniqueJoinedCommunities.map((comm) => {
                 const isActive = activeCommunity?.id === comm.id;
                 return (
                   <button
