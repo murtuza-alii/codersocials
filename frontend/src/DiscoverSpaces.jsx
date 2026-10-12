@@ -24,6 +24,19 @@ import {
 
 const DEFAULT_COMMUNITIES = [
   {
+    id: 'cmrit-engineering-hub',
+    name: 'CMRIT Engineering & Tech Hub',
+    slug: 'cmrit-engineering-hub',
+    description: 'Official developer and engineering collective of CMR Institute of Technology, Bengaluru (AECS Layout, ITPL Main Rd). High-octane student innovation, hackathons, IEEE/Cultura builds, and robotics projects.',
+    rules: 'Foster campus innovation, share reproducible GitHub repos and schematics, prepare for Cultura & NextGen Convergence.',
+    privacy: 'PUBLIC',
+    member_count: 348,
+    avatar: 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=400&q=80',
+    banner: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1600&q=80',
+    is_joined: true,
+    is_pending: false,
+  },
+  {
     id: 1,
     name: 'Systems & Infrastructure',
     slug: 'systems-infrastructure',

@@ -65,6 +65,19 @@ const DEFAULT_COMMUNITIES = [
     ],
   },
   {
+    id: 'cmrit-engineering-hub',
+    name: 'CMRIT Engineering & Tech Hub',
+    slug: 'cmrit-engineering-hub',
+    is_joined: true,
+    channels: [
+      { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Official CMRIT circulars, fest dates & circulars' },
+      { id: 'general', name: 'general', is_announcement: false, topic: 'AECS Layout corridor discussions & campus life' },
+      { id: 'cultura-hackathon', name: 'cultura-hackathon', is_announcement: false, topic: 'Teams & dev sprints for Cultura & NextGen Convergence' },
+      { id: 'ieee-robotics-lab', name: 'ieee-robotics-lab', is_announcement: false, topic: 'Robotics, STM32 microcontrollers & embedded lab projects' },
+      { id: 'ai-ml-initiatives', name: 'ai-ml-initiatives', is_announcement: false, topic: 'PyTorch, local LLM quantization & lab models' },
+    ],
+  },
+  {
     id: 'silicon-tech-vault',
     name: 'Silicon Tech Vault',
     slug: 'silicon-tech-vault',
