@@ -58,7 +58,7 @@
     <div style="display: flex; gap: 10px; padding: 12px 24px; border-top: 1px solid var(--sanctuary-border); background: #030408; overflow-x: auto; align-items: center;">
         <span style="font-size: 0.75rem; font-weight: 700; color: var(--sanctuary-text-muted); font-family: var(--font-mono); letter-spacing: 0.08em; white-space: nowrap;">CHANNELS:</span>
         {% for ch in channels %}
-        {% cycle 'var(--sanctuary-cyan)' 'var(--sanctuary-violet)' 'var(--sanctuary-lime)' 'var(--sanctuary-magenta)' as ch_pill_color %}
+        {% cycle 'var(--sanctuary-cyan)' 'var(--sanctuary-violet)' 'var(--sanctuary-lime)' 'var(--sanctuary-magenta)' as ch_pill_color silent %}
         <a href="{% url 'chat:channel_chat' community_slug=community.slug channel_slug=ch.slug %}" class="accordion-nav-item" style="padding: 6px 14px; border-radius: var(--radius-sm); background: var(--sanctuary-surface); border: 1px solid var(--sanctuary-border); color: var(--sanctuary-text); font-size: 0.82rem; text-decoration: none; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
             <i class="fa-solid {% if ch.is_announcement %}fa-bullhorn{% else %}fa-hashtag{% endif %}" style="color: {% if ch.is_announcement %}var(--sanctuary-amber){% else %}{{ ch_pill_color }}{% endif %};"></i>
             <span>{{ ch.name }}</span>

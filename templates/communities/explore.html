@@ -27,7 +27,7 @@
 <!-- Community Cards Grid -->
 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
     {% for comm in communities %}
-    {% cycle 'var(--sanctuary-lime)' 'var(--sanctuary-violet)' 'var(--sanctuary-amber)' 'var(--sanctuary-cyan)' as comm_color %}
+    {% cycle 'var(--sanctuary-lime)' 'var(--sanctuary-violet)' 'var(--sanctuary-amber)' 'var(--sanctuary-cyan)' as comm_color silent %}
     <div class="cyber-note-flip" style="min-height: 330px;">
         <div class="flip-card-inner">
             <!-- FRONT: Information & Status -->

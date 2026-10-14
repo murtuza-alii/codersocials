@@ -97,7 +97,7 @@
                         <div style="font-size: 0.75rem; color: var(--sanctuary-text-muted); margin-top: 2px; font-family: var(--font-mono);">
                             {{ post.created_at|timesince }} ago
                             {% if post.tag %}
-                            {% cycle 'var(--sanctuary-cyan)' 'var(--sanctuary-lime)' 'var(--sanctuary-amber)' 'var(--sanctuary-violet)' as tag_color %}
+                            {% cycle 'var(--sanctuary-cyan)' 'var(--sanctuary-lime)' 'var(--sanctuary-amber)' 'var(--sanctuary-violet)' as tag_color silent %}
                             • <span style="color: {{ tag_color }}; font-weight: 600;">{{ post.tag }}</span>
                             {% endif %}
                         </div>
