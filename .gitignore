@@ -29,3 +29,7 @@ dist-ssr/
 *.swo
 .DS_Store
 Thumbs.db
+
+# Presentation & Scratch builds
+.codex-presentation-build/
+*.ndjson
