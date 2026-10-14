@@ -81,21 +81,73 @@ body { font-family: var(--font-family) !important; }
 .accordion-category-header { text-transform: none !important; letter-spacing: .01em !important; font-weight: 600 !important; }
 .sanctuary-content h1, .sanctuary-content h2, .sanctuary-content h3 { letter-spacing: -.035em; font-weight: 620 !important; text-wrap: balance; }
 
-button, input, textarea, select, .cyber-btn, .rail-btn,
-.sanctuary-post-card, .cyber-modal-card, .conversation-card,
-.community-card, .profile-panel, .post-detail-sidebar,
-.avatar-img, .rail-btn img {
-  border-radius: 4px;
+.rail-btn {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 0 !important;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px) !important;
+  background: #080808 !important;
+  color: #929292 !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  font-family: var(--font-code) !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
-button, .cyber-btn { font-family: var(--font-family) !important; text-transform: none !important; letter-spacing: 0 !important; }
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
-  outline: 2px solid #c4f36b !important;
-  outline-offset: 2px;
+.rail-btn span {
+  font-family: var(--font-code) !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 0.02em !important;
 }
-.rail-btn { color: #909090 !important; border-color: transparent !important; }
-.rail-btn:hover, .rail-btn.active { color: #c4f36b !important; border-color: #303030 !important; background: #101010 !important; }
-.rail-btn[href*="logout"]:hover { color: #df7d78 !important; }
-.rail-pill { background: #c4f36b !important; box-shadow: none !important; }
+.rail-btn:hover {
+  color: #ffffff !important;
+  border-color: #c4f36b !important;
+  background: #111111 !important;
+}
+.rail-btn.active {
+  color: #c4f36b !important;
+  border-color: #c4f36b !important;
+  background: rgba(196, 243, 107, 0.09) !important;
+  box-shadow: 0 0 12px rgba(196, 243, 107, 0.2) !important;
+}
+.rail-btn.active span {
+  color: #c4f36b !important;
+}
+.rail-btn img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 0 !important;
+}
+.rail-pill {
+  position: absolute !important;
+  left: -8px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 4px !important;
+  height: 0px !important;
+  background: #c4f36b !important;
+  border-radius: 0 !important;
+  opacity: 0 !important;
+  transition: height 0.2s ease, opacity 0.2s ease !important;
+}
+.rail-btn:hover .rail-pill {
+  height: 14px !important;
+  opacity: 1 !important;
+}
+.rail-btn.active .rail-pill {
+  height: 24px !important;
+  opacity: 1 !important;
+}
+.rail-btn[href*="logout"]:hover {
+  color: #df7d78 !important;
+  border-color: #df7d78 !important;
+}
 .accordion-header, .sanctuary-content [class*="card"], .sanctuary-content [class*="panel"] {
   background-color: rgba(6, 9, 14, 0.78) !important;
   backdrop-filter: blur(14px);
