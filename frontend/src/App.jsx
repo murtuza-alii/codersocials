@@ -69,6 +69,8 @@ const DEFAULT_COMMUNITIES = [
     name: 'CMRIT Engineering & Tech Hub',
     slug: 'cmrit-engineering-hub',
     is_joined: true,
+    avatar: '/media/communities/avatars/cmrit_avatar.png',
+    banner: '/media/communities/banners/cmrit_banner.jpg',
     channels: [
       { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Official CMRIT circulars, fest dates & circulars' },
       { id: 'general', name: 'general', is_announcement: false, topic: 'AECS Layout corridor discussions & campus life' },

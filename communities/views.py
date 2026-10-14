@@ -292,6 +292,8 @@ def community_detail(request, slug):
                 'is_joined': is_member,
                 'is_admin': is_admin,
                 'can_access': True,
+                'avatar': community.avatar.url if community.avatar else None,
+                'banner': community.banner.url if community.banner else None,
                 'creator': {'username': community.creator.username} if community.creator else None,
                 'channels': [{'id': str(ch.id), 'name': ch.name, 'slug': ch.slug, 'is_announcement': ch.is_announcement, 'topic': ch.topic} for ch in channels],
             },
