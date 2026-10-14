@@ -57,6 +57,29 @@ class Post(models.Model):
         return self.media_items.count() > 1
 
     @property
+    def primary_media_url(self):
+        first_item = self.media_items.first()
+        if first_item and first_item.file:
+            return first_item.file.url
+        if self.media_file:
+            return self.media_file.url
+        return None
+
+    @property
+    def primary_thumbnail_url(self):
+        if self.thumbnail:
+            return self.thumbnail.url
+        first_item = self.media_items.first()
+        if first_item:
+            if first_item.thumbnail:
+                return first_item.thumbnail.url
+            if first_item.file:
+                return first_item.file.url
+        if self.media_file:
+            return self.media_file.url
+        return None
+
+    @property
     def all_media(self):
         items = list(self.media_items.all())
         if not items and self.media_file:
