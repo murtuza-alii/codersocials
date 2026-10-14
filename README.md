@@ -1,6 +1,9 @@
-# SocialConnect - College Mini-Project Blueprint & Documentation
+# Sanctuary Network (formerly SocialConnect)
 
-A modern social networking platform inspired by **Instagram**, designed for users to connect, share photo content, follow friends, and engage through likes and comments.
+> 📖 **Looking for a clean, beginner-friendly explanation of how the whole project works?**  
+> Check out the [**Sanctuary Network System Architecture & Usage Guide**](PROJECT_GUIDE.md) for the philosophy, backend/frontend architecture, privacy features, and quickstart instructions.
+
+A modern, private, and organic social networking platform designed for close circles, campuses (e.g., CMRIT), and genuine connections without toxic engagement algorithms.
 
 ---
 
