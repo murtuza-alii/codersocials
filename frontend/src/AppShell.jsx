@@ -6,6 +6,7 @@ import { Tooltip } from './Popup';
 import {
   House,
   Compass,
+  Cpu,
   Plus,
   ChatTeardropDots,
   Hash,
@@ -325,6 +326,44 @@ export default function AppShell({
               }}
             >
               <Compass size={20} weight={currentRoute === 'discover' ? 'fill' : 'bold'} />
+            </button>
+          </Tooltip>
+
+          {/* Agent Swarm & MCP Bounties Button */}
+          <Tooltip text="Agent Swarm & MCP Bounties" position="right">
+            <button
+              type="button"
+              onClick={() => onNavigate('swarm')}
+              style={{
+                width: '44px',
+                height: '44px',
+                background: currentRoute === 'swarm' ? 'var(--neon-cyan)' : 'var(--bg-surface)',
+                color: currentRoute === 'swarm' ? '#000000' : 'var(--neon-cyan)',
+                border: `1px solid ${currentRoute === 'swarm' ? 'var(--neon-cyan)' : 'var(--neon-cyan-border)'}`,
+                clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                outline: 'none',
+                position: 'relative',
+                transition: 'background 160ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms ease',
+              }}
+              onPointerDown={(e) => { e.currentTarget.style.transform = 'scale(0.96)'; }}
+              onPointerUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
+              {currentRoute === 'swarm' && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    left: '-10px',
+                    width: '4px',
+                    height: '20px',
+                    background: 'var(--neon-cyan)',
+                  }}
+                />
+              )}
+              <Cpu size={20} weight={currentRoute === 'swarm' ? 'fill' : 'bold'} />
             </button>
           </Tooltip>
 

@@ -69,11 +69,21 @@ class Command(BaseCommand):
             'code_ninja': "Python enthusiast & tech explorer 🐍 Let's connect & build!",
         }
 
+        names = {
+            'alex_dev': ('Alex', 'Rivera'),
+            'sarah_creator': ('Sarah', 'Jenkins'),
+            'code_ninja': ('Kai', 'Chen'),
+        }
+
         for username in MOCK_USERNAMES:
+            first_n, last_n = names.get(username, ('', ''))
             user, created = User.objects.get_or_create(
                 username=username,
-                defaults={'email': f'{username}@example.com'}
+                defaults={'email': f'{username}@example.com', 'first_name': first_n, 'last_name': last_n}
             )
+            if not user.first_name and first_n:
+                user.first_name = first_n
+                user.last_name = last_n
             user.set_password('password123')
             user.save()
 

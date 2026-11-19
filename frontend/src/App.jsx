@@ -8,6 +8,7 @@ import CommunityDetail from './CommunityDetail';
 import CreatePost from './CreatePost';
 import ChannelChat from './ChannelChat';
 import Profile from './Profile';
+import AgentSwarm from './AgentSwarm';
 import Auth from './Auth';
 import AppSettings from './AppSettings';
 import Creative3DBackground from './Creative3DBackground';
@@ -123,9 +124,9 @@ const DEFAULT_CONVERSATIONS = [
 ];
 
 const DEFAULT_USERS = [
-  { id: 4, username: 'alex_dev', role: 'Developer', status: 'online' },
-  { id: 6, username: 'code_ninja', role: 'Research', status: 'offline' },
-  { id: 5, username: 'sarah_creator', role: 'Member', status: 'online' },
+  { id: 4, username: 'alex_dev', name: 'Alex Rivera', display_name: 'Alex Rivera', first_name: 'Alex', last_name: 'Rivera', role: 'Developer', status: 'online' },
+  { id: 6, username: 'code_ninja', name: 'Kai Chen', display_name: 'Kai Chen', first_name: 'Kai', last_name: 'Chen', role: 'Research', status: 'offline' },
+  { id: 5, username: 'sarah_creator', name: 'Sarah Jenkins', display_name: 'Sarah Jenkins', first_name: 'Sarah', last_name: 'Jenkins', role: 'Member', status: 'online' },
 ];
 
 export const deduplicateCommunities = (list) => {
@@ -540,6 +541,14 @@ export default function App() {
           });
         }
       }
+    } else if (route === 'manage_members') {
+      let comm = payload || joinedCommunities[0];
+      if (typeof comm === 'string') {
+        comm = joinedCommunities.find((c) => c.slug === comm || c.id === comm) || { slug: comm, name: comm };
+      }
+      setActiveCommunity(comm);
+      setCurrentRoute('community');
+      return;
     } else if (route === 'community') {
       let comm = payload || joinedCommunities[0];
       if (typeof comm === 'string') {
@@ -827,6 +836,11 @@ export default function App() {
                 currentUser={user}
                 onNavigate={handleNavigate}
                 onBack={() => setCurrentRoute('feed')}
+              />
+            ) : currentRoute === 'swarm' ? (
+              <AgentSwarm
+                currentUser={user}
+                onNavigate={handleNavigate}
               />
             ) : currentRoute === 'profile' ? (
               <Profile

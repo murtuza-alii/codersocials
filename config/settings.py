@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'posts.apps.PostsConfig',
     'communities.apps.CommunitiesConfig',
     'chat.apps.ChatConfig',
+    'mcp_bridge.apps.McpBridgeConfig',
 ]
 
 MIDDLEWARE = [

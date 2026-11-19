@@ -278,6 +278,7 @@ def community_detail(request, slug):
             })
 
         is_member = membership.status == 'APPROVED' if membership else False
+        pending_requests_count = community.memberships.filter(status='PENDING').count() if is_admin else 0
         return JsonResponse({
             'status': 'ok',
             'community': {
@@ -296,10 +297,12 @@ def community_detail(request, slug):
                 'banner': community.banner.url if community.banner else None,
                 'creator': {'username': community.creator.username} if community.creator else None,
                 'channels': [{'id': str(ch.id), 'name': ch.name, 'slug': ch.slug, 'is_announcement': ch.is_announcement, 'topic': ch.topic} for ch in channels],
+                'pending_requests_count': pending_requests_count,
             },
             'channels': [{'id': str(ch.id), 'name': ch.name, 'slug': ch.slug, 'is_announcement': ch.is_announcement, 'topic': ch.topic} for ch in channels],
             'membership': {'status': membership.status if membership else None, 'role': membership.role if membership else None},
             'is_admin': is_admin,
+            'pending_requests_count': pending_requests_count,
             'posts': posts_data,
         })
 
@@ -389,15 +392,62 @@ def leave_community(request, slug):
     return redirect('communities:explore')
 
 
-@login_required
+@csrf_exempt
 def manage_members(request, slug):
     community = get_object_or_404(Community, slug=slug)
     curr_user = get_current_user(request)
+    is_json = request.headers.get('accept') == 'application/json' or request.GET.get('format') == 'json' or request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
     if not is_community_admin(curr_user, community):
+        if is_json:
+            return JsonResponse({'status': 'forbidden', 'error': 'Only administrators can manage community memberships.'}, status=403)
         raise PermissionDenied("Only administrators can manage community memberships.")
 
-    pending_requests = community.memberships.filter(status='PENDING').select_related('user')
-    approved_members = community.memberships.filter(status='APPROVED').select_related('user')
+    pending_requests = community.memberships.filter(status='PENDING').select_related('user', 'user__profile')
+    approved_members = community.memberships.filter(status='APPROVED').select_related('user', 'user__profile')
+
+    if is_json:
+        pending_data = [
+            {
+                'id': m.id,
+                'user': {
+                    'id': m.user.id,
+                    'username': m.user.username,
+                    'avatar': m.user.profile.avatar.url if hasattr(m.user, 'profile') and m.user.profile.avatar else None,
+                },
+                'role': m.role,
+                'status': m.status,
+                'created_at': m.created_at.isoformat(),
+            }
+            for m in pending_requests
+        ]
+        approved_data = [
+            {
+                'id': m.id,
+                'user': {
+                    'id': m.user.id,
+                    'username': m.user.username,
+                    'avatar': m.user.profile.avatar.url if hasattr(m.user, 'profile') and m.user.profile.avatar else None,
+                    'is_creator': m.user == community.creator,
+                },
+                'role': m.role,
+                'status': m.status,
+                'created_at': m.created_at.isoformat(),
+            }
+            for m in approved_members
+        ]
+        return JsonResponse({
+            'status': 'ok',
+            'community': {
+                'id': str(community.id),
+                'name': community.name,
+                'slug': community.slug,
+                'privacy': community.privacy,
+                'member_count': community.member_count,
+            },
+            'pending_requests': pending_data,
+            'approved_members': approved_data,
+        })
 
     return render(request, 'communities/manage_members.html', {
         'community': community,

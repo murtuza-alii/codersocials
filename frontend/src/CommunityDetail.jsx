@@ -38,6 +38,8 @@ import {
   ShieldCheck,
   Plus,
   SignOut,
+  Check,
+  X,
 } from '@phosphor-icons/react';
 
 // ============================================================================
@@ -620,6 +622,93 @@ export default function CommunityDetail({
   const [isRequesting, setIsRequesting] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
+  // Manage space modal state
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+  const [manageLoading, setManageLoading] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [approvedMembers, setApprovedMembers] = useState([]);
+  const [actionMemberLoadingId, setActionMemberLoadingId] = useState(null);
+  const [manageTab, setManageTab] = useState('pending');
+
+  const loadManageMembers = async () => {
+    setManageLoading(true);
+    try {
+      const res = await fetch(`/communities/c/${community.slug}/manage/`, {
+        headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPendingRequests(data.pending_requests || []);
+        setApprovedMembers(data.approved_members || []);
+      }
+    } catch (err) {
+      console.error('Failed to load manage members', err);
+    } finally {
+      setManageLoading(false);
+    }
+  };
+
+  const handleApproveMember = async (membershipId) => {
+    setActionMemberLoadingId(membershipId);
+    try {
+      const res = await fetch(`/communities/c/${community.slug}/approve/${membershipId}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        const approvedReq = pendingRequests.find((r) => r.id === membershipId);
+        setPendingRequests((prev) => prev.filter((r) => r.id !== membershipId));
+        if (approvedReq) {
+          setApprovedMembers((prev) => [
+            { ...approvedReq, status: 'APPROVED' },
+            ...prev,
+          ]);
+        }
+        setCommunity((prev) => ({
+          ...prev,
+          member_count: (prev.member_count || 0) + 1,
+          pending_requests_count: Math.max(0, (prev.pending_requests_count || 1) - 1),
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to approve request', err);
+    } finally {
+      setActionMemberLoadingId(null);
+    }
+  };
+
+  const handleRejectMember = async (membershipId) => {
+    setActionMemberLoadingId(membershipId);
+    try {
+      const res = await fetch(`/communities/c/${community.slug}/reject/${membershipId}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        setPendingRequests((prev) => prev.filter((r) => r.id !== membershipId));
+        setCommunity((prev) => ({
+          ...prev,
+          pending_requests_count: Math.max(0, (prev.pending_requests_count || 1) - 1),
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to decline request', err);
+    } finally {
+      setActionMemberLoadingId(null);
+    }
+  };
+
   // Sync state if initialCommunity prop changes
   useEffect(() => {
     if (initialCommunity) {
@@ -1112,11 +1201,29 @@ export default function CommunityDetail({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onNavigate('manage_members', community)}
+                  onClick={() => {
+                    setIsManageModalOpen(true);
+                    loadManageMembers();
+                  }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Gear size={14} weight="bold" />
                     <span>MANAGE SPACE</span>
+                    {(community.pending_requests_count || 0) > 0 && (
+                      <span
+                        style={{
+                          background: 'var(--neon-magenta)',
+                          color: '#fff',
+                          fontSize: '0.68rem',
+                          padding: '1px 5px',
+                          borderRadius: '2px',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 800,
+                        }}
+                      >
+                        {community.pending_requests_count}
+                      </span>
+                    )}
                   </div>
                 </Button>
               )}
@@ -1390,6 +1497,215 @@ export default function CommunityDetail({
           </div>
         </aside>
       </div>
+
+      {/* MANAGE SPACE / MEMBERS MODAL */}
+      <Modal
+        isOpen={isManageModalOpen}
+        onClose={() => setIsManageModalOpen(false)}
+        title={`MANAGE SPACE // ${community.name?.toUpperCase() || 'SPACE'}`}
+        subtitle="Review pending access requests and oversee membership roster."
+        maxWidth="580px"
+        showFooter={false}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--neon-cyan-border)', gap: '12px' }}>
+            <button
+              type="button"
+              onClick={() => setManageTab('pending')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                borderBottom: manageTab === 'pending' ? '2px solid var(--neon-cyan)' : '2px solid transparent',
+                color: manageTab === 'pending' ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                padding: '8px 12px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <Clock size={16} />
+              <span>PENDING REQUESTS ({pendingRequests.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setManageTab('members')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                borderBottom: manageTab === 'members' ? '2px solid var(--neon-cyan)' : '2px solid transparent',
+                color: manageTab === 'members' ? 'var(--neon-cyan)' : 'var(--text-secondary)',
+                padding: '8px 12px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <Users size={16} />
+              <span>ACTIVE MEMBERS ({approvedMembers.length})</span>
+            </button>
+          </div>
+
+          {manageLoading ? (
+            <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+              Querying space membership records...
+            </div>
+          ) : manageTab === 'pending' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '360px', overflowY: 'auto' }}>
+              {pendingRequests.length === 0 ? (
+                <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+                  No pending access requests detected for this space.
+                </div>
+              ) : (
+                pendingRequests.map((req) => (
+                  <div
+                    key={req.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid var(--neon-cyan-border)',
+                      padding: '12px 14px',
+                      gap: '12px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          background: 'var(--neon-cyan-dim)',
+                          border: '1px solid var(--neon-cyan)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--neon-cyan)',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 700,
+                          fontSize: '0.82rem',
+                        }}
+                      >
+                        {req.user?.username?.slice(0, 2)?.toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>
+                          @{req.user?.username}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                          Requested access to private space
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleApproveMember(req.id)}
+                        disabled={actionMemberLoadingId === req.id}
+                        style={{
+                          background: 'var(--neon-lime, #00ff66)',
+                          color: '#000',
+                          border: 'none',
+                          padding: '6px 14px',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {actionMemberLoadingId === req.id ? '...' : 'APPROVE'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRejectMember(req.id)}
+                        disabled={actionMemberLoadingId === req.id}
+                        style={{
+                          background: 'transparent',
+                          color: 'var(--neon-magenta)',
+                          border: '1px solid var(--neon-magenta)',
+                          padding: '6px 14px',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        DECLINE
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '360px', overflowY: 'auto' }}>
+              {approvedMembers.length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+                  No members found.
+                </div>
+              ) : (
+                approvedMembers.map((m) => (
+                  <div
+                    key={m.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid var(--neon-cyan-border)',
+                      padding: '10px 14px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          background: 'var(--neon-cyan-dim)',
+                          border: '1px solid var(--neon-cyan)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--neon-cyan)',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 700,
+                          fontSize: '0.78rem',
+                        }}
+                      >
+                        {m.user?.username?.slice(0, 2)?.toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          @{m.user?.username}
+                          {m.user?.is_creator && (
+                            <span style={{ fontSize: '0.65rem', fontFamily: 'var(--font-mono)', background: 'var(--neon-cyan-dim)', color: 'var(--neon-cyan)', padding: '1px 6px', border: '1px solid var(--neon-cyan-border)' }}>
+                              CREATOR
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                          ROLE: {m.role}
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--neon-lime, #00ff66)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                      ACTIVE
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

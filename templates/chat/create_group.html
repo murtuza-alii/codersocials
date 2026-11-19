@@ -14,21 +14,50 @@
 
     <form method="POST">
         {% csrf_token %}
-        <div class="form-group">
+        <div class="form-group" style="margin-bottom: 20px;">
             <label style="display: block; font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); color: var(--sanctuary-text-muted); text-transform: uppercase; margin-bottom: 8px;">Group Call-Sign *</label>
             <input type="text" name="title" required placeholder="e.g. Core Engineers, Night Ops, Study Group" style="width: 100%; padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--sanctuary-border); background: #090a0d; color: var(--sanctuary-text); outline: none;">
         </div>
 
         <div style="margin-bottom: 28px;">
-            <label style="display: block; font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); color: var(--sanctuary-text-muted); text-transform: uppercase; margin-bottom: 8px;">Select Network Nodes to Add</label>
-            <div style="max-height: 240px; overflow-y: auto; background: #090a0d; border: 1px solid var(--sanctuary-border); border-radius: var(--radius-sm); padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="font-weight: 700; font-size: 0.78rem; font-family: var(--font-mono); color: var(--sanctuary-text-muted); text-transform: uppercase;">Select Network Nodes to Add</label>
+                <span id="member-count-badge" style="font-size: 0.72rem; font-family: var(--font-mono); color: var(--sanctuary-amber);">0 SELECTED</span>
+            </div>
+
+            <!-- Filter input -->
+            <div style="position: relative; margin-bottom: 8px;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 11px; color: var(--sanctuary-text-muted); font-size: 0.82rem;"></i>
+                <input 
+                    type="text" 
+                    id="filter-members-input" 
+                    placeholder="Filter by name or @username..." 
+                    oninput="filterMembers(this.value);" 
+                    style="width: 100%; padding: 8px 14px 8px 34px; border-radius: var(--radius-sm); border: 1px solid var(--sanctuary-border); background: #06070a; color: var(--sanctuary-text); outline: none; font-size: 0.84rem;"
+                >
+            </div>
+
+            <div id="members-list-box" style="max-height: 240px; overflow-y: auto; background: #090a0d; border: 1px solid var(--sanctuary-border); border-radius: var(--radius-sm); padding: 8px; display: flex; flex-direction: column; gap: 6px;">
                 {% for u in users %}
-                <label style="display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: var(--radius-sm); cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='var(--sanctuary-surface)'" onmouseout="this.style.background='transparent'">
-                    <input type="checkbox" name="members" value="{{ u.username }}" style="accent-color: var(--sanctuary-amber);">
-                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--sanctuary-surface); display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 800; font-family: var(--font-mono); color: var(--sanctuary-heather); border: 1px solid var(--sanctuary-border);">
-                        {{ u.username|slice:":2"|upper }}
+                <label class="member-item" data-search="{{ u.get_full_name|default:''|lower }} {{ u.username|lower }}" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: var(--radius-sm); cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='var(--sanctuary-surface)'" onmouseout="this.style.background='transparent'">
+                    <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                        <input type="checkbox" name="members" value="{{ u.username }}" onchange="updateSelectedCount();" style="accent-color: var(--sanctuary-amber); width: 16px; height: 16px; cursor: pointer;">
+                        {% if u.profile.avatar %}
+                            <img src="{{ u.profile.avatar.url }}" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--sanctuary-border);">
+                        {% else %}
+                            <div style="width: 34px; height: 34px; border-radius: 50%; background: var(--sanctuary-surface); display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 800; font-family: var(--font-mono); color: var(--sanctuary-heather); border: 1px solid var(--sanctuary-border);">
+                                {{ u.first_name|slice:":1"|default:u.username|slice:":1"|upper }}
+                            </div>
+                        {% endif %}
+                        <div style="min-width: 0;">
+                            <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">
+                                {{ u.get_full_name|default:u.username }}
+                            </div>
+                            <div style="font-size: 0.74rem; font-family: var(--font-mono); color: var(--sanctuary-amber);">
+                                @{{ u.username }}
+                            </div>
+                        </div>
                     </div>
-                    <span style="font-size: 0.9rem; font-weight: 600; color: #fff;">@{{ u.username }}</span>
                 </label>
                 {% empty %}
                 <div style="color: var(--sanctuary-text-muted); font-size: 0.85rem; padding: 12px; text-align: center;">No other network nodes detected.</div>
@@ -44,4 +73,24 @@
         </div>
     </form>
 </div>
+
+<script>
+function filterMembers(q) {
+    const term = (q || '').trim().toLowerCase();
+    const items = document.querySelectorAll('.member-item');
+    items.forEach(item => {
+        const text = item.getAttribute('data-search') || '';
+        if (!term || text.includes(term)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function updateSelectedCount() {
+    const count = document.querySelectorAll('input[name="members"]:checked').length;
+    document.getElementById('member-count-badge').innerText = `${count} SELECTED`;
+}
+</script>
 {% endblock %}

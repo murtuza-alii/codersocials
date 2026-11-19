@@ -13,7 +13,7 @@ from .models import CommunityChannel, ChannelMessage, Conversation, Conversation
 
 
 def get_current_user(request):
-    if request.user.is_authenticated:
+    if hasattr(request, 'user') and request.user.is_authenticated:
         return request.user
     return User.objects.filter(username='sarah_creator').first()
 
@@ -22,6 +22,11 @@ def get_current_user(request):
 def channel_chat_view(request, community_slug, channel_slug):
     community = get_object_or_404(Community, slug=community_slug)
     curr_user = get_current_user(request)
+
+    if not user_can_access_community(curr_user, community):
+        if request.headers.get('accept') == 'application/json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'gated', 'error': 'This space is private. You must be an approved member to access channels.'}, status=403)
+        raise PermissionDenied("This space is private. You must be an approved member to access channels.")
 
     channel = CommunityChannel.objects.filter(community=community, slug=channel_slug).first() or \
               CommunityChannel.objects.filter(community=community, name=channel_slug).first() or \
@@ -181,8 +186,11 @@ def inbox_view(request):
             })
         return JsonResponse({'status': 'ok', 'conversations': data})
 
+    suggested_users = User.objects.exclude(id=curr_user.id if curr_user else 0).select_related('profile')[:6]
+
     return render(request, 'chat/inbox.html', {
         'conversations': conversations,
+        'suggested_users': suggested_users,
     })
 
 
@@ -259,13 +267,26 @@ def conversation_detail_view(request, conversation_id):
 
 @csrf_exempt
 def start_dm_view(request, username):
-    target_user = User.objects.filter(username=username).first()
-    if not target_user and str(username).isdigit():
-        target_user = User.objects.filter(id=int(username)).first()
+    username_query = (username or '').strip().lstrip('@')
+    is_id = username_query.isdigit()
+
+    q_filter = Q(username__iexact=username_query) | Q(first_name__iexact=username_query) | Q(last_name__iexact=username_query)
+    if is_id:
+        q_filter |= Q(id=int(username_query))
+    parts = username_query.split()
+    if len(parts) >= 2:
+        q_filter |= (Q(first_name__iexact=parts[0], last_name__iexact=parts[1]) | Q(first_name__iexact=parts[1], last_name__iexact=parts[0]))
+    
+    target_user = User.objects.filter(q_filter).first()
+    if not target_user:
+        target_user = User.objects.filter(
+            Q(username__icontains=username_query) | Q(first_name__icontains=username_query) | Q(last_name__icontains=username_query)
+        ).first()
+
     if not target_user:
         if request.headers.get('accept') == 'application/json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'status': 'error', 'error': 'User not found.'}, status=404)
-        messages.error(request, "User not found.")
+            return JsonResponse({'status': 'error', 'error': f"User '{username}' not found."}, status=404)
+        messages.error(request, f"User '{username}' not found. Try searching by their full name or @username.")
         return redirect('chat:inbox')
 
     curr_user = get_current_user(request)
@@ -402,28 +423,51 @@ def create_group_chat_view(request):
 
 def api_users_list(request):
     """API endpoint to list and search users on the platform by username or real name."""
-    q = request.GET.get('q', '').strip()
+    q = request.GET.get('q', '').strip().lstrip('@')
+    curr_user = get_current_user(request)
+    
     users = User.objects.all().select_related('profile').order_by('username')
+    if curr_user and curr_user.is_authenticated:
+        users = users.exclude(id=curr_user.id)
+        
     if q:
-        users = users.filter(
+        q_parts = q.split()
+        q_filter = (
             Q(username__icontains=q) |
             Q(first_name__icontains=q) |
             Q(last_name__icontains=q) |
             Q(profile__bio__icontains=q)
         )
+        if len(q_parts) >= 2:
+            q_filter |= (
+                (Q(first_name__icontains=q_parts[0]) & Q(last_name__icontains=q_parts[1])) |
+                (Q(first_name__icontains=q_parts[1]) & Q(last_name__icontains=q_parts[0]))
+            )
+        users = users.filter(q_filter)
+        
     results = []
     for u in users[:50]:
         profile = getattr(u, 'profile', None)
         full_name = f"{u.first_name} {u.last_name}".strip()
+        display_name = full_name if full_name else u.username.replace('_', ' ').replace('-', ' ').title()
+        
+        # Initials for avatar fallback
+        if u.first_name and u.last_name:
+            initials = f"{u.first_name[0]}{u.last_name[0]}".upper()
+        else:
+            initials = u.username[:2].upper()
+
         results.append({
             'id': u.id,
             'username': u.username,
             'name': full_name or u.username,
+            'display_name': display_name,
             'first_name': u.first_name,
             'last_name': u.last_name,
+            'initials': initials,
             'bio': profile.bio if profile else '',
             'avatar': profile.avatar.url if profile and profile.avatar else None,
-            'is_self': request.user.is_authenticated and u == request.user,
+            'is_self': False,
             'role': 'Developer' if u.username == 'alex_dev' else ('Research' if u.username == 'code_ninja' else ('Admin' if u.is_superuser else 'Member')),
             'status': 'online' if u.username in ['alex_dev', 'sarah_creator'] else 'offline',
         })

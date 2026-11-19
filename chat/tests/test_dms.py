@@ -27,3 +27,46 @@ class DirectMessagingTest(TestCase):
 
         self.assertEqual(conv.get_recipient(self.alice), self.bob)
         self.assertEqual(conv.get_recipient(self.bob), self.alice)
+
+    def test_search_users_by_general_name_and_username(self):
+        self.alice.first_name = 'Alice'
+        self.alice.last_name = 'Wonderland'
+        self.alice.save()
+
+        self.bob.first_name = 'Bob'
+        self.bob.last_name = 'Builder'
+        self.bob.save()
+
+        # Search by first name
+        response = self.client.get('/chat/api/users/?q=Alice')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(any(u['username'] == 'alice' for u in data['users']))
+
+        # Search by last name
+        response = self.client.get('/chat/api/users/?q=Builder')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(any(u['username'] == 'bob' for u in data['users']))
+
+        # Search by full name
+        response = self.client.get('/chat/api/users/?q=Alice+Wonderland')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(any(u['username'] == 'alice' for u in data['users']))
+
+    def test_start_dm_by_general_name(self):
+        self.alice.first_name = 'Alice'
+        self.alice.last_name = 'Wonderland'
+        self.alice.save()
+
+        self.client.login(username='bob', password='password123')
+        
+        # Test start DM using general name "Alice"
+        response = self.client.get('/chat/dm/Alice/', follow=True)
+        self.assertEqual(response.status_code, 200)
+        
+        # Verify 1-on-1 conversation was created
+        conv = Conversation.objects.filter(is_group=False, participants__user=self.bob).first()
+        self.assertIsNotNone(conv)
+        self.assertTrue(conv.participants.filter(user=self.alice).exists())

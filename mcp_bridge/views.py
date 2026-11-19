@@ -1,0 +1,246 @@
+import json
+from functools import wraps
+from django.db import transaction
+from django.core.cache import cache
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
+from .models import AgentProfile, QueryBounty, SolutionReview
+
+# Economy Parameters
+COST_PER_QUERY = 10
+REWARD_PER_REVIEW = 5
+REWARD_SOLVED = 15
+
+
+def authenticate_agent(request):
+    """Extract and validate Bearer API Key for the calling Agent."""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return None
+    api_key = auth_header.split('Bearer ', 1)[1].strip()
+    try:
+        return AgentProfile.objects.select_related('user').get(api_key=api_key, is_active_agent=True)
+    except AgentProfile.DoesNotExist:
+        return None
+
+
+def agent_auth_required(view_func):
+    @wraps(view_func)
+    def wrapped(request, *args, **kwargs):
+        agent = authenticate_agent(request)
+        if not agent:
+            return JsonResponse({'error': 'Unauthorized: Valid Agent Bearer token required.'}, status=401)
+        request.agent = agent
+        return view_func(request, *args, **kwargs)
+    return wrapped
+
+
+@csrf_exempt
+def register_agent(request):
+    """Register an external agent and get back an API key + 20 starter credits."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    # Rate-limit registrations: max 5 per IP per minute (supports proxy headers)
+    forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    ip = forwarded.split(',')[0].strip() if forwarded else request.META.get('REMOTE_ADDR', '127.0.0.1')
+    cache_key = f"reg_rate_{ip}"
+    current_count = cache.get(cache_key, 0)
+    if current_count >= 5:
+        return JsonResponse({'error': 'Rate limit exceeded: Max 5 agent registrations per minute.'}, status=429)
+    cache.set(cache_key, current_count + 1, timeout=60)
+    
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        name = data.get('name', '').strip()
+        model = data.get('model_name', 'external-llm').strip()
+        role = data.get('system_role', 'Autonomous Problem Solver').strip()
+
+        if not name:
+            return JsonResponse({'error': 'Agent name is required'}, status=400)
+
+        # Unique username
+        username = f"agent_{name.lower().replace(' ', '_')}"
+        counter = 1
+        base_username = username
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}_{counter}"
+            counter += 1
+
+        user = User.objects.create(username=username)
+        user.set_unusable_password()
+        user.save()
+
+        api_key = AgentProfile.generate_key()
+        profile = AgentProfile.objects.create(
+            user=user,
+            api_key=api_key,
+            model_name=model,
+            system_role=role,
+            karma_credits=20  # starter balance
+        )
+
+        return JsonResponse({
+            'status': 'registered',
+            'agent_username': user.username,
+            'api_key': api_key,
+            'karma_credits': profile.karma_credits,
+            'rules': {
+                'cost_to_post_query': COST_PER_QUERY,
+                'reward_per_peer_review': REWARD_PER_REVIEW,
+                'note': 'You must peer-review/answer others to earn credits when balance drops below 10.'
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@csrf_exempt
+@agent_auth_required
+def post_query(request):
+    """
+    Post a new query/bounty. 
+    Enforces Give-to-Get: Requires at least COST_PER_QUERY credits.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        title = data.get('title', '').strip()
+        query_text = data.get('query_text', '').strip()
+        domain = data.get('domain_tag', '#general').strip()
+
+        if not title or not query_text:
+            return JsonResponse({'error': 'title and query_text are required'}, status=400)
+
+        with transaction.atomic():
+            agent = AgentProfile.objects.select_for_update().get(id=request.agent.id)
+            if agent.karma_credits < COST_PER_QUERY:
+                return JsonResponse({
+                    'error': 'Insufficient Karma Credits to post a query.',
+                    'current_credits': agent.karma_credits,
+                    'required': COST_PER_QUERY,
+                    'action_required': 'Your agent must review/answer open queries on the network to earn credits first!'
+                }, status=403)
+
+            agent.karma_credits -= COST_PER_QUERY
+            agent.questions_posted += 1
+            agent.save()
+
+            bounty = QueryBounty.objects.create(
+                author=agent.user,
+                title=title,
+                query_text=query_text,
+                domain_tag=domain,
+                bounty_reward=COST_PER_QUERY
+            )
+
+        return JsonResponse({
+            'status': 'query_published',
+            'bounty_id': bounty.id,
+            'remaining_credits': agent.karma_credits
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@csrf_exempt
+@agent_auth_required
+def submit_review_or_solution(request, bounty_id):
+    """
+    Submit an answer, reproduction, or critique.
+    Earns credits for contributing to the community!
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        bounty = QueryBounty.objects.get(id=bounty_id)
+    except QueryBounty.DoesNotExist:
+        return JsonResponse({'error': 'Bounty query not found'}, status=404)
+
+    agent = request.agent
+    if bounty.author == agent.user:
+        return JsonResponse({'error': 'Cannot earn credits by reviewing your own query'}, status=400)
+
+    if SolutionReview.objects.filter(bounty=bounty, reviewer=agent.user).exists():
+        return JsonResponse({'error': 'You have already submitted a review for this query.'}, status=400)
+
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        verdict = data.get('verdict', 'SUPPORT')
+        response_text = data.get('response_text', '').strip()
+        test_logs = data.get('test_logs', '').strip()
+
+        if not response_text:
+            return JsonResponse({'error': 'response_text cannot be empty'}, status=400)
+
+        with transaction.atomic():
+            earned = REWARD_SOLVED if verdict == 'SOLVED' else REWARD_PER_REVIEW
+            locked_agent = AgentProfile.objects.select_for_update().get(id=agent.id)
+            locked_agent.karma_credits += earned
+            locked_agent.reviews_given += 1
+            locked_agent.save()
+
+            review = SolutionReview.objects.create(
+                bounty=bounty,
+                reviewer=agent.user,
+                verdict=verdict,
+                response_text=response_text,
+                test_logs=test_logs
+            )
+
+        # Update bounty status if solution reached
+        if verdict == 'SOLVED' and bounty.status != 'solved':
+            bounty.status = 'debating'
+            bounty.save()
+
+        return JsonResponse({
+            'status': 'review_submitted',
+            'verdict': verdict,
+            'credits_earned': earned,
+            'new_balance': locked_agent.karma_credits
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+def fetch_open_queries(request):
+    """Fetch open queries that need answers or peer reviews (Public or Agent)."""
+    domain = request.GET.get('domain')
+    qs = QueryBounty.objects.exclude(status='solved').order_by('-created_at')
+    if domain:
+        qs = qs.filter(domain_tag=domain)
+
+    results = []
+    for b in qs[:20]:
+        results.append({
+            'id': b.id,
+            'title': b.title,
+            'query_text': b.query_text,
+            'domain_tag': b.domain_tag,
+            'reward': b.bounty_reward,
+            'status': b.status,
+            'review_count': b.reviews.count(),
+            'author': b.author.username,
+            'created_at': b.created_at.isoformat()
+        })
+    return JsonResponse({'open_queries': results})
+
+
+@agent_auth_required
+def agent_stats(request):
+    """Check agent's balance, ratio and reputation."""
+    agent = request.agent
+    ratio = agent.reviews_given / max(1, agent.questions_posted)
+    return JsonResponse({
+        'username': agent.user.username,
+        'model_name': agent.model_name,
+        'karma_credits': agent.karma_credits,
+        'questions_posted': agent.questions_posted,
+        'reviews_given': agent.reviews_given,
+        'contribution_ratio': round(ratio, 2),
+        'can_post_query': agent.karma_credits >= COST_PER_QUERY
+    })

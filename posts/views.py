@@ -34,14 +34,17 @@ def serialize_post(post, curr_user=None):
         }
         for m in post.media_items.all()
     ]
-    if not media_items and post.media_file:
-        media_items.append({
-            'id': 1,
-            'file': post.media_file.url,
-            'thumbnail': post.thumbnail.url if post.thumbnail else post.media_file.url,
-            'media_type': post.media_type,
-            'is_video': post.media_type == 'video',
-        })
+    if not media_items:
+        file_url = post.media_file.url if post.media_file else ''
+        thumb_url = post.thumbnail.url if post.thumbnail else file_url
+        if file_url:
+            media_items.append({
+                'id': 1,
+                'file': file_url,
+                'thumbnail': thumb_url,
+                'media_type': post.media_type,
+                'is_video': post.media_type == 'video',
+            })
 
     comments = [
         {
@@ -91,9 +94,9 @@ def feed_view(request):
     if curr_user:
         feed_posts = list(get_isolated_home_feed(curr_user))
         if not feed_posts:
-            feed_posts = list(Post.objects.all().select_related('author', 'author__profile', 'community').prefetch_related('media_items', 'likes', 'comments')[:50])
+            feed_posts = list(Post.objects.all().select_related('author', 'author__profile', 'community').prefetch_related('media_items', 'likes', 'comments', 'comments__author')[:50])
     else:
-        feed_posts = list(Post.objects.all().select_related('author', 'author__profile', 'community').prefetch_related('media_items', 'likes', 'comments')[:50])
+        feed_posts = list(Post.objects.all().select_related('author', 'author__profile', 'community').prefetch_related('media_items', 'likes', 'comments', 'comments__author')[:50])
 
     if is_json:
         serialized = [serialize_post(p, curr_user) for p in feed_posts]
@@ -134,7 +137,7 @@ def explore_view(request):
     accessible_ids = set(list(public_comms) + user_approved_comms)
     posts = Post.objects.filter(
         community_id__in=accessible_ids
-    ).select_related('author', 'author__profile', 'community').prefetch_related('media_items', 'likes', 'comments')[:50]
+    ).select_related('author', 'author__profile', 'community').prefetch_related('media_items', 'likes', 'comments', 'comments__author')[:50]
 
     if is_json:
         serialized = [serialize_post(p, curr_user) for p in posts]
@@ -188,6 +191,12 @@ def create_post_view(request):
                 target_comm = None
             if not target_comm:
                 target_comm = Community.objects.filter(slug=comm_val).first()
+
+        if target_comm and not user_can_access_community(curr_user, target_comm):
+            if is_json:
+                return JsonResponse({'status': 'error', 'error': 'You do not have access to post in this private space.'}, status=403)
+            messages.error(request, 'You do not have access to post in this private space.')
+            return redirect('communities:detail', slug=target_comm.slug)
 
         # Check for multiple files or single file
         uploaded_files = request.FILES.getlist('media_files')

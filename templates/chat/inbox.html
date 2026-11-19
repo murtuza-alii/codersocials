@@ -17,23 +17,94 @@
         </div>
     </div>
 
-    <!-- Quick DM Starter by Username -->
-    <div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.5); position: relative; overflow: hidden;">
-        <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--sanctuary-amber);"></div>
-        <div style="font-weight: 700; font-size: 0.75rem; color: var(--sanctuary-amber); margin-bottom: 12px; letter-spacing: 0.08em; font-family: var(--font-mono);">START DIRECT TRANSMISSION</div>
-        <form onsubmit="event.preventDefault(); const u = document.getElementById('dm-username').value.trim(); if(u) window.location.href='/chat/dm/' + u + '/';" style="display: flex; gap: 10px;">
-            <input type="text" id="dm-username" placeholder="Enter target username (e.g. alex_dev)..." required style="flex: 1; padding: 10px 16px; border-radius: var(--radius-sm); border: 1px solid var(--sanctuary-border); background: #090a0d; color: var(--sanctuary-text); outline: none;">
-            <button type="submit" class="cyber-btn cyber-btn-primary">
-                <i class="fa-solid fa-paper-plane"></i> Transmit
+    <!-- Quick DM Starter by Name or Username with Live Recommendations -->
+    <div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.5); position: relative; overflow: visible; z-index: 50;">
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--sanctuary-amber); border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);"></div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-weight: 700; font-size: 0.75rem; color: var(--sanctuary-amber); letter-spacing: 0.08em; font-family: var(--font-mono);">
+                START DIRECT TRANSMISSION
+            </div>
+            <span style="font-size: 0.7rem; color: var(--sanctuary-text-muted); font-family: var(--font-mono);">
+                NAME & USERNAME DISCOVERY
+            </span>
+        </div>
+        
+        <p style="color: var(--sanctuary-text-muted); font-size: 0.82rem; margin-bottom: 12px;">
+            Search by a person's general name (e.g. "Alex", "Sarah") or username handle (@alex_dev). Recommendations appear instantly as you type.
+        </p>
+
+        <!-- Search Form & Autocomplete Dropdown Container -->
+        <div style="position: relative;">
+            <form id="dm-search-form" onsubmit="handleDmSubmit(event);" style="display: flex; gap: 10px;">
+                <div style="position: relative; flex: 1; display: flex; align-items: center;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; color: var(--sanctuary-text-muted); font-size: 0.88rem; pointer-events: none;"></i>
+                    <input 
+                        type="text" 
+                        id="dm-username" 
+                        placeholder="Search by general name (e.g. Alex, Sarah) or username (@alex_dev)..." 
+                        autocomplete="off"
+                        required 
+                        style="width: 100%; padding: 11px 40px 11px 42px; border-radius: var(--radius-sm); border: 1px solid var(--sanctuary-border); background: #090a0d; color: var(--sanctuary-text); outline: none; font-size: 0.92rem; transition: border-color 0.15s ease, box-shadow 0.15s ease;"
+                        onfocus="this.style.borderColor='var(--sanctuary-amber)'; this.style.boxShadow='0 0 12px rgba(255,184,0,0.18)'; showRecommendations();"
+                        onblur="setTimeout(hideRecommendations, 250); this.style.borderColor='var(--sanctuary-border)'; this.style.boxShadow='none';"
+                        oninput="onSearchInput(this.value);"
+                        onkeydown="handleSearchKeydown(event);"
+                    >
+                    <button type="button" id="clear-search-btn" onclick="clearSearch();" style="display: none; position: absolute; right: 12px; background: none; border: none; color: var(--sanctuary-text-muted); cursor: pointer; padding: 4px; font-size: 0.85rem;" title="Clear search">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <button type="submit" class="cyber-btn cyber-btn-primary" style="white-space: nowrap;">
+                    <i class="fa-solid fa-paper-plane"></i> Transmit
+                </button>
+            </form>
+
+            <!-- Floating Recommendations Dropdown -->
+            <div id="user-recommendations-dropdown" style="display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: #0c0e14; border: 1px solid var(--sanctuary-amber); border-radius: var(--radius-md); box-shadow: 0 16px 36px rgba(0,0,0,0.9), 0 0 18px rgba(255, 184, 0, 0.18); z-index: 100; max-height: 340px; overflow-y: auto;">
+                <div style="padding: 10px 14px; border-bottom: 1px solid var(--sanctuary-border); display: flex; justify-content: space-between; align-items: center; background: #080a0f;">
+                    <span id="recommendations-heading" style="font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; color: var(--sanctuary-amber); letter-spacing: 0.08em; text-transform: uppercase;">
+                        RECOMMENDED NETWORK NODES
+                    </span>
+                    <span id="recommendations-count" style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--sanctuary-text-muted);">
+                        0 FOUND
+                    </span>
+                </div>
+                <div id="recommendations-list" style="display: flex; flex-direction: column;">
+                    <!-- Dynamically populated via JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Recommended Chips for instant one-click transmission -->
+        {% if suggested_users %}
+        <div style="margin-top: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 0.72rem; font-family: var(--font-mono); color: var(--sanctuary-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+                Quick Direct:
+            </span>
+            {% for su in suggested_users %}
+            <button 
+                type="button" 
+                onclick="selectUser('{{ su.username }}')" 
+                style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--sanctuary-border); background: rgba(255,255,255,0.04); color: var(--sanctuary-text); font-size: 0.78rem; cursor: pointer; transition: all 0.15s ease;"
+                onmouseover="this.style.borderColor='var(--sanctuary-amber)'; this.style.color='#fff'; this.style.background='rgba(255,184,0,0.12)';"
+                onmouseout="this.style.borderColor='var(--sanctuary-border)'; this.style.color='var(--sanctuary-text)'; this.style.background='rgba(255,255,255,0.04)';"
+                title="Direct message {{ su.get_full_name|default:su.username }}"
+            >
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--sanctuary-lime);"></span>
+                <span style="font-weight: 600;">{{ su.get_full_name|default:su.username }}</span>
+                <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--sanctuary-amber);">@{{ su.username }}</span>
             </button>
-        </form>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
     <!-- Conversations List -->
     <div style="background: var(--sanctuary-card); border: 1px solid var(--sanctuary-border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.5);">
         <div style="padding: 14px 20px; border-bottom: 1px solid var(--sanctuary-border); font-weight: 800; font-size: 0.95rem; color: #fff; background: #0d0f14; display: flex; justify-content: space-between; align-items: center;">
             <span>ACTIVE THREADS</span>
-            <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--sanctuary-amber);">{{ conversations.count }} CONVERSATIONS</span>
+            <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--sanctuary-amber);">{{ conversations|length }} CONVERSATIONS</span>
         </div>
 
         {% for conv in conversations %}
@@ -52,13 +123,20 @@
                             {{ conv.title|default:"Unnamed Group" }}
                             <span style="font-size: 0.75rem; color: var(--sanctuary-text-muted); font-family: var(--font-mono); font-weight: 400;">({{ conv.participants.count }} users)</span>
                         {% else %}
-                            @{{ conv.get_recipient.username|default:"Direct Message" }}
+                            {% with other=conv.get_recipient %}
+                                {% if other %}
+                                    {{ other.get_full_name|default:other.username }}
+                                    <span style="font-size: 0.75rem; color: var(--sanctuary-amber); font-family: var(--font-mono); font-weight: 400;">@{{ other.username }}</span>
+                                {% else %}
+                                    Direct Message
+                                {% endif %}
+                            {% endwith %}
                         {% endif %}
                     </div>
                     <div style="font-size: 0.82rem; color: var(--sanctuary-text-muted); margin-top: 3px;">
                         {% with last_msg=conv.messages.last %}
                             {% if last_msg %}
-                                <span style="color: {% if conv.is_group %}var(--sanctuary-heather){% else %}var(--sanctuary-rose){% endif %}; font-weight: 600;">{{ last_msg.sender.username }}:</span> {{ last_msg.message|truncatewords:8 }}
+                                <span style="color: {% if conv.is_group %}var(--sanctuary-heather){% else %}var(--sanctuary-rose){% endif %}; font-weight: 600;">{{ last_msg.sender.get_full_name|default:last_msg.sender.username }}:</span> {{ last_msg.message|truncatewords:8 }}
                             {% else %}
                                 Channel initialized, no messages
                             {% endif %}
@@ -74,9 +152,217 @@
         <div style="text-align: center; padding: 48px 20px; color: var(--sanctuary-text-muted);">
             <i class="fa-solid fa-comments" style="font-size: 2.4rem; margin-bottom: 12px; display: block; color: var(--sanctuary-rose);"></i>
             <h3 style="color: #fff; font-size: 1.2rem; font-weight: 800;">No conversations yet</h3>
-            <p style="font-size: 0.85rem; margin-top: 6px;">Start a conversation from a member profile, or create a group.</p>
+            <p style="font-size: 0.85rem; margin-top: 6px;">Start a conversation by typing a person's name above or from a member profile.</p>
         </div>
         {% endfor %}
     </div>
 </div>
+
+<script>
+let currentRecommendations = [];
+let selectedIndex = -1;
+let debounceTimer = null;
+
+function showRecommendations() {
+    const dropdown = document.getElementById('user-recommendations-dropdown');
+    dropdown.style.display = 'block';
+    const query = document.getElementById('dm-username').value.trim();
+    fetchUsers(query);
+}
+
+function hideRecommendations() {
+    const dropdown = document.getElementById('user-recommendations-dropdown');
+    dropdown.style.display = 'none';
+    selectedIndex = -1;
+}
+
+function clearSearch() {
+    const input = document.getElementById('dm-username');
+    input.value = '';
+    document.getElementById('clear-search-btn').style.display = 'none';
+    fetchUsers('');
+    input.focus();
+}
+
+function onSearchInput(val) {
+    const clearBtn = document.getElementById('clear-search-btn');
+    if (val.trim()) {
+        clearBtn.style.display = 'block';
+    } else {
+        clearBtn.style.display = 'none';
+    }
+    
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        fetchUsers(val.trim());
+    }, 150);
+}
+
+async function fetchUsers(query) {
+    const list = document.getElementById('recommendations-list');
+    const heading = document.getElementById('recommendations-heading');
+    const countSpan = document.getElementById('recommendations-count');
+    
+    if (query) {
+        heading.innerText = `SEARCH RESULTS FOR "${query.toUpperCase()}"`;
+    } else {
+        heading.innerText = 'RECOMMENDED NETWORK NODES';
+    }
+
+    try {
+        const res = await fetch(`/chat/api/users/?q=${encodeURIComponent(query)}`);
+        if (!res.ok) throw new Error('Network error');
+        const data = await res.json();
+        currentRecommendations = data.users || [];
+        countSpan.innerText = `${currentRecommendations.length} FOUND`;
+        renderRecommendations(currentRecommendations, query);
+    } catch (e) {
+        list.innerHTML = `<div style="padding: 14px; text-align: center; color: var(--sanctuary-rose); font-size: 0.82rem;">Failed to fetch users. Try typing name or username directly.</div>`;
+    }
+}
+
+function renderRecommendations(users, query) {
+    const list = document.getElementById('recommendations-list');
+    selectedIndex = -1;
+    
+    if (users.length === 0) {
+        list.innerHTML = `
+            <div style="padding: 24px 16px; text-align: center; color: var(--sanctuary-text-muted); font-size: 0.86rem;">
+                <i class="fa-solid fa-user-xmark" style="font-size: 1.4rem; display: block; margin-bottom: 8px; color: var(--sanctuary-rose);"></i>
+                No network contacts found matching "<strong>${escapeHtml(query)}</strong>".
+                <div style="font-size: 0.75rem; margin-top: 4px; color: var(--sanctuary-text-muted);">Try searching by first name, last name, or exact username.</div>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = users.map((u, idx) => {
+        const isOnline = u.status === 'online';
+        const displayName = u.display_name || u.name || u.username;
+        const avatarHtml = u.avatar ? 
+            `<img src="${u.avatar}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid var(--sanctuary-border);">` :
+            `<div style="width: 38px; height: 38px; border-radius: 50%; background: #161a23; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 800; font-family: var(--font-mono); color: var(--sanctuary-amber); border: 1px solid var(--sanctuary-border);">${escapeHtml(u.initials || u.username.slice(0, 2).toUpperCase())}</div>`;
+        
+        return `
+            <div 
+                id="rec-item-${idx}" 
+                class="rec-item"
+                onmousedown="selectUser('${escapeHtml(u.username)}');" 
+                onmouseenter="highlightIndex(${idx});"
+                style="display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.15s ease;"
+            >
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                    <div style="position: relative;">
+                        ${avatarHtml}
+                        <span style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; background: ${isOnline ? 'var(--sanctuary-lime)' : '#666'}; border: 2px solid #0c0e14;"></span>
+                    </div>
+                    <div style="min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span style="font-weight: 700; font-size: 0.92rem; color: #fff;">${escapeHtml(displayName)}</span>
+                            <span style="font-size: 0.76rem; color: var(--sanctuary-amber); font-family: var(--font-mono);">@${escapeHtml(u.username)}</span>
+                        </div>
+                        <div style="font-size: 0.76rem; color: var(--sanctuary-text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 440px;">
+                            <span style="color: var(--sanctuary-cyan); font-weight: 600;">[${escapeHtml(u.role || 'Member')}]</span>
+                            ${u.bio ? `· ${escapeHtml(u.bio)}` : ''}
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: 10px;">
+                    <span style="padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.72rem; font-family: var(--font-mono); font-weight: 700; background: rgba(255,184,0,0.12); color: var(--sanctuary-amber); border: 1px solid rgba(255,184,0,0.25);">
+                        <i class="fa-solid fa-paper-plane" style="margin-right: 4px;"></i> Chat
+                    </span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function highlightIndex(idx) {
+    selectedIndex = idx;
+    document.querySelectorAll('.rec-item').forEach((el, i) => {
+        if (i === idx) {
+            el.style.background = 'rgba(255, 184, 0, 0.14)';
+        } else {
+            el.style.background = 'transparent';
+        }
+    });
+}
+
+function handleSearchKeydown(e) {
+    const dropdown = document.getElementById('user-recommendations-dropdown');
+    if (dropdown.style.display === 'none') {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            showRecommendations();
+            return;
+        }
+    }
+    
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (currentRecommendations.length > 0) {
+            selectedIndex = (selectedIndex + 1) % currentRecommendations.length;
+            highlightIndex(selectedIndex);
+            const el = document.getElementById(`rec-item-${selectedIndex}`);
+            if (el) el.scrollIntoView({ block: 'nearest' });
+        }
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (currentRecommendations.length > 0) {
+            selectedIndex = (selectedIndex - 1 + currentRecommendations.length) % currentRecommendations.length;
+            highlightIndex(selectedIndex);
+            const el = document.getElementById(`rec-item-${selectedIndex}`);
+            if (el) el.scrollIntoView({ block: 'nearest' });
+        }
+    } else if (e.key === 'Enter') {
+        if (selectedIndex >= 0 && selectedIndex < currentRecommendations.length) {
+            e.preventDefault();
+            selectUser(currentRecommendations[selectedIndex].username);
+        }
+    } else if (e.key === 'Escape') {
+        hideRecommendations();
+    }
+}
+
+function selectUser(username) {
+    if (!username) return;
+    window.location.href = '/chat/dm/' + encodeURIComponent(username) + '/';
+}
+
+function handleDmSubmit(e) {
+    e.preventDefault();
+    if (selectedIndex >= 0 && selectedIndex < currentRecommendations.length) {
+        selectUser(currentRecommendations[selectedIndex].username);
+        return;
+    }
+    // If only 1 result matches, auto-navigate to it
+    if (currentRecommendations.length === 1) {
+        selectUser(currentRecommendations[0].username);
+        return;
+    }
+    const val = document.getElementById('dm-username').value.trim();
+    if (val) {
+        // Find if any recommendation display_name or username matches
+        const exact = currentRecommendations.find(u => 
+            u.username.toLowerCase() === val.toLowerCase() || 
+            (u.display_name && u.display_name.toLowerCase() === val.toLowerCase()) ||
+            (u.name && u.name.toLowerCase() === val.toLowerCase())
+        );
+        if (exact) {
+            selectUser(exact.username);
+        } else {
+            selectUser(val);
+        }
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+</script>
 {% endblock %}

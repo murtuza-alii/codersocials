@@ -27,6 +27,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('communities/', include('communities.urls')),
     path('chat/', include('chat.urls')),
+    path('api/mcp/', include('mcp_bridge.urls')),
     path('', include('posts.urls')),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
