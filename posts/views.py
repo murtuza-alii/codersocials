@@ -20,7 +20,7 @@ from communities.models import Community, CommunityMembership
 def get_current_user(request):
     if request.user.is_authenticated:
         return request.user
-    return User.objects.filter(username='sarah_creator').first()
+    return User.objects.filter(username='human_supervisor').first() or User.objects.filter(username='sarah_creator').first()
 
 
 def serialize_post(post, curr_user=None):
@@ -46,27 +46,41 @@ def serialize_post(post, curr_user=None):
                 'is_video': post.media_type == 'video',
             })
 
-    comments = [
-        {
+    comments = []
+    for c in post.comments.select_related('author', 'author__profile', 'author__agent_profile').all():
+        agent_p = getattr(c.author, 'agent_profile', None)
+        comments.append({
             'id': c.id,
-            'author': {'username': c.author.username},
+            'author': {
+                'username': c.author.username,
+                'name': f"{c.author.first_name} {c.author.last_name}".strip() or c.author.username,
+                'avatar': c.author.profile.avatar.url if hasattr(c.author, 'profile') and c.author.profile.avatar else None,
+                'is_human': c.author.username.startswith('human_'),
+                'role': getattr(agent_p, 'system_role', 'MEMBER') if agent_p else ('SUPERVISOR' if c.author.username.startswith('human_') else 'MEMBER'),
+                'model_name': agent_p.model_name if agent_p else ('Human Supervisor' if c.author.username.startswith('human_') else 'Agent Node'),
+                'system_role': agent_p.system_role if agent_p else '',
+            },
             'text': c.text,
             'created_at': c.created_at.isoformat(),
-        }
-        for c in post.comments.all()
-    ]
+        })
 
     is_liked = post.likes.filter(user=curr_user).exists() if curr_user else False
     can_takedown = (curr_user == post.author or (post.community and is_community_admin(curr_user, post.community))) if curr_user else False
 
     profile = getattr(post.author, 'profile', None)
+    post_author_agent = getattr(post.author, 'agent_profile', None)
     return {
         'id': post.id,
+        'tag': post.tag,
         'caption': post.caption,
         'author': {
             'username': post.author.username,
+            'name': f"{post.author.first_name} {post.author.last_name}".strip() or post.author.username,
             'avatar': profile.avatar.url if profile and profile.avatar else None,
-            'profile': {'role': 'ADMIN' if (post.community and is_community_admin(post.author, post.community)) else 'MEMBER'}
+            'is_human': post.author.username.startswith('human_'),
+            'profile': {'role': 'ADMIN' if (post.community and is_community_admin(post.author, post.community)) else 'MEMBER'},
+            'model_name': post_author_agent.model_name if post_author_agent else ('Human Supervisor' if post.author.username.startswith('human_') else 'Agent Node'),
+            'system_role': post_author_agent.system_role if post_author_agent else '',
         },
         'community': {
             'id': str(post.community.id),
@@ -75,12 +89,75 @@ def serialize_post(post, curr_user=None):
         } if post.community else None,
         'created_at': post.created_at.isoformat(),
         'total_likes': post.likes.count(),
-        'total_comments': post.comments.count(),
+        'total_comments': len(comments),
         'is_liked': is_liked,
         'can_takedown': can_takedown,
         'media_items': media_items,
         'comments': comments,
     }
+
+
+def simulate_agent_reaction_on_post(post, trigger_msg, sender):
+    """If human sends a comment/directive on a post, have a relevant agent reply on that post thread."""
+    if not sender or not sender.username.startswith('human_'):
+        return None
+    if not trigger_msg:
+        return None
+
+    agent_members = User.objects.filter(
+        username__startswith='agent_',
+        community_memberships__community=post.community
+    ) if post.community else User.objects.filter(username__startswith='agent_')
+    
+    if not agent_members.exists():
+        agent_members = User.objects.filter(username__startswith='agent_')
+    if not agent_members.exists():
+        return None
+
+    lower_msg = str(trigger_msg or '').lower()
+    
+    if any(k in lower_msg for k in ['proof', 'verify', 'formal', 'logic']):
+        responder = agent_members.filter(username__contains='deepseek').first() or agent_members.first()
+        reply = (
+            f"[REACTION // {responder.first_name}]: Formal verification harness dispatched.\n"
+            f"Inductive hypothesis evaluated across active state-space. All invariants hold."
+        )
+    elif any(k in lower_msg for k in ['audit', 'security', 'cve', 'vuln', 'leak', 'memory']):
+        responder = agent_members.filter(username__contains='secops').first() or agent_members.first()
+        reply = (
+            f"[REACTION // {responder.first_name}]: Memory safety and ASan trace completed.\n"
+            f"Zero heap buffer overflow detected; bounds strictly validated."
+        )
+    elif any(k in lower_msg for k in ['fuzz', 'test', 'eval', 'benchmark', 'harness']):
+        responder = agent_members.filter(username__contains='gemini').first() or agent_members.first()
+        reply = (
+            f"[REACTION // {responder.first_name}]: High-volume test runner executed across 10,000 synthetic permutations.\n"
+            f"P99 latency: 1.28ms | Consensus convergence rate: 99.98%."
+        )
+    elif any(k in lower_msg for k in ['halt', 'abort', 'pause', 'stop']):
+        responder = agent_members.filter(username__contains='arbiter').first() or agent_members.first()
+        reply = (
+            f"[SUPERVISOR DIRECTIVE ACKNOWLEDGED]: Execution pipeline frozen pending human review.\n"
+            f"Consensus epoch held at current block."
+        )
+    elif any(k in lower_msg for k in ['approve', 'lgtm', 'ship', 'merge', 'consensus']):
+        responder = agent_members.filter(username__contains='arbiter').first() or agent_members.first()
+        reply = (
+            f"[ARBITER // {responder.first_name}]: Consensus quorum verified. Supervisor directive merged into master state machine."
+        )
+    else:
+        responder = agent_members.filter(username__contains='claude').first() or agent_members.first()
+        reply = (
+            f"[ANALYSIS // {responder.first_name}]: Incorporating steering directive: '{str(trigger_msg)[:70]}...'.\n"
+            f"Updating state transition graph to reflect constraints."
+        )
+
+    agent_comment = Comment.objects.create(
+        post=post,
+        author=responder,
+        text=reply,
+    )
+    return agent_comment
 
 
 def feed_view(request):
@@ -300,21 +377,13 @@ def post_detail_view(request, pk):
     ) if curr_user else False
 
     if is_json:
-        comments_data = [
-            {
-                'id': c.id,
-                'author': {'username': c.author.username},
-                'text': c.text,
-                'created_at': c.created_at.isoformat(),
-            }
-            for c in comments
-        ]
+        serialized = serialize_post(post, curr_user)
         return JsonResponse({
             'status': 'ok',
-            'post': serialize_post(post, curr_user),
+            'post': serialized,
             'is_liked': is_liked,
             'can_takedown': can_takedown,
-            'comments': comments_data,
+            'comments': serialized.get('comments', []),
         })
 
     if request.method == 'POST':
@@ -399,10 +468,32 @@ def add_comment_view(request, pk):
                 author=curr_user,
                 text=text,
             )
+            # Trigger autonomous agent reaction on post conversation
+            simulate_agent_reaction_on_post(post, text, curr_user)
+
             if is_json:
+                comments_data = []
+                for c in post.comments.select_related('author', 'author__profile', 'author__agent_profile').all():
+                    agent_p = getattr(c.author, 'agent_profile', None)
+                    comments_data.append({
+                        'id': c.id,
+                        'author': {
+                            'username': c.author.username,
+                            'name': f"{c.author.first_name} {c.author.last_name}".strip() or c.author.username,
+                            'avatar': c.author.profile.avatar.url if hasattr(c.author, 'profile') and c.author.profile.avatar else None,
+                            'is_human': c.author.username.startswith('human_'),
+                            'role': getattr(agent_p, 'system_role', 'MEMBER') if agent_p else ('SUPERVISOR' if c.author.username.startswith('human_') else 'MEMBER'),
+                            'model_name': agent_p.model_name if agent_p else ('Human Supervisor' if c.author.username.startswith('human_') else 'Agent Node'),
+                            'system_role': agent_p.system_role if agent_p else '',
+                        },
+                        'text': c.text,
+                        'created_at': c.created_at.isoformat(),
+                    })
                 return JsonResponse({
                     'status': 'ok',
-                    'comment': {
+                    'comments': comments_data,
+                    'total_comments': len(comments_data),
+                    'comment': comments_data[-1] if comments_data else {
                         'id': comment.id,
                         'author': {'username': curr_user.username},
                         'text': comment.text,

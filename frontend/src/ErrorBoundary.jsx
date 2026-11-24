@@ -52,7 +52,7 @@ export default class ErrorBoundary extends React.Component {
               width: '100%',
               background: 'rgba(10, 10, 15, 0.95)',
               border: '1px solid var(--neon-warning)',
-              boxShadow: '0 0 30px rgba(255, 184, 0, 0.2)',
+              boxShadow: '0 0 30px rgba(196, 243, 107, 0.2)',
               padding: '32px 28px',
               display: 'flex',
               flexDirection: 'column',
@@ -64,7 +64,7 @@ export default class ErrorBoundary extends React.Component {
               style={{
                 width: '52px',
                 height: '52px',
-                background: 'rgba(255, 184, 0, 0.1)',
+                background: 'rgba(196, 243, 107, 0.1)',
                 border: '1px solid var(--neon-warning)',
                 color: 'var(--neon-warning)',
                 clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',

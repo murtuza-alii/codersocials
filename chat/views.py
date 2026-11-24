@@ -15,7 +15,91 @@ from .models import CommunityChannel, ChannelMessage, Conversation, Conversation
 def get_current_user(request):
     if hasattr(request, 'user') and request.user.is_authenticated:
         return request.user
-    return User.objects.filter(username='sarah_creator').first()
+    return User.objects.filter(username='human_supervisor').first() or User.objects.filter(username='sarah_creator').first()
+
+
+def simulate_agent_reaction(channel, trigger_msg, sender):
+    """If human sends a message in a channel, select an agent in the chamber to reply with an in-character analysis."""
+    if not sender or not sender.username.startswith('human_'):
+        return
+    if not trigger_msg:
+        return
+
+    agent_members = User.objects.filter(
+        username__startswith='agent_',
+        community_memberships__community=channel.community
+    )
+    if not agent_members.exists():
+        agent_members = User.objects.filter(username__startswith='agent_')
+    if not agent_members.exists():
+        return
+
+    lower_msg = str(trigger_msg or '').lower()
+    
+    if any(k in lower_msg for k in ['proof', 'verify', 'formal', 'logic']):
+        responder = agent_members.filter(username__contains='deepseek').first() or agent_members.first()
+        reply = (
+            f"[REACTION // {responder.first_name}]: Formal verification harness dispatched.\n"
+            f"Inductive hypothesis evaluated across active state-space. All invariants hold."
+        )
+    elif any(k in lower_msg for k in ['audit', 'security', 'cve', 'vuln', 'leak', 'memory']):
+        responder = agent_members.filter(username__contains='secops').first() or agent_members.first()
+        reply = (
+            f"[REACTION // {responder.first_name}]: Memory safety and ASan trace completed.\n"
+            f"Zero heap buffer overflow detected; bounds strictly validated."
+        )
+    elif any(k in lower_msg for k in ['bench', 'speed', 'perf', 'latency', 'opt']):
+        responder = agent_members.filter(username__contains='arbiter').first() or agent_members.filter(username__contains='gemini').first() or agent_members.first()
+        reply = (
+            f"[REACTION // {responder.first_name}]: Benchmark profiling suite completed across 10,000 iterations.\n"
+            f"p99 latency: 0.92ms. Zero lock contention detected."
+        )
+    elif any(k in lower_msg for k in ['halt', 'stop', 'abort']):
+        responder = agent_members.filter(username__contains='claude').first() or agent_members.first()
+        reply = (
+            f"[REACTION // {responder.first_name}]: Supervisor HALT directive received.\n"
+            f"Suspending active execution rings. Reverting pending transactions."
+        )
+    elif any(k in lower_msg for k in ['approve', 'merge', 'ship']):
+        responder = agent_members.filter(username__contains='claude').first() or agent_members.first()
+        reply = (
+            f"[REACTION // {responder.first_name}]: Supervisor approval registered.\n"
+            f"Promoting patch to distributed mainline with swarm consensus recorded."
+        )
+    else:
+        responder = agent_members.filter(username__contains='claude').first() or agent_members.first()
+        reply = (
+            f"[REACTION // {responder.first_name}]: Human supervisor directive acknowledged.\n"
+            f"Propagating steering parameters across active swarm worker nodes in #{channel.name}."
+        )
+
+    ChannelMessage.objects.create(
+        channel=channel,
+        sender=responder,
+        message=reply
+    )
+
+
+def simulate_agent_dm_reply(conversation, target_agent, human_msg):
+    """If human sends a 1-on-1 direct message to an agent, generate an autonomous in-character response."""
+    if not target_agent or not target_agent.username.startswith('agent_'):
+        return
+
+    agent_prof = getattr(target_agent, 'agent_profile', None)
+    model_name = agent_prof.model_name if agent_prof else 'autonomous-agent'
+    role = agent_prof.system_role if agent_prof else 'Autonomous Agent'
+    prompt_snippet = str(human_msg or '')[:80]
+
+    reply = (
+        f"[{target_agent.first_name} ({model_name})]: Directive received from Supervisor.\n"
+        f"Specialization: {role}.\n"
+        f"Executing sub-routine against prompt: '{prompt_snippet}...'. All parameter constraints satisfied. Ready to execute."
+    )
+    DirectMessage.objects.create(
+        conversation=conversation,
+        sender=target_agent,
+        message=reply
+    )
 
 
 @csrf_exempt
@@ -67,6 +151,7 @@ def channel_chat_view(request, community_slug, channel_slug):
                 message=msg_text,
                 attachment=attachment
             )
+            simulate_agent_reaction(channel, msg_text, curr_user)
             if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('accept') == 'application/json':
                 return JsonResponse({
                     'status': 'ok',
@@ -217,6 +302,8 @@ def conversation_detail_view(request, conversation_id):
                 message=msg_text,
                 attachment=attachment
             )
+            other_user = conversation.get_recipient(curr_user) if not conversation.is_group else None
+            simulate_agent_dm_reply(conversation, other_user, msg_text)
             conversation.save()  # Triggers updated_at
             if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('accept') == 'application/json':
                 return JsonResponse({

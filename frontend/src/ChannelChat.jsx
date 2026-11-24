@@ -335,109 +335,126 @@ export default function ChannelChat({
         </div>
 
         {/* Message Items */}
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '14px',
-              padding: '6px 0',
-            }}
-          >
-            {/* Sender Monogram */}
+        {messages.map((msg) => {
+          const isHuman = msg.sender?.username?.startsWith('human_');
+          const isAgent = msg.sender?.username?.startsWith('agent_');
+          let agentBadge = msg.sender?.profile?.role || 'NODE';
+          if (msg.sender?.username?.includes('claude')) agentBadge = 'Claude 3.7 // ARCHITECT';
+          else if (msg.sender?.username?.includes('deepseek')) agentBadge = 'DeepSeek R1 // REASONING';
+          else if (msg.sender?.username?.includes('secops')) agentBadge = 'GPT-4o // AUDITOR';
+          else if (msg.sender?.username?.includes('verifier') || msg.sender?.username?.includes('gemini')) agentBadge = 'Gemini 2.5 // VERIFIER';
+          else if (msg.sender?.username?.includes('arbiter') || msg.sender?.username?.includes('llama')) agentBadge = 'Llama 3.3 // ARBITER';
+
+          const hasCodeBlock = msg.message?.includes('```');
+
+          return (
             <div
+              key={msg.id}
               style={{
-                width: '40px',
-                height: '40px',
-                background: '#000000',
-                border: '1px solid var(--neon-cyan-border)',
-                clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--neon-cyan)',
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                flexShrink: 0,
+                alignItems: 'flex-start',
+                gap: '14px',
+                padding: '10px 14px',
+                background: isHuman ? 'rgba(196, 243, 107, 0.05)' : 'rgba(255, 255, 255, 0.01)',
+                border: isHuman ? '1px solid rgba(196, 243, 107, 0.3)' : '1px solid rgba(255, 255, 255, 0.04)',
+                borderRadius: '4px',
               }}
             >
-              {msg.sender?.username ? msg.sender.username.slice(0, 2).toUpperCase() : 'OP'}
-            </div>
+              {/* Sender Monogram */}
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  background: isHuman ? 'rgba(196, 243, 107, 0.12)' : '#000000',
+                  border: `1px solid ${isHuman ? 'var(--neon-cyan)' : 'var(--neon-cyan-border)'}`,
+                  clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--neon-cyan)',
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  flexShrink: 0,
+                }}
+              >
+                {isHuman ? 'DIR' : (msg.sender?.username ? msg.sender.username.slice(6, 8).toUpperCase() : 'AG')}
+              </div>
 
-            {/* Message Content Body */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '4px' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--neon-cyan)' }}>
-                  @{msg.sender?.username}
-                </span>
+              {/* Message Content Body */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.88rem', color: isHuman ? 'var(--neon-cyan)' : '#ffffff' }}>
+                    @{msg.sender?.username}
+                  </span>
 
-                {msg.sender?.profile?.role && (
                   <span
                     style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: '0.62rem',
-                      fontWeight: 700,
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
                       color: 'var(--neon-cyan)',
-                      border: '1px solid var(--neon-cyan-border)',
-                      padding: '1px 5px',
+                      background: 'rgba(196, 243, 107, 0.1)',
+                      border: '1px solid rgba(196, 243, 107, 0.3)',
+                      padding: '1px 6px',
+                      borderRadius: '2px',
                     }}
                   >
-                    {msg.sender.profile.role}
+                    {isHuman ? 'HUMAN SUPERVISOR // STEERING' : agentBadge}
                   </span>
-                )}
 
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-dim)' }}>
-                  {msg.created_at
-                    ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    : 'now'}
-                </span>
-              </div>
-
-              <div
-                style={{
-                  fontSize: '0.9rem',
-                  lineHeight: 1.55,
-                  color: 'var(--text-primary)',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {msg.message}
-              </div>
-
-              {/* Attachment chip */}
-              {msg.attachment && (
-                <div style={{ marginTop: '8px' }}>
-                  <a
-                    href={msg.attachment.url || msg.attachment}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      background: 'var(--bg-surface)',
-                      border: '1px solid var(--neon-cyan-border)',
-                      padding: '4px 10px',
-                      color: 'var(--neon-cyan)',
-                      textDecoration: 'none',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.74rem',
-                      transition: 'border-color 0.2s ease',
-                    }}
-                    onPointerEnter={(e) => (e.currentTarget.style.borderColor = 'var(--neon-cyan)')}
-                    onPointerLeave={(e) => (e.currentTarget.style.borderColor = 'var(--neon-cyan-border)')}
-                  >
-                    <FileText size={14} weight="bold" />
-                    <span>{msg.attachment.name || 'View Attachment'}</span>
-                  </a>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-dim)', marginLeft: 'auto' }}>
+                    {msg.created_at
+                      ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : 'now'}
+                  </span>
                 </div>
-              )}
+
+                <div
+                  style={{
+                    fontSize: '0.88rem',
+                    lineHeight: 1.6,
+                    color: 'var(--text-primary)',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    fontFamily: hasCodeBlock ? 'var(--font-mono)' : 'inherit',
+                  }}
+                >
+                  {msg.message}
+                </div>
+
+                {/* Attachment chip */}
+                {msg.attachment && (
+                  <div style={{ marginTop: '8px' }}>
+                    <a
+                      href={msg.attachment.url || msg.attachment}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--neon-cyan-border)',
+                        padding: '4px 10px',
+                        color: 'var(--neon-cyan)',
+                        textDecoration: 'none',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.74rem',
+                        transition: 'border-color 0.2s ease',
+                      }}
+                      onPointerEnter={(e) => (e.currentTarget.style.borderColor = 'var(--neon-cyan)')}
+                      onPointerLeave={(e) => (e.currentTarget.style.borderColor = 'var(--neon-cyan-border)')}
+                    >
+                      <FileText size={14} weight="bold" />
+                      <span>{msg.attachment.name || 'View Attachment'}</span>
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         <div ref={streamEndRef} />
       </div>
@@ -488,6 +505,39 @@ export default function ChannelChat({
             </div>
           )}
 
+          {/* Quick Supervisor Directive Chips */}
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', overflowX: 'auto', paddingBottom: '2px' }}>
+            <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)', alignSelf: 'center', marginRight: '4px' }}>
+              DIRECTIVES:
+            </span>
+            {[
+              'Request formal proof of invariants',
+              'Run fuzzing harness across 10k iterations',
+              'Audit memory allocation bounds & ASan',
+              'Halt swarm execution rings',
+              'Approve RFC and merge to mainline',
+            ].map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => setInputMsg(`DIRECTIVE: ${chip}`)}
+                style={{
+                  background: 'rgba(196, 243, 107, 0.08)',
+                  border: '1px solid rgba(196, 243, 107, 0.25)',
+                  color: 'var(--neon-cyan)',
+                  borderRadius: '3px',
+                  padding: '3px 8px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.70rem',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                + {chip}
+              </button>
+            ))}
+          </div>
+
           <form
             onSubmit={handleSendMessage}
             style={{
@@ -536,7 +586,7 @@ export default function ChannelChat({
               type="text"
               value={inputMsg}
               onChange={(e) => setInputMsg(e.target.value)}
-              placeholder={`Message #${channel.name}...`}
+              placeholder="Inject steering directive into swarm (e.g. prompt agents, request proof, audit)..."
               disabled={isSending}
               style={{
                 flex: 1,

@@ -16,7 +16,7 @@ from chat.models import CommunityChannel
 def get_current_user(request):
     if request.user.is_authenticated:
         return request.user
-    return User.objects.filter(username='sarah_creator').first()
+    return User.objects.filter(username='human_supervisor').first() or User.objects.filter(username='sarah_creator').first()
 
 
 def explore_communities(request):
@@ -233,14 +233,17 @@ def community_detail(request, slug):
         })
 
     # Fetch posts inside this community
-    posts = community.posts.all().select_related('author', 'author__profile').prefetch_related(
-        'media_items', 'likes', 'comments', 'comments__author'
+    posts = community.posts.all().select_related(
+        'author', 'author__profile', 'author__agent_profile'
+    ).prefetch_related(
+        'media_items', 'likes', 'comments', 'comments__author',
+        'comments__author__profile', 'comments__author__agent_profile'
     )
     channels = community.channels.all()
 
     if request.headers.get('accept') == 'application/json' or request.GET.get('format') == 'json' or request.headers.get('x-requested-with') == 'XMLHttpRequest':
         posts_data = []
-        for p in posts[:30]:
+        for p in posts[:50]:
             media_items = [
                 {
                     'id': m.id,
@@ -251,22 +254,39 @@ def community_detail(request, slug):
                 }
                 for m in p.media_items.all()
             ]
-            comments_data = [
-                {
+            comments_data = []
+            for c in p.comments.all():
+                agent_p = getattr(c.author, 'agent_profile', None)
+                comments_data.append({
                     'id': c.id,
-                    'author': {'username': c.author.username},
+                    'author': {
+                        'username': c.author.username,
+                        'name': f"{c.author.first_name} {c.author.last_name}".strip() or c.author.username,
+                        'avatar': c.author.profile.avatar.url if hasattr(c.author, 'profile') and c.author.profile.avatar else None,
+                        'is_human': c.author.username.startswith('human_'),
+                        'role': getattr(agent_p, 'system_role', 'MEMBER') if agent_p else ('SUPERVISOR' if c.author.username.startswith('human_') else 'MEMBER'),
+                        'model_name': agent_p.model_name if agent_p else ('Human-in-the-Loop' if c.author.username.startswith('human_') else 'Agent Node'),
+                        'system_role': agent_p.system_role if agent_p else '',
+                    },
                     'text': c.text,
                     'created_at': c.created_at.isoformat(),
-                }
-                for c in p.comments.all()
-            ]
+                })
+
+            post_author_agent = getattr(p.author, 'agent_profile', None)
+            author_data = {
+                'username': p.author.username,
+                'name': f"{p.author.first_name} {p.author.last_name}".strip() or p.author.username,
+                'avatar': p.author.profile.avatar.url if hasattr(p.author, 'profile') and p.author.profile.avatar else None,
+                'is_human': p.author.username.startswith('human_'),
+                'profile': {'role': 'ADMIN' if is_community_admin(p.author, community) else 'MEMBER'},
+                'model_name': post_author_agent.model_name if post_author_agent else ('Human Supervisor' if p.author.username.startswith('human_') else 'Agent Node'),
+                'system_role': post_author_agent.system_role if post_author_agent else '',
+            }
+
             posts_data.append({
                 'id': p.id,
-                'author': {
-                    'username': p.author.username,
-                    'avatar': p.author.profile.avatar.url if hasattr(p.author, 'profile') and p.author.profile.avatar else None,
-                    'profile': {'role': 'ADMIN' if is_community_admin(p.author, community) else 'MEMBER'}
-                },
+                'tag': p.tag,
+                'author': author_data,
                 'caption': p.caption,
                 'created_at': p.created_at.isoformat(),
                 'total_likes': p.likes.count(),
@@ -279,6 +299,21 @@ def community_detail(request, slug):
 
         is_member = membership.status == 'APPROVED' if membership else False
         pending_requests_count = community.memberships.filter(status='PENDING').count() if is_admin else 0
+        
+        members_data = []
+        for m in community.memberships.select_related('user', 'user__profile', 'user__agent_profile').filter(status='APPROVED')[:30]:
+            agent_prof = getattr(m.user, 'agent_profile', None)
+            members_data.append({
+                'id': str(m.id),
+                'username': m.user.username,
+                'name': f"{m.user.first_name} {m.user.last_name}".strip() or m.user.username,
+                'role': m.role,
+                'is_agent': m.user.username.startswith('agent_'),
+                'model_name': agent_prof.model_name if agent_prof else ('Human-in-the-Loop' if m.user.username.startswith('human_') else 'Node'),
+                'system_role': agent_prof.system_role if agent_prof else 'Platform Supervisor',
+                'karma_credits': agent_prof.karma_credits if agent_prof else 1000,
+            })
+
         return JsonResponse({
             'status': 'ok',
             'community': {
@@ -300,6 +335,7 @@ def community_detail(request, slug):
                 'pending_requests_count': pending_requests_count,
             },
             'channels': [{'id': str(ch.id), 'name': ch.name, 'slug': ch.slug, 'is_announcement': ch.is_announcement, 'topic': ch.topic} for ch in channels],
+            'members': members_data,
             'membership': {'status': membership.status if membership else None, 'role': membership.role if membership else None},
             'is_admin': is_admin,
             'pending_requests_count': pending_requests_count,

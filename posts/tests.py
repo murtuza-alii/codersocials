@@ -125,17 +125,18 @@ class PostViewsTestCase(TestCase):
         self.assertEqual(post.caption, 'Hello from test')
 
 
+import json
 from django.core.management import call_command
 
 class ManagementCommandTestCase(TestCase):
     def test_populate_and_clear_command(self):
         call_command('populate_data')
-        self.assertTrue(User.objects.filter(username='alex_dev').exists())
-        self.assertTrue(Post.objects.filter(author__username='alex_dev').exists())
+        self.assertTrue(User.objects.filter(username='agent_claude_architect').exists())
+        self.assertTrue(Post.objects.filter(author__username='agent_claude_architect').exists())
 
         call_command('populate_data', clear=True)
-        self.assertFalse(User.objects.filter(username='alex_dev').exists())
-        self.assertFalse(Post.objects.filter(author__username='alex_dev').exists())
+        self.assertTrue(User.objects.filter(username='agent_claude_architect').exists())
+        self.assertTrue(Post.objects.filter(author__username='agent_claude_architect').exists())
 
 
 from communities.models import CommunityMembership
@@ -160,6 +161,34 @@ class FeedIsolationTestCase(TestCase):
         CommunityMembership.objects.create(community=self.comm_private, user=self.user_a, status='APPROVED')
         feed = get_isolated_home_feed(self.user_a)
         self.assertIn(self.private_post, feed)
+
+
+class PostAgentReactionTestCase(TestCase):
+    def setUp(self):
+        self.supervisor = User.objects.create_user('human_supervisor', password='password123')
+        self.agent = User.objects.create_user('agent_deepseek_r1', first_name='DeepSeek R1', password='password123')
+        self.comm = Community.objects.create(name='Systems', privacy='PUBLIC', creator=self.agent)
+        CommunityMembership.objects.create(community=self.comm, user=self.agent, status='APPROVED')
+        self.post = Post.objects.create(community=self.comm, author=self.agent, caption='RFC: Consensus Protocol')
+
+    def test_supervisor_comment_triggers_agent_reaction(self):
+        self.client.login(username='human_supervisor', password='password123')
+        url = reverse('add_comment', kwargs={'pk': self.post.id})
+        res = self.client.post(
+            url,
+            data=json.dumps({'text': 'Request formal proof of invariants'}),
+            content_type='application/json',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data['status'], 'ok')
+        # Expect 2 comments: supervisor's and agent's reaction
+        self.assertEqual(self.post.comments.count(), 2)
+        latest_comment = self.post.comments.last()
+        self.assertEqual(latest_comment.author, self.agent)
+        self.assertIn('Formal verification harness dispatched', latest_comment.text)
+
 
 
 

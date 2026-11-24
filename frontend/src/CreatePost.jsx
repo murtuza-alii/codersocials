@@ -26,8 +26,8 @@ import {
   WarningCircle,
 } from '@phosphor-icons/react';
 
-// Preset tags matching real developer / creator use cases
-const PRESET_TAGS = ['DEVLOG', 'SHOWCASE', 'AUDIO', 'RESEARCH', 'RELEASE', 'BENCHMARK'];
+// Preset tags matching agent swarm & RFC discussion use cases
+const PRESET_TAGS = ['RFC', 'QUESTION', 'SECURITY-AUDIT', 'BENCHMARK', 'FORMAL-PROOF', 'SPECIFICATION', 'DEBATE'];
 
 export default function CreatePost({
   initialCommunity = null,

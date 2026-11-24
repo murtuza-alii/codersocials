@@ -136,18 +136,18 @@ export default function AppShell({
           userSelect: 'none',
         }}
       >
-        {/* Sanctuary Home Feed Icon */}
-        <Tooltip text="Home Feed" position="right">
+        {/* Sanctuary Swarm Hub Icon */}
+        <Tooltip text="Swarm Hub & Task Bounties" position="right">
           <button
             type="button"
-            onClick={() => onNavigate('feed')}
-            aria-label="Sanctuary Home Feed"
+            onClick={() => onNavigate('swarm')}
+            aria-label="Sanctuary Swarm Hub"
             style={{
               width: '44px',
               height: '44px',
-              background: currentRoute === 'feed' ? 'var(--neon-cyan)' : 'var(--bg-surface)',
-              color: currentRoute === 'feed' ? '#000000' : 'var(--neon-cyan)',
-              border: `1px solid ${currentRoute === 'feed' ? 'var(--neon-cyan)' : 'var(--neon-cyan-border)'}`,
+              background: currentRoute === 'swarm' ? 'var(--neon-cyan)' : 'var(--bg-surface)',
+              color: currentRoute === 'swarm' ? '#000000' : 'var(--neon-cyan)',
+              border: `1px solid ${currentRoute === 'swarm' ? 'var(--neon-cyan)' : 'var(--neon-cyan-border)'}`,
               clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
               display: 'flex',
               alignItems: 'center',
@@ -159,7 +159,7 @@ export default function AppShell({
             }}
           >
             {/* Active Pill Indicator */}
-            {currentRoute === 'feed' && (
+            {currentRoute === 'swarm' && (
               <span
                 style={{
                   position: 'absolute',
@@ -171,7 +171,7 @@ export default function AppShell({
                 }}
               />
             )}
-            <House size={22} weight={currentRoute === 'feed' ? 'fill' : 'bold'} />
+            <Cpu size={22} weight={currentRoute === 'swarm' ? 'fill' : 'bold'} />
           </button>
         </Tooltip>
 
@@ -329,17 +329,17 @@ export default function AppShell({
             </button>
           </Tooltip>
 
-          {/* Agent Swarm & MCP Bounties Button */}
-          <Tooltip text="Agent Swarm & MCP Bounties" position="right">
+          {/* Agent Roster & Telemetry Button */}
+          <Tooltip text="Agent Roster & Telemetry" position="right">
             <button
               type="button"
-              onClick={() => onNavigate('swarm')}
+              onClick={() => onNavigate('agents')}
               style={{
                 width: '44px',
                 height: '44px',
-                background: currentRoute === 'swarm' ? 'var(--neon-cyan)' : 'var(--bg-surface)',
-                color: currentRoute === 'swarm' ? '#000000' : 'var(--neon-cyan)',
-                border: `1px solid ${currentRoute === 'swarm' ? 'var(--neon-cyan)' : 'var(--neon-cyan-border)'}`,
+                background: currentRoute === 'agents' ? 'var(--neon-cyan)' : 'var(--bg-surface)',
+                color: currentRoute === 'agents' ? '#000000' : 'var(--neon-cyan)',
+                border: `1px solid ${currentRoute === 'agents' ? 'var(--neon-cyan)' : 'var(--neon-cyan-border)'}`,
                 clipPath: 'polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px)',
                 display: 'flex',
                 alignItems: 'center',
@@ -352,7 +352,7 @@ export default function AppShell({
               onPointerDown={(e) => { e.currentTarget.style.transform = 'scale(0.96)'; }}
               onPointerUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
-              {currentRoute === 'swarm' && (
+              {currentRoute === 'agents' && (
                 <span
                   style={{
                     position: 'absolute',
@@ -363,7 +363,7 @@ export default function AppShell({
                   }}
                 />
               )}
-              <Cpu size={20} weight={currentRoute === 'swarm' ? 'fill' : 'bold'} />
+              <UsersThree size={20} weight={currentRoute === 'agents' ? 'fill' : 'bold'} />
             </button>
           </Tooltip>
 
@@ -1373,31 +1373,11 @@ export default function AppShell({
                         transition: 'transform 0.18s ease',
                       }}
                     />
-                    <span>Text Channels</span>
+                    <span>CHAMBER TOPICS &amp; RFCS</span>
                     <span style={{ fontSize: '0.64rem', color: 'var(--text-dim)', marginLeft: '4px' }}>
                       {channels.length}
                     </span>
                   </button>
-
-                  <Tooltip text={`Create Channel in ${activeCommunity?.name || 'Space'}`} position="left">
-                    <button
-                      type="button"
-                      onClick={() => setIsCreateChannelOpen(true)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--text-dim)',
-                        cursor: 'pointer',
-                        padding: '2px',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
-                      onPointerEnter={(e) => (e.currentTarget.style.color = 'var(--neon-cyan)')}
-                      onPointerLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
-                    >
-                      <Plus size={13} weight="bold" />
-                    </button>
-                  </Tooltip>
                 </div>
 
                 {isChannelsOpen && (

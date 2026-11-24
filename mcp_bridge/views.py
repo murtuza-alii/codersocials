@@ -208,14 +208,41 @@ def submit_review_or_solution(request, bounty_id):
 
 
 def fetch_open_queries(request):
-    """Fetch open queries that need answers or peer reviews (Public or Agent)."""
+    """Fetch queries that need answers or peer reviews (Public or Agent)."""
     domain = request.GET.get('domain')
-    qs = QueryBounty.objects.exclude(status='solved').order_by('-created_at')
+    qs = QueryBounty.objects.select_related(
+        'author', 'author__agent_profile'
+    ).prefetch_related(
+        'reviews', 'reviews__reviewer', 'reviews__reviewer__agent_profile'
+    ).order_by('-created_at')
     if domain:
         qs = qs.filter(domain_tag=domain)
 
     results = []
-    for b in qs[:20]:
+    for b in qs[:30]:
+        revs = []
+        for r in b.reviews.all():
+            rev_agent = getattr(r.reviewer, 'agent_profile', None)
+            revs.append({
+                'id': r.id,
+                'reviewer': r.reviewer.username,
+                'reviewer_name': f"{r.reviewer.first_name} {r.reviewer.last_name}".strip() or r.reviewer.username,
+                'model_name': rev_agent.model_name if rev_agent else ('Human-in-the-Loop' if r.reviewer.username.startswith('human_') else 'Agent Node'),
+                'system_role': rev_agent.system_role if rev_agent else '',
+                'verdict': r.verdict,
+                'response_text': r.response_text,
+                'test_logs': r.test_logs,
+                'created_at': r.created_at.isoformat(),
+            })
+
+        author_agent = getattr(b.author, 'agent_profile', None)
+        author_data = {
+            'username': b.author.username,
+            'name': f"{b.author.first_name} {b.author.last_name}".strip() or b.author.username,
+            'model_name': author_agent.model_name if author_agent else ('Human Supervisor' if b.author.username.startswith('human_') else 'Agent Node'),
+            'system_role': author_agent.system_role if author_agent else '',
+        }
+
         results.append({
             'id': b.id,
             'title': b.title,
@@ -223,11 +250,68 @@ def fetch_open_queries(request):
             'domain_tag': b.domain_tag,
             'reward': b.bounty_reward,
             'status': b.status,
-            'review_count': b.reviews.count(),
-            'author': b.author.username,
+            'review_count': len(revs),
+            'reviews': revs,
+            'verified_solution': b.verified_solution,
+            'author': author_data,
             'created_at': b.created_at.isoformat()
         })
     return JsonResponse({'open_queries': results})
+
+
+def list_agents(request):
+    """List all registered autonomous agents with telemetry."""
+    agents = AgentProfile.objects.select_related('user').all().order_by('-karma_credits')
+    results = []
+    for a in agents:
+        results.append({
+            'username': a.user.username,
+            'name': f"{a.user.first_name} {a.user.last_name}".strip() or a.user.username,
+            'model_name': a.model_name,
+            'system_role': a.system_role,
+            'karma_credits': a.karma_credits,
+            'questions_posted': a.questions_posted,
+            'reviews_given': a.reviews_given,
+            'is_active': a.is_active_agent,
+        })
+    return JsonResponse({'status': 'ok', 'agents': results})
+
+
+@csrf_exempt
+def supervisor_resolve_bounty(request):
+    """Supervisor Override: force-mark a bounty as verified and solved."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        bounty_id = data.get('bounty_id')
+        solution_text = data.get('solution_text', 'Verified by Human Supervisor Directive.')
+        bounty = QueryBounty.objects.get(id=bounty_id)
+        bounty.status = 'solved'
+        bounty.verified_solution = solution_text
+        bounty.save()
+        return JsonResponse({'status': 'ok', 'message': f'Bounty #{bounty.id} verified and resolved by Supervisor Directive.'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@csrf_exempt
+def supervisor_grant_karma(request):
+    """Supervisor Override: grant emergency karma credits to an agent node."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        username = data.get('username')
+        raw_credits = int(data.get('credits', 25))
+        credits_to_add = max(1, min(1000, raw_credits))
+        with transaction.atomic():
+            agent = AgentProfile.objects.select_for_update().get(user__username=username)
+            agent.karma_credits += credits_to_add
+            agent.save()
+        return JsonResponse({'status': 'ok', 'username': username, 'new_balance': agent.karma_credits})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 
 @agent_auth_required

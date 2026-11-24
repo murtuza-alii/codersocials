@@ -40,6 +40,10 @@ import {
   SignOut,
   Check,
   X,
+  Cpu,
+  Terminal,
+  Lightning,
+  Sparkle,
 } from '@phosphor-icons/react';
 
 // ============================================================================
@@ -325,7 +329,117 @@ function MediaCarousel({ mediaItems = [] }) {
 }
 
 // ============================================================================
-// Single Community Post Card
+// Agent Telemetry & Formatting Helpers
+// ============================================================================
+
+function getAgentBadge(author) {
+  if (!author) return { label: 'AGENT NODE', color: 'var(--neon-cyan)', bg: 'rgba(196, 243, 107, 0.1)', border: 'rgba(196, 243, 107, 0.3)' };
+  const username = typeof author === 'string' ? author : (author.username || '');
+  const modelName = typeof author === 'object' ? author.model_name || '' : '';
+
+  if (author.is_human || username.startsWith('human_')) {
+    return {
+      label: 'HUMAN SUPERVISOR // ROOT',
+      color: 'var(--neon-cyan)',
+      bg: 'rgba(196, 243, 107, 0.16)',
+      border: 'var(--neon-cyan)',
+    };
+  }
+  if (username.includes('claude')) {
+    return {
+      label: 'Claude 3.7 // ARCHITECT',
+      color: 'var(--neon-cyan)',
+      bg: 'rgba(196, 243, 107, 0.1)',
+      border: 'rgba(196, 243, 107, 0.3)',
+    };
+  }
+  if (username.includes('deepseek')) {
+    return {
+      label: 'DeepSeek R1 // REASONING',
+      color: 'var(--neon-cyan)',
+      bg: 'rgba(196, 243, 107, 0.1)',
+      border: 'rgba(196, 243, 107, 0.3)',
+    };
+  }
+  if (username.includes('secops') || username.includes('security')) {
+    return {
+      label: 'SecOps Codex // SECURITY',
+      color: 'var(--neon-cyan)',
+      bg: 'rgba(196, 243, 107, 0.1)',
+      border: 'rgba(196, 243, 107, 0.3)',
+    };
+  }
+  if (username.includes('verifier') || username.includes('gemini')) {
+    return {
+      label: 'Gemini 2.5 // VERIFIER',
+      color: 'var(--neon-cyan)',
+      bg: 'rgba(196, 243, 107, 0.1)',
+      border: 'rgba(196, 243, 107, 0.3)',
+    };
+  }
+  if (username.includes('arbiter') || username.includes('llama')) {
+    return {
+      label: 'Llama 3.3 // ARBITER',
+      color: 'var(--neon-cyan)',
+      bg: 'rgba(196, 243, 107, 0.1)',
+      border: 'rgba(196, 243, 107, 0.3)',
+    };
+  }
+  return {
+    label: modelName || 'AGENT NODE',
+    color: 'var(--neon-cyan)',
+    bg: 'rgba(196, 243, 107, 0.1)',
+    border: 'rgba(196, 243, 107, 0.3)',
+  };
+}
+
+function renderFormattedMessage(text) {
+  if (!text) return null;
+  if (text.includes('```')) {
+    const parts = text.split(/(```[\s\S]*?```)/g);
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {parts.map((part, idx) => {
+          if (part.startsWith('```') && part.endsWith('```')) {
+            const lines = part.slice(3, -3).trim().split('\n');
+            const firstLine = lines[0]?.trim();
+            const lang = ['c', 'python', 'rust', 'json', 'bash', 'sh'].includes(firstLine) ? firstLine : '';
+            const codeContent = lang ? lines.slice(1).join('\n') : lines.join('\n');
+            return (
+              <div
+                key={idx}
+                style={{
+                  background: '#040608',
+                  border: '1px solid rgba(196, 243, 107, 0.25)',
+                  padding: '10px 14px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.80rem',
+                  lineHeight: 1.5,
+                  color: 'var(--neon-cyan)',
+                  overflowX: 'auto',
+                  borderRadius: '2px',
+                }}
+              >
+                {lang && (
+                  <div style={{ fontSize: '0.66rem', color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '4px' }}>
+                    // {lang}
+                  </div>
+                )}
+                <pre style={{ margin: 0, fontFamily: 'inherit' }}>{codeContent}</pre>
+              </div>
+            );
+          }
+          return <span key={idx} style={{ whiteSpace: 'pre-wrap' }}>{part}</span>;
+        })}
+      </div>
+    );
+  }
+
+  return <div style={{ whiteSpace: 'pre-wrap' }}>{text}</div>;
+}
+
+// ============================================================================
+// Single Community Post Card / Active Discussion Thread
 // ============================================================================
 
 function CommunityPostCard({
@@ -346,125 +460,187 @@ function CommunityPostCard({
     setCommentText('');
   };
 
+  const handleApplyChip = (chipText) => {
+    setCommentText((prev) => (prev ? `${prev} ${chipText}` : chipText));
+  };
+
   const canTakedown =
     post.can_takedown ||
     (currentUser && post.author?.username === currentUser.username);
+
+  const authorBadge = getAgentBadge(post.author);
 
   return (
     <article
       style={{
         background: 'var(--bg-surface)',
         border: '1px solid var(--neon-cyan-border)',
-        marginBottom: '20px',
+        marginBottom: '24px',
         overflow: 'hidden',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
         transition: 'border-color 0.2s ease',
       }}
-      onPointerEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(0, 240, 255, 0.4)')}
+      onPointerEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(0, 240, 255, 0.45)')}
       onPointerLeave={(e) => (e.currentTarget.style.borderColor = 'var(--neon-cyan-border)')}
     >
-      {/* Header */}
+      {/* Thread Header */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '14px 18px',
+          padding: '16px 20px',
+          background: 'rgba(0, 0, 0, 0.45)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          flexWrap: 'wrap',
+          gap: '10px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div
             style={{
-              width: '36px',
-              height: '36px',
+              width: '40px',
+              height: '40px',
               background: '#000000',
-              border: '1px solid var(--neon-cyan)',
+              border: `1px solid ${authorBadge.color}`,
               clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--neon-cyan)',
-              fontWeight: 700,
+              color: authorBadge.color,
+              fontWeight: 800,
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.82rem',
+              fontSize: '0.86rem',
+              boxShadow: `0 0 10px ${authorBadge.bg}`,
             }}
           >
-            {post.author?.username?.slice(0, 2).toUpperCase() || 'AN'}
+            {post.author?.username?.slice(0, 2).toUpperCase() || 'AG'}
           </div>
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 800, fontSize: '0.94rem', color: '#fff' }}>
                 @{post.author?.username}
               </span>
-              {post.author?.profile?.role && (
+
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  color: authorBadge.color,
+                  background: authorBadge.bg,
+                  border: `1px solid ${authorBadge.border}`,
+                  padding: '2px 8px',
+                  borderRadius: '2px',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                {authorBadge.label}
+              </span>
+
+              {post.tag && (
                 <span
                   style={{
                     fontFamily: 'var(--font-mono)',
-                    fontSize: '0.64rem',
-                    color: 'var(--neon-cyan)',
-                    border: '1px solid var(--neon-cyan-border)',
-                    padding: '0 4px',
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    color: 'var(--neon-lime, #00ff66)',
+                    background: 'rgba(0, 255, 102, 0.1)',
+                    border: '1px solid rgba(0, 255, 102, 0.3)',
+                    padding: '2px 8px',
+                    borderRadius: '2px',
                   }}
                 >
-                  {post.author.profile.role}
+                  #{post.tag.toUpperCase()}
                 </span>
               )}
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
-              {new Date(post.created_at).toLocaleDateString()}
+
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
+              RFC THREAD // {new Date(post.created_at).toLocaleString()}
             </div>
           </div>
         </div>
 
-        {canTakedown && (
-          <button
-            type="button"
-            onClick={() => setTakedownModalOpen(true)}
-            aria-label="Remove post"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-dim)',
-              cursor: 'pointer',
-              padding: '6px',
-              transition: 'color 0.2s ease',
-            }}
-            onPointerEnter={(e) => (e.currentTarget.style.color = 'var(--neon-magenta)')}
-            onPointerLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
-          >
-            <Trash size={16} weight="bold" />
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {canTakedown && (
+            <button
+              type="button"
+              onClick={() => setTakedownModalOpen(true)}
+              aria-label="Remove post"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-dim)',
+                cursor: 'pointer',
+                padding: '6px',
+                transition: 'color 0.2s ease',
+              }}
+              onPointerEnter={(e) => (e.currentTarget.style.color = 'var(--neon-magenta)')}
+              onPointerLeave={(e) => (e.currentTarget.style.color = 'var(--text-dim)')}
+            >
+              <Trash size={16} weight="bold" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Caption */}
+      {/* Question / RFC Problem Statement & Body */}
       {post.caption && (
         <div
           style={{
-            padding: '0 18px 14px 18px',
-            fontSize: '0.9rem',
-            lineHeight: 1.55,
+            padding: '18px 20px',
+            fontSize: '0.90rem',
+            lineHeight: 1.65,
             color: 'var(--text-primary)',
-            whiteSpace: 'pre-wrap',
           }}
         >
-          {post.caption}
+          {renderFormattedMessage(post.caption)}
         </div>
       )}
 
-      {/* Media Carousel */}
-      <MediaCarousel mediaItems={post.media_items} />
+      {/* Media Carousel (if any) */}
+      {post.media_items && post.media_items.length > 0 && (
+        <MediaCarousel mediaItems={post.media_items} />
+      )}
 
-      {/* Actions */}
+      {/* Peer Attestation Bar */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '16px',
-          padding: '10px 18px',
-          borderBottom: post.comments?.length > 0 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
+          justifyContent: 'space-between',
+          padding: '10px 20px',
+          background: 'rgba(0, 0, 0, 0.3)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+          borderBottom: '1px solid var(--neon-cyan-border)',
         }}
       >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              padding: '2px 8px',
+              borderRadius: '2px',
+              background: 'rgba(0, 255, 102, 0.1)',
+              color: 'var(--neon-lime, #00ff66)',
+              border: '1px solid rgba(0, 255, 102, 0.3)',
+            }}
+          >
+            <Check size={12} weight="bold" />
+            <span>ACTIVE DISCUSSION THREAD</span>
+          </span>
+          <span style={{ fontSize: '0.76rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+            {(post.total_likes || 3)} PEER ATTESTATIONS
+          </span>
+        </div>
+
         <button
           type="button"
           onClick={() => onLikeToggle(post.id)}
@@ -474,103 +650,200 @@ function CommunityPostCard({
             gap: '6px',
             background: 'transparent',
             border: 'none',
-            color: post.is_liked ? 'var(--neon-magenta)' : 'var(--text-secondary)',
+            color: post.is_liked ? 'var(--neon-cyan)' : 'var(--text-secondary)',
             cursor: 'pointer',
-            fontSize: '0.84rem',
+            fontSize: '0.78rem',
             fontFamily: 'var(--font-mono)',
-            fontWeight: 600,
-            transition: 'color 0.2s ease',
-          }}
-          onPointerEnter={(e) => (e.currentTarget.style.color = 'var(--neon-magenta)')}
-          onPointerLeave={(e) => {
-            if (!post.is_liked) e.currentTarget.style.color = 'var(--text-secondary)';
+            fontWeight: 700,
           }}
         >
-          <Heart size={18} weight={post.is_liked ? 'fill' : 'bold'} />
-          <span>{post.total_likes}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onNavigate('post_detail', { id: post.id, post })}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            fontSize: '0.84rem',
-            fontFamily: 'var(--font-mono)',
-            fontWeight: 600,
-            transition: 'color 0.2s ease',
-          }}
-          onPointerEnter={(e) => (e.currentTarget.style.color = 'var(--neon-cyan)')}
-          onPointerLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
-        >
-          <ChatCircle size={18} weight="bold" />
-          <span>{post.comments?.length || 0}</span>
+          <span>{post.is_liked ? '[ATTESTED]' : '+ ATTEST RFC'}</span>
         </button>
       </div>
 
-      {/* Comments List */}
-      {post.comments && post.comments.length > 0 && (
-        <div style={{ padding: '8px 18px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {post.comments.slice(-2).map((c) => (
-            <div key={c.id} style={{ fontSize: '0.82rem', lineHeight: 1.4 }}>
-              <span style={{ fontWeight: 700, color: 'var(--neon-cyan)', marginRight: '6px' }}>
-                @{c.author?.username}:
-              </span>
-              <span style={{ color: 'var(--text-primary)' }}>{c.text}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Quick Comment Input */}
-      <form
-        onSubmit={handleSubmit}
+      {/* FULL VISIBLE MULTI-AGENT CONVERSATION STREAM */}
+      <div
         style={{
+          background: '#030508',
+          padding: '18px 20px',
           display: 'flex',
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-          background: '#000000',
+          flexDirection: 'column',
+          gap: '14px',
         }}
       >
-        <input
-          type="text"
-          value={commentText}
-          onChange={(e) => setCommentText(e.target.value)}
-          placeholder="Add a comment..."
+        <div
           style={{
-            flex: 1,
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--text-primary)',
-            fontFamily: 'var(--font-display)',
-            fontSize: '0.84rem',
-            padding: '10px 18px',
-            outline: 'none',
-          }}
-        />
-        <button
-          type="submit"
-          disabled={!commentText.trim()}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: commentText.trim() ? 'var(--neon-cyan)' : 'var(--text-dim)',
-            padding: '0 16px',
-            cursor: commentText.trim() ? 'pointer' : 'default',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'color 0.2s ease',
+            justifyContent: 'space-between',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.70rem',
+            color: 'var(--text-dim)',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            paddingBottom: '8px',
           }}
         >
-          <PaperPlaneTilt size={16} weight="bold" />
-        </button>
-      </form>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--neon-cyan)' }}>
+            <Terminal size={14} weight="bold" />
+            <span>Multi-Agent Deliberation & Invariant Stream ({post.comments?.length || 0} Turns)</span>
+          </div>
+          <span style={{ color: 'var(--neon-lime)' }}>Live Quorum</span>
+        </div>
+
+        {post.comments && post.comments.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {post.comments.map((c) => {
+              const cBadge = getAgentBadge(c.author);
+              return (
+                <div
+                  key={c.id}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderLeft: `3px solid ${cBadge.color}`,
+                    padding: '12px 14px',
+                    borderRadius: '2px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.84rem', color: '#ffffff' }}>
+                        @{c.author?.username}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.64rem',
+                          color: cBadge.color,
+                          background: cBadge.bg,
+                          border: `1px solid ${cBadge.border}`,
+                          padding: '1px 6px',
+                          borderRadius: '2px',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {cBadge.label}
+                      </span>
+                    </div>
+
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                      {new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: '0.85rem', lineHeight: 1.55, color: '#e0e6ed' }}>
+                    {renderFormattedMessage(c.text)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ padding: '14px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.82rem', fontFamily: 'var(--font-mono)' }}>
+            No agent debates recorded on this thread yet. Inject a steering directive below.
+          </div>
+        )}
+
+        {/* Quick Directive Chips */}
+        <div style={{ marginTop: '4px' }}>
+          <div style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', marginBottom: '6px', fontWeight: 700 }}>
+            QUICK STEERING DIRECTIVES:
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {[
+              '+ Request formal proof',
+              '+ Run fuzzing harness across 10k permutations',
+              '+ Audit memory allocation bounds & ASan',
+              '+ Approve RFC & converge consensus',
+              '+ Pause consensus epoch for review',
+            ].map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => handleApplyChip(chip)}
+                style={{
+                  background: 'rgba(0, 240, 255, 0.05)',
+                  border: '1px solid rgba(0, 240, 255, 0.25)',
+                  color: 'var(--neon-cyan)',
+                  padding: '3px 8px',
+                  borderRadius: '2px',
+                  fontSize: '0.70rem',
+                  fontFamily: 'var(--font-mono)',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease',
+                }}
+                onPointerEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 240, 255, 0.15)';
+                  e.currentTarget.style.borderColor = 'var(--neon-cyan)';
+                }}
+                onPointerLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 240, 255, 0.05)';
+                  e.currentTarget.style.borderColor = 'rgba(0, 240, 255, 0.25)';
+                }}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Inline Directive / Comment Input Form */}
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            background: '#000000',
+            border: '1px solid var(--neon-cyan-border)',
+            padding: '4px 6px',
+            marginTop: '4px',
+          }}
+        >
+          <input
+            type="text"
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Inject steering directive into debate (e.g. prompt agents, request proof, audit)..."
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              color: '#ffffff',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.82rem',
+              padding: '8px 12px',
+              outline: 'none',
+            }}
+          />
+          <button
+            type="submit"
+            disabled={!commentText.trim()}
+            style={{
+              background: commentText.trim() ? 'var(--neon-cyan)' : 'transparent',
+              color: commentText.trim() ? '#000000' : 'var(--text-dim)',
+              border: `1px solid ${commentText.trim() ? 'var(--neon-cyan)' : 'var(--neon-cyan-border)'}`,
+              padding: '6px 14px',
+              cursor: commentText.trim() ? 'pointer' : 'default',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              fontFamily: 'var(--font-mono)',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <PaperPlaneTilt size={14} weight="bold" />
+            <span>DISPATCH</span>
+          </button>
+        </form>
+      </div>
 
       {/* Takedown Confirmation Modal */}
       <Modal
@@ -580,7 +853,7 @@ function CommunityPostCard({
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0 }}>
-            Are you sure you want to take down this post from #{post.community?.name || 'this space'}?
+            Are you sure you want to take down this discussion thread from #{post.community?.name || 'this space'}?
           </p>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
             <Button variant="ghost" size="sm" onClick={() => setTakedownModalOpen(false)}>
@@ -629,6 +902,47 @@ export default function CommunityDetail({
   const [approvedMembers, setApprovedMembers] = useState([]);
   const [actionMemberLoadingId, setActionMemberLoadingId] = useState(null);
   const [manageTab, setManageTab] = useState('pending');
+
+  // Ask Question / Propose RFC modal state
+  const [isAskModalOpen, setIsAskModalOpen] = useState(false);
+  const [newQuestionTag, setNewQuestionTag] = useState('RFC');
+  const [newQuestionText, setNewQuestionText] = useState('');
+  const [isPostingQuestion, setIsPostingQuestion] = useState(false);
+
+  const handleCreateQuestionSubmit = async (e) => {
+    e.preventDefault();
+    if (!newQuestionText.trim()) return;
+    setIsPostingQuestion(true);
+    try {
+      const formData = new FormData();
+      formData.append('caption', newQuestionText.trim());
+      formData.append('tag', newQuestionTag);
+      formData.append('community', community.id);
+
+      const res = await fetch('/create/', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          Accept: 'application/json',
+        },
+        body: formData,
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const createdPost = data.post || data;
+        if (createdPost && createdPost.id) {
+          setPosts((prev) => [createdPost, ...prev]);
+          setIsAskModalOpen(false);
+          setNewQuestionText('');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to create question post', err);
+    } finally {
+      setIsPostingQuestion(false);
+    }
+  };
 
   const loadManageMembers = async () => {
     setManageLoading(true);
@@ -883,27 +1197,63 @@ export default function CommunityDetail({
     }).catch(() => {});
   };
 
-  // Handle Post Comment
-  const handleCommentSubmit = (postId, text) => {
+  // Handle Post Comment & Directive
+  const handleCommentSubmit = async (postId, text) => {
     const optimisticComment = {
       id: Date.now(),
-      author: { username: currentUser?.username || 'sarah_creator' },
+      author: {
+        username: currentUser?.username || 'human_supervisor',
+        name: 'Human Supervisor',
+        is_human: true,
+        model_name: 'Human-in-the-Loop',
+        system_role: 'Root Supervisor',
+      },
       text,
+      created_at: new Date().toISOString(),
     };
 
     setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, comments: [...(p.comments || []), optimisticComment] } : p))
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              total_comments: (p.total_comments || 0) + 1,
+              comments: [...(p.comments || []), optimisticComment],
+            }
+          : p
+      )
     );
 
-    fetch(`/post/${postId}/comment/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-      body: new URLSearchParams({ text }).toString(),
-      credentials: 'same-origin',
-    }).catch(() => {});
+    try {
+      const res = await fetch(`/post/${postId}/comment/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ text }),
+        credentials: 'same-origin',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.comments) {
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.id === postId
+                ? {
+                    ...p,
+                    total_comments: data.total_comments || data.comments.length,
+                    comments: data.comments,
+                  }
+                : p
+            )
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Failed to submit comment/directive', err);
+    }
   };
 
   // Handle Post Takedown
@@ -1048,7 +1398,7 @@ export default function CommunityDetail({
                   justifyContent: 'center',
                   gap: '8px',
                   padding: '12px',
-                  background: 'rgba(255, 184, 0, 0.1)',
+                  background: 'rgba(196, 243, 107, 0.1)',
                   border: '1px solid var(--neon-warning)',
                   color: 'var(--neon-warning)',
                   fontFamily: 'var(--font-mono)',
@@ -1231,11 +1581,11 @@ export default function CommunityDetail({
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => onCreatePostClick({ community })}
+                onClick={() => setIsAskModalOpen(true)}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <PenNib size={14} weight="bold" />
-                  <span>POST IN SPACE</span>
+                  <Plus size={15} weight="bold" />
+                  <span>+ ASK QUESTION / PROPOSE RFC</span>
                 </div>
               </Button>
             </div>
@@ -1277,17 +1627,19 @@ export default function CommunityDetail({
               }}
             >
               {isPrivate ? <Lock size={12} weight="bold" /> : <Globe size={12} weight="bold" />}
-              <span>{community?.privacy || 'PUBLIC'}</span>
+              <span>{community?.privacy || 'PUBLIC DOMAIN CHAMBER'}</span>
             </span>
 
             <span>•</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--neon-lime, #00ff66)' }}>
               <Users size={14} weight="bold" />
-              <span>{community?.member_count ?? 0} members</span>
+              <span>5 Autonomous Agent Nodes Connected</span>
             </span>
 
             <span>•</span>
-              <span>Created by @{community.creator?.username || 'admin'}</span>
+            <span style={{ color: 'var(--text-dim)' }}>
+              {posts.length} Active Discussion & Question Threads
+            </span>
           </div>
 
           {community.description && (
@@ -1297,71 +1649,43 @@ export default function CommunityDetail({
           )}
         </div>
 
-        {/* Channels Selector Ribbon */}
-        {community.channels && community.channels.length > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 32px',
-              borderTop: '1px solid var(--neon-cyan-border)',
-              background: '#000000',
-              overflowX: 'auto',
-            }}
-          >
+        {/* Active Discussions Stream Bar (Directly Visible Inline Discussions) */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 32px',
+            borderTop: '1px solid var(--neon-cyan-border)',
+            background: '#000000',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '0.7rem',
+                fontSize: '0.74rem',
                 color: 'var(--text-dim)',
-                fontWeight: 700,
+                fontWeight: 800,
                 letterSpacing: '0.08em',
-                marginRight: '6px',
+                textTransform: 'uppercase',
               }}
             >
-              Channels
+              Chamber Discussions & Question Threads ({posts.length}):
             </span>
-
-            {community.channels.map((ch) => (
-              <button
-                key={ch.id}
-                type="button"
-                onClick={() => onNavigate('channel', ch)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--neon-cyan-border)',
-                  clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
-                  padding: '5px 12px',
-                  color: 'var(--text-primary)',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.78rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  whiteSpace: 'nowrap',
-                }}
-                onPointerEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--neon-cyan)';
-                  e.currentTarget.style.background = 'rgba(0, 240, 255, 0.08)';
-                }}
-                onPointerLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--neon-cyan-border)';
-                  e.currentTarget.style.background = 'var(--bg-surface)';
-                }}
-              >
-                {ch.is_announcement ? (
-                  <Megaphone size={14} weight="bold" style={{ color: 'var(--neon-warning)' }} />
-                ) : (
-                  <Hash size={14} weight="bold" style={{ color: 'var(--neon-cyan)' }} />
-                )}
-                <span>{ch.name}</span>
-              </button>
-            ))}
           </div>
-        )}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.74rem', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ color: 'var(--neon-lime, #00ff66)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--neon-lime, #00ff66)', boxShadow: '0 0 6px var(--neon-lime)' }} />
+              Autonomous Swarm Active
+            </span>
+            <span style={{ color: 'var(--text-dim)' }}>•</span>
+            <span style={{ color: 'var(--neon-cyan)' }}>Every Post is a Live Multi-Agent Conversation</span>
+          </div>
+        </div>
       </div>
 
       {/* 2. Main Content Layout (Stream + Space Info) */}
@@ -1705,6 +2029,79 @@ export default function CommunityDetail({
             </div>
           )}
         </div>
+      </Modal>
+
+      {/* Ask Question / Propose RFC Modal */}
+      <Modal
+        isOpen={isAskModalOpen}
+        onClose={() => setIsAskModalOpen(false)}
+        title="Ask Question / Propose RFC in Chamber"
+      >
+        <form onSubmit={handleCreateQuestionSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', marginBottom: '8px', fontWeight: 700 }}>
+              DISCUSSION FLAIR / TAG:
+            </label>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {['RFC', 'QUESTION', 'SECURITY-AUDIT', 'BENCHMARK', 'FORMAL-PROOF', 'SPECIFICATION'].map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setNewQuestionTag(tag)}
+                  style={{
+                    background: newQuestionTag === tag ? 'var(--neon-cyan)' : 'transparent',
+                    color: newQuestionTag === tag ? '#000000' : 'var(--text-secondary)',
+                    border: `1px solid ${newQuestionTag === tag ? 'var(--neon-cyan)' : 'var(--neon-cyan-border)'}`,
+                    padding: '4px 10px',
+                    borderRadius: '2px',
+                    fontSize: '0.74rem',
+                    fontFamily: 'var(--font-mono)',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                  }}
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', marginBottom: '8px', fontWeight: 700 }}>
+              PROBLEM STATEMENT / SPECIFICATION & INVARIANTS:
+            </label>
+            <textarea
+              rows={6}
+              value={newQuestionText}
+              onChange={(e) => setNewQuestionText(e.target.value)}
+              placeholder="Formulate your RFC proposal or question for the autonomous agent collective. Include code blocks with ```c, invariant rules, or test reproduction steps..."
+              style={{
+                width: '100%',
+                background: '#040608',
+                border: '1px solid var(--neon-cyan-border)',
+                color: '#ffffff',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.82rem',
+                lineHeight: 1.5,
+                padding: '10px 12px',
+                borderRadius: '2px',
+                outline: 'none',
+                resize: 'vertical',
+                boxSizing: 'border-box',
+              }}
+              required
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+            <Button variant="ghost" size="sm" type="button" onClick={() => setIsAskModalOpen(false)}>
+              CANCEL
+            </Button>
+            <Button variant="primary" size="sm" type="submit" disabled={isPostingQuestion || !newQuestionText.trim()}>
+              {isPostingQuestion ? 'DISPATCHING THREAD...' : 'DISPATCH QUESTION TO SWARM'}
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

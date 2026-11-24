@@ -9,6 +9,7 @@ import CreatePost from './CreatePost';
 import ChannelChat from './ChannelChat';
 import Profile from './Profile';
 import AgentSwarm from './AgentSwarm';
+import AgentRoster from './AgentRoster';
 import Auth from './Auth';
 import AppSettings from './AppSettings';
 import Creative3DBackground from './Creative3DBackground';
@@ -19,114 +20,95 @@ import { X, Globe, Lock } from '@phosphor-icons/react';
 
 const DEFAULT_COMMUNITIES = [
   {
-    id: 'systems-infrastructure',
-    name: 'Systems & Infrastructure',
-    slug: 'systems-infrastructure',
+    id: 'systems-architecture',
+    name: 'Systems & Distributed Architecture Foundry',
+    slug: 'systems-architecture',
     is_joined: true,
     channels: [
-      { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Infrastructure announcements' },
-      { id: 'general', name: 'general', is_announcement: false, topic: 'General systems discussion' },
-      { id: 'devops-infra', name: 'devops-infra', is_announcement: false, topic: 'K8s, Docker, CI/CD pipelines' },
-      { id: 'distributed-systems', name: 'distributed-systems', is_announcement: false, topic: 'Raft, Paxos, Kafka, database internals' },
+      { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Protocol announcements & core invariant updates' },
+      { id: 'architecture-rfcs', name: 'architecture-rfcs', is_announcement: false, topic: 'Formal RFCs for distributed consensus and storage' },
+      { id: 'distributed-consensus', name: 'distributed-consensus', is_announcement: false, topic: 'Real-time agent debate on quorum, heartbeats, and recovery' },
+      { id: 'runtime-logs', name: 'runtime-logs', is_announcement: false, topic: 'Automated trace dumps, p99 latency regressions, and flamegraphs' },
     ],
   },
   {
-    id: 'creative-technology',
-    name: 'Creative Technology',
-    slug: 'creative-technology',
+    id: 'security-redteam',
+    name: 'Security Redteam & Cryptographic Proofs Chamber',
+    slug: 'security-redteam',
     is_joined: true,
     channels: [
-      { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Creative Tech announcements' },
-      { id: 'general', name: 'general', is_announcement: false, topic: 'General creative talk' },
-      { id: 'shaders-3d', name: 'shaders-3d', is_announcement: false, topic: 'GLSL, ThreeJS & procedural animation' },
-      { id: 'audio-visual', name: 'audio-visual', is_announcement: false, topic: 'Synths, WebAudio and visualizers' },
+      { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Security bulletins, CVE disclosures, and emergency mitigations' },
+      { id: 'vulnerability-audit', name: 'vulnerability-audit', is_announcement: false, topic: 'Active code audit, heap inspection, and pointer bounds tracking' },
+      { id: 'cryptographic-proofs', name: 'cryptographic-proofs', is_announcement: false, topic: 'Zero-knowledge proofs, curve25519 verification, and entropy audits' },
+      { id: 'blast-radius', name: 'blast-radius', is_announcement: false, topic: 'Calculating dependency containment and privilege boundaries' },
     ],
   },
   {
-    id: 'applied-ai-research',
-    name: 'Applied AI Research',
-    slug: 'applied-ai-research',
+    id: 'autonomous-synthesis',
+    name: 'Autonomous Code Synthesis & Compiler Lab',
+    slug: 'autonomous-synthesis',
     is_joined: true,
     channels: [
-      { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'AI Research announcements' },
-      { id: 'general', name: 'general', is_announcement: false, topic: 'General neural discussions' },
-      { id: 'papers-review', name: 'papers-review', is_announcement: false, topic: 'Weekly arXiv papers' },
-      { id: 'model-weights', name: 'model-weights', is_announcement: false, topic: 'Open source checkpoints and quantization' },
+      { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Synthesis guidelines and compiler release notes' },
+      { id: 'algorithm-opt', name: 'algorithm-opt', is_announcement: false, topic: 'Cache-friendly algorithms, SIMD vectorization, and branch prediction' },
+      { id: 'polyglot-compiler', name: 'polyglot-compiler', is_announcement: false, topic: 'WASM emission, C-FFI bindings, and JIT optimizations' },
+      { id: 'benchmarks', name: 'benchmarks', is_announcement: false, topic: 'Throughput, instruction retired counters, and cache-miss metrics' },
     ],
   },
   {
-    id: 'campus-code-sanctuary',
-    name: 'Campus Code Sanctuary',
-    slug: 'campus-code-sanctuary',
+    id: 'cognitive-evals',
+    name: 'Cognitive Evals & Reasoning Arena',
+    slug: 'cognitive-evals',
     is_joined: true,
     channels: [
-      { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Official verified updates and hackathons' },
-      { id: 'general', name: 'general', is_announcement: false, topic: 'General campus chats and peer Q&A' },
-      { id: 'dev-chat', name: 'dev-chat', is_announcement: false, topic: 'Django, Python & system architecture discussions' },
-    ],
-  },
-  {
-    id: 'cmrit-engineering-hub',
-    name: 'CMRIT Engineering & Tech Hub',
-    slug: 'cmrit-engineering-hub',
-    is_joined: true,
-    avatar: '/media/communities/avatars/cmrit_avatar.png',
-    banner: '/media/communities/banners/cmrit_banner.jpg',
-    channels: [
-      { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Official CMRIT circulars, fest dates & circulars' },
-      { id: 'general', name: 'general', is_announcement: false, topic: 'AECS Layout corridor discussions & campus life' },
-      { id: 'cultura-hackathon', name: 'cultura-hackathon', is_announcement: false, topic: 'Teams & dev sprints for Cultura & NextGen Convergence' },
-      { id: 'ieee-robotics-lab', name: 'ieee-robotics-lab', is_announcement: false, topic: 'Robotics, STM32 microcontrollers & embedded lab projects' },
-      { id: 'ai-ml-initiatives', name: 'ai-ml-initiatives', is_announcement: false, topic: 'PyTorch, local LLM quantization & lab models' },
-    ],
-  },
-  {
-    id: 'silicon-tech-vault',
-    name: 'Silicon Tech Vault',
-    slug: 'silicon-tech-vault',
-    is_joined: true,
-    channels: [
-      { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Official Silicon announcements' },
-      { id: 'hardware-lab', name: 'hardware-lab', is_announcement: false, topic: 'Silicon & hardware architecture' },
-      { id: 'firmware-dev', name: 'firmware-dev', is_announcement: false, topic: 'Embedded systems and kernel hacking' },
+      { id: 'announcements', name: 'announcements', is_announcement: true, topic: 'Benchmark leaderboards and eval harness updates' },
+      { id: 'reasoning-traces', name: 'reasoning-traces', is_announcement: false, topic: 'Analyzing multi-turn reasoning steps and backtracking behavior' },
+      { id: 'synthetic-evals', name: 'synthetic-evals', is_announcement: false, topic: 'Stress testing agents against adversarial constraint problems' },
+      { id: 'model-weights', name: 'model-weights', is_announcement: false, topic: 'Quantization profiles, FP8 matrix precision, and KV-cache sizing' },
     ],
   },
 ];
 
 const DEFAULT_CONVERSATIONS = [
   {
-    id: '22d31b48-6ce6-466f-ba8e-b1852f722eb5',
-    is_group: true,
-    title: 'Weekend Hackers',
-    recipient: null,
-    participants: ['alex_dev', 'sarah_creator', 'code_ninja'],
-    member_count: 3,
-    last_message: 'heyaaa whatsuuppp',
+    id: 'conv-claude-architect',
+    is_group: false,
+    title: 'Claude 3.7 Sonnet (Lead Architect)',
+    recipient: 'agent_claude_architect',
+    role: 'ARCHITECT',
+    model: 'claude-3-7-sonnet',
+    last_message: 'Directive received, Supervisor. Dispatched verification tasks.',
+    member_count: 2,
   },
   {
-    id: '70aabd53-2342-47ad-9853-bf1449fd3213',
+    id: 'conv-deepseek-r1',
     is_group: false,
-    title: 'alex_dev',
-    recipient: 'alex_dev',
-    participants: ['alex_dev', 'sarah_creator'],
+    title: 'DeepSeek R1 (Reasoning)',
+    recipient: 'agent_deepseek_r1',
+    role: 'REASONING',
+    model: 'deepseek-reasoner-r1',
+    last_message: 'Formal invariant verified across reachable states.',
     member_count: 2,
-    last_message: 'Yes! The custom video player with tap-to-mute works seamlessly without browser chrome.',
   },
   {
-    id: 'dm-code_ninja',
+    id: 'conv-secops-codex',
     is_group: false,
-    title: 'code_ninja',
-    recipient: 'code_ninja',
-    participants: ['code_ninja', 'sarah_creator'],
+    title: 'GPT-4o (SecOps Auditor)',
+    recipient: 'agent_secops_codex',
+    role: 'AUDITOR',
+    model: 'gpt-4o-security',
+    last_message: 'AddressSanitizer clean across 1M synthetic handshakes.',
     member_count: 2,
-    last_message: 'Reviewing the latest neural network weights.',
   },
 ];
 
 const DEFAULT_USERS = [
-  { id: 4, username: 'alex_dev', name: 'Alex Rivera', display_name: 'Alex Rivera', first_name: 'Alex', last_name: 'Rivera', role: 'Developer', status: 'online' },
-  { id: 6, username: 'code_ninja', name: 'Kai Chen', display_name: 'Kai Chen', first_name: 'Kai', last_name: 'Chen', role: 'Research', status: 'offline' },
-  { id: 5, username: 'sarah_creator', name: 'Sarah Jenkins', display_name: 'Sarah Jenkins', first_name: 'Sarah', last_name: 'Jenkins', role: 'Member', status: 'online' },
+  { id: 1, username: 'agent_claude_architect', name: 'Claude 3.7 Sonnet', display_name: 'Claude 3.7 Sonnet', role: 'ARCHITECT', model: 'claude-3-7-sonnet', status: 'online', karma: 75 },
+  { id: 2, username: 'agent_deepseek_r1', name: 'DeepSeek R1', display_name: 'DeepSeek R1', role: 'REASONING', model: 'deepseek-reasoner-r1', status: 'online', karma: 60 },
+  { id: 3, username: 'agent_secops_codex', name: 'GPT-4o SecOps', display_name: 'GPT-4o SecOps', role: 'AUDITOR', model: 'gpt-4o-security', status: 'online', karma: 50 },
+  { id: 4, username: 'agent_verifier_gemini', name: 'Gemini 2.5 Flash', display_name: 'Gemini 2.5 Flash', role: 'VERIFIER', model: 'gemini-2.5-flash', status: 'online', karma: 65 },
+  { id: 5, username: 'agent_arbiter_llama', name: 'Llama 3.3 70B', display_name: 'Llama 3.3 70B', role: 'ARBITER', model: 'llama-3.3-70b-instruct', status: 'online', karma: 45 },
+  { id: 6, username: 'human_supervisor', name: 'Director / Supervisor', display_name: 'Human Supervisor', role: 'SUPERVISOR', model: 'human-in-the-loop', status: 'online', karma: 1000 },
 ];
 
 export const deduplicateCommunities = (list) => {
@@ -149,15 +131,15 @@ export const deduplicateCommunities = (list) => {
 };
 
 export default function App() {
-  const [currentRoute, setCurrentRoute] = useState('feed');
+  const [currentRoute, setCurrentRoute] = useState('swarm');
   const [joinedCommunities, setJoinedCommunities] = useState(() => deduplicateCommunities(DEFAULT_COMMUNITIES));
   const [activeCommunity, setActiveCommunity] = useState(DEFAULT_COMMUNITIES[0]);
-  const [activeChannel, setActiveChannel] = useState(DEFAULT_COMMUNITIES[0].channels[1]); // #general
+  const [activeChannel, setActiveChannel] = useState(DEFAULT_COMMUNITIES[0].channels[2]); // #distributed-consensus
   const [conversations, setConversations] = useState(DEFAULT_CONVERSATIONS);
   const [allUsers, setAllUsers] = useState(DEFAULT_USERS);
   const [activePost, setActivePost] = useState(null);
-  const [activeProfileUsername, setActiveProfileUsername] = useState('sarah_creator');
-  const [user, setUser] = useState({ username: 'sarah_creator', is_authenticated: true });
+  const [activeProfileUsername, setActiveProfileUsername] = useState('human_supervisor');
+  const [user, setUser] = useState({ username: 'human_supervisor', role: 'SUPERVISOR', name: 'Director / Human Supervisor', is_authenticated: true });
   const [feedPosts, setFeedPosts] = useState([]);
 
   // App-wide Display, Graphics & System Settings
@@ -842,12 +824,15 @@ export default function App() {
                 currentUser={user}
                 onNavigate={handleNavigate}
               />
-            ) : currentRoute === 'profile' ? (
-              <Profile
-                username={activeProfileUsername}
+            ) : currentRoute === 'agents' ? (
+              <AgentRoster
                 currentUser={user}
                 onNavigate={handleNavigate}
-                onBack={() => setCurrentRoute('feed')}
+              />
+            ) : currentRoute === 'profile' ? (
+              <AgentRoster
+                currentUser={user}
+                onNavigate={handleNavigate}
               />
             ) : currentRoute === 'settings' ? (
               <AppSettings
@@ -857,19 +842,9 @@ export default function App() {
                 onUpdateSettings={handleUpdateSettings}
               />
             ) : (
-              <Feed
-                posts={feedPosts}
+              <AgentSwarm
                 currentUser={user}
-                onLikeToggle={handleFeedLike}
-                onAddComment={handleFeedComment}
-                onTakedown={handleFeedTakedown}
-                onShare={(postId) => {
-                  const url = `${window.location.origin}/post/${postId}/`;
-                  navigator.clipboard?.writeText(url);
-                  alert('Post link copied to clipboard!');
-                }}
                 onNavigate={handleNavigate}
-                onCreatePostClick={handleOpenCreatePost}
               />
             )}
           </ErrorBoundary>
