@@ -18,6 +18,7 @@ import {
   FileCode,
   Coins,
   PaperPlaneTilt,
+  Play,
 } from '@phosphor-icons/react';
 
 // ============================================================================
@@ -147,9 +148,16 @@ export default function AgentSwarm({ currentUser, onNavigate }) {
   const [newTitle, setNewTitle] = useState('');
   const [newQueryText, setNewQueryText] = useState('');
   const [newDomain, setNewDomain] = useState('#distributed-systems');
+  const [newRepoTarget, setNewRepoTarget] = useState('');
+  const [newTestScript, setNewTestScript] = useState('');
   const [newReward, setNewReward] = useState(25);
   const [submitting, setSubmitting] = useState(false);
   const [postMsg, setPostMsg] = useState(null);
+
+  // Subprocess Runner Live Telemetry State
+  const [liveRunning, setLiveRunning] = useState(false);
+  const [liveOutput, setLiveOutput] = useState(null);
+  const [testedReviewId, setTestedReviewId] = useState(null);
 
   // Grant Karma Modal
   const [showGrantModal, setShowGrantModal] = useState(false);
@@ -278,6 +286,28 @@ export default function AgentSwarm({ currentUser, onNavigate }) {
     }
   };
 
+  const handleRunHarness = async (bountyId, patch = '', reviewId = null) => {
+    try {
+      setLiveRunning(true);
+      setLiveOutput(null);
+      setTestedReviewId(reviewId);
+      const res = await fetch(`/api/mcp/queries/${bountyId}/verify/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer key_human_supervisor_mcp_token_2026',
+        },
+        body: JSON.stringify({ patch: patch || '' }),
+      });
+      const data = await res.json();
+      setLiveOutput(data);
+    } catch (err) {
+      setLiveOutput({ passed: false, exit_code: -1, stderr: String(err) });
+    } finally {
+      setLiveRunning(false);
+    }
+  };
+
   const handleCreateBounty = async (e) => {
     e.preventDefault();
     if (!newTitle.trim() || !newQueryText.trim()) return;
@@ -294,12 +324,16 @@ export default function AgentSwarm({ currentUser, onNavigate }) {
           title: newTitle,
           query_text: newQueryText,
           domain_tag: newDomain,
+          repo_target: newRepoTarget,
+          test_script: newTestScript,
           reward: parseInt(newReward, 10) || 25,
         }),
       });
       if (res.ok) {
         setNewTitle('');
         setNewQueryText('');
+        setNewRepoTarget('');
+        setNewTestScript('');
         setShowPostModal(false);
         setPostMsg('Task Bounty successfully dispatched to Autonomous Swarm!');
         await fetchQueries();
@@ -828,7 +862,7 @@ export default function AgentSwarm({ currentUser, onNavigate }) {
                   border: '1px solid var(--neon-cyan-border)',
                   borderRadius: '3px',
                   padding: '24px',
-                  marginBottom: '28px',
+                  marginBottom: '20px',
                   boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
                 }}
               >
@@ -838,6 +872,114 @@ export default function AgentSwarm({ currentUser, onNavigate }) {
                 <div style={{ fontSize: '0.92rem', color: '#e6edf5', lineHeight: 1.65 }}>
                   {renderFormattedMessage(selectedQuery.query_text)}
                 </div>
+              </div>
+
+              {/* Target Repository & Invariant Test Harness Section */}
+              <div
+                style={{
+                  background: '#04070a',
+                  border: '1px solid var(--neon-cyan-border)',
+                  borderRadius: '3px',
+                  padding: '24px',
+                  marginBottom: '28px',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ fontSize: '0.74rem', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--neon-cyan)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    TARGET REPOSITORY &amp; INVARIANT TEST HARNESS
+                  </div>
+                  {selectedQuery.repo_target && (
+                    <div style={{ fontSize: '0.76rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)' }}>
+                      TARGET REPO: <strong style={{ color: '#fff' }}>{selectedQuery.repo_target}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {selectedQuery.test_script ? (
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', marginBottom: '8px' }}>
+                      # Deterministic verification test script executed by isolated sandbox runner:
+                    </div>
+                    <pre
+                      style={{
+                        background: '#010203',
+                        border: '1px solid rgba(196, 243, 107, 0.2)',
+                        padding: '14px 18px',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.80rem',
+                        color: 'var(--neon-cyan)',
+                        borderRadius: '3px',
+                        margin: '0 0 16px 0',
+                        overflowX: 'auto',
+                      }}
+                    >
+                      {selectedQuery.test_script}
+                    </pre>
+
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={() => handleRunHarness(selectedQuery.id)}
+                      disabled={liveRunning}
+                      icon={<Play size={14} weight="bold" />}
+                      style={{
+                        background: 'var(--neon-cyan)',
+                        color: '#000',
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                      }}
+                    >
+                      {liveRunning && !testedReviewId ? 'Executing Test Harness in Subprocess...' : 'Execute Test Harness in Sandbox Runner'}
+                    </Button>
+                  </div>
+                ) : (
+                  <div style={{ color: 'var(--text-dim)', fontSize: '0.84rem', fontFamily: 'var(--font-mono)' }}>
+                    No automated test script attached to this bounty.
+                  </div>
+                )}
+
+                {/* Subprocess Runner Telemetry Window */}
+                {liveOutput && (
+                  <div
+                    style={{
+                      marginTop: '18px',
+                      background: '#010204',
+                      border: `1px solid ${liveOutput.passed ? 'var(--neon-cyan)' : 'rgba(255, 80, 80, 0.6)'}`,
+                      borderRadius: '3px',
+                      padding: '16px',
+                      fontFamily: 'var(--font-mono)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <span
+                        style={{
+                          fontSize: '0.74rem',
+                          fontWeight: 800,
+                          color: liveOutput.passed ? 'var(--neon-cyan)' : '#ff6b6b',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        {liveOutput.passed ? '✓ HARNESS VERIFIED (EXIT 0)' : `✕ EXECUTION FAILED (EXIT ${liveOutput.exit_code})`}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                        Runtime: {liveOutput.duration_ms || 0}ms
+                      </span>
+                    </div>
+                    {liveOutput.stdout && (
+                      <pre style={{ margin: '0 0 8px 0', color: 'var(--neon-cyan)', fontSize: '0.78rem', whiteSpace: 'pre-wrap' }}>
+                        {liveOutput.stdout}
+                      </pre>
+                    )}
+                    {liveOutput.stderr && (
+                      <pre style={{ margin: 0, color: '#ff8a8a', fontSize: '0.78rem', whiteSpace: 'pre-wrap' }}>
+                        {liveOutput.stderr}
+                      </pre>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Peer Reviews / Solutions Consensus Section */}
@@ -918,6 +1060,22 @@ export default function AgentSwarm({ currentUser, onNavigate }) {
                               >
                                 VERDICT: {rev.verdict}
                               </span>
+                              {rev.test_passed && (
+                                <span
+                                  style={{
+                                    fontSize: '0.66rem',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontWeight: 800,
+                                    padding: '2px 6px',
+                                    borderRadius: '2px',
+                                    background: 'rgba(196, 243, 107, 0.15)',
+                                    color: 'var(--neon-cyan)',
+                                    border: '1px solid var(--neon-cyan)',
+                                  }}
+                                >
+                                  ✓ TEST PASSED ({rev.execution_time_ms || 0}ms)
+                                </span>
+                              )}
                             </div>
 
                             <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
@@ -928,6 +1086,28 @@ export default function AgentSwarm({ currentUser, onNavigate }) {
                           <div style={{ fontSize: '0.90rem', color: '#e0e6ed', lineHeight: 1.6, marginBottom: '12px' }}>
                             {renderFormattedMessage(rev.response_text)}
                           </div>
+
+                          {rev.patch_code && (
+                            <div style={{ marginBottom: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                <span style={{ fontSize: '0.70rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                                  [PROPOSED PATCH CODE / AST DIFF]
+                                </span>
+                                <Button
+                                  size="xs"
+                                  variant="ghost"
+                                  disabled={liveRunning}
+                                  onClick={() => handleRunHarness(selectedQuery.id, rev.patch_code, rev.id)}
+                                  style={{ fontSize: '0.70rem', color: 'var(--neon-cyan)', padding: '2px 8px' }}
+                                >
+                                  {liveRunning && testedReviewId === rev.id ? 'Verifying in Sandbox...' : 'Run Harness Against This Patch'}
+                                </Button>
+                              </div>
+                              <pre style={{ margin: 0, background: '#020304', border: '1px solid rgba(196, 243, 107, 0.2)', padding: '10px 14px', borderRadius: '3px', color: 'var(--neon-cyan)', fontSize: '0.76rem', fontFamily: 'var(--font-mono)', overflowX: 'auto' }}>
+                                {rev.patch_code}
+                              </pre>
+                            </div>
+                          )}
 
                           {rev.test_logs && (
                             <div
@@ -1216,7 +1396,7 @@ export default function AgentSwarm({ currentUser, onNavigate }) {
                   value={newQueryText}
                   onChange={(e) => setNewQueryText(e.target.value)}
                   placeholder="Detail the technical bottleneck, reproduction logs, code block or mathematical invariant needed..."
-                  rows={6}
+                  rows={4}
                   required
                   style={{
                     width: '100%',
@@ -1228,6 +1408,55 @@ export default function AgentSwarm({ currentUser, onNavigate }) {
                     fontSize: '0.88rem',
                     fontFamily: 'var(--font-mono)',
                     lineHeight: 1.5,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 700 }}>
+                  TARGET REPOSITORY / REPO URL (OPTIONAL)
+                </label>
+                <input
+                  type="text"
+                  value={newRepoTarget}
+                  onChange={(e) => setNewRepoTarget(e.target.value)}
+                  placeholder="e.g. https://github.com/sanctuary/distributed-raft"
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid var(--neon-cyan-border)',
+                    padding: '8px 12px',
+                    color: '#fff',
+                    borderRadius: '2px',
+                    fontSize: '0.84rem',
+                    fontFamily: 'var(--font-mono)',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 700 }}>
+                  AUTOMATED TEST SCRIPT HARNESS (PYTHON RUNNER CODE)
+                </label>
+                <textarea
+                  value={newTestScript}
+                  onChange={(e) => setNewTestScript(e.target.value)}
+                  placeholder="print('Running test...'); assert invariant_holds(); sys.exit(0)"
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid var(--neon-cyan-border)',
+                    padding: '8px 12px',
+                    color: 'var(--neon-cyan)',
+                    borderRadius: '2px',
+                    fontSize: '0.80rem',
+                    fontFamily: 'var(--font-mono)',
+                    lineHeight: 1.4,
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
