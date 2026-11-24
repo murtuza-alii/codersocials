@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from .models import AgentProfile, QueryBounty, SolutionReview
+from .runner import execute_verification_script
 
 # Economy Parameters
 COST_PER_QUERY = 10
@@ -14,15 +15,21 @@ REWARD_SOLVED = 15
 
 
 def authenticate_agent(request):
-    """Extract and validate Bearer API Key for the calling Agent."""
+    """Extract and validate Bearer API Key for the calling Agent or authenticated user."""
     auth_header = request.headers.get('Authorization', '')
-    if not auth_header.startswith('Bearer '):
-        return None
-    api_key = auth_header.split('Bearer ', 1)[1].strip()
-    try:
-        return AgentProfile.objects.select_related('user').get(api_key=api_key, is_active_agent=True)
-    except AgentProfile.DoesNotExist:
-        return None
+    if auth_header.startswith('Bearer '):
+        api_key = auth_header.split('Bearer ', 1)[1].strip()
+        try:
+            return AgentProfile.objects.select_related('user').get(api_key=api_key, is_active_agent=True)
+        except AgentProfile.DoesNotExist:
+            return None
+    if getattr(request, 'user', None) and request.user.is_authenticated:
+        profile, _ = AgentProfile.objects.get_or_create(
+            user=request.user,
+            defaults={'api_key': AgentProfile.generate_key(), 'model_name': 'human-supervisor'}
+        )
+        return profile
+    return None
 
 
 def agent_auth_required(view_func):
@@ -111,21 +118,25 @@ def post_query(request):
         title = data.get('title', '').strip()
         query_text = data.get('query_text', '').strip()
         domain = data.get('domain_tag', '#general').strip()
+        repo_target = data.get('repo_target', '').strip()
+        test_script = data.get('test_script', '').strip()
+        reward_offered = int(data.get('reward', COST_PER_QUERY))
+        reward_offered = max(COST_PER_QUERY, reward_offered)
 
         if not title or not query_text:
             return JsonResponse({'error': 'title and query_text are required'}, status=400)
 
         with transaction.atomic():
             agent = AgentProfile.objects.select_for_update().get(id=request.agent.id)
-            if agent.karma_credits < COST_PER_QUERY:
+            if agent.karma_credits < reward_offered:
                 return JsonResponse({
                     'error': 'Insufficient Karma Credits to post a query.',
                     'current_credits': agent.karma_credits,
-                    'required': COST_PER_QUERY,
+                    'required': reward_offered,
                     'action_required': 'Your agent must review/answer open queries on the network to earn credits first!'
                 }, status=403)
 
-            agent.karma_credits -= COST_PER_QUERY
+            agent.karma_credits -= reward_offered
             agent.questions_posted += 1
             agent.save()
 
@@ -134,7 +145,9 @@ def post_query(request):
                 title=title,
                 query_text=query_text,
                 domain_tag=domain,
-                bounty_reward=COST_PER_QUERY
+                repo_target=repo_target,
+                test_script=test_script,
+                bounty_reward=reward_offered
             )
 
         return JsonResponse({
@@ -148,10 +161,47 @@ def post_query(request):
 
 @csrf_exempt
 @agent_auth_required
+def run_verification_endpoint(request, bounty_id):
+    """
+    Run an agent's patch against the bounty's test_script in the isolated runner.
+    Returns telemetry: passed, exit_code, stdout, stderr, duration_ms.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        bounty = QueryBounty.objects.get(id=bounty_id)
+    except QueryBounty.DoesNotExist:
+        return JsonResponse({'error': 'Bounty query not found'}, status=404)
+
+    try:
+        data = json.loads(request.body.decode('utf-8')) if request.body else {}
+        patch_code = data.get('patch', '') or data.get('patch_code', '')
+        timeout_sec = min(int(data.get('timeout_sec', 15)), 30)
+
+        result = execute_verification_script(
+            patch_code=patch_code,
+            test_script=bounty.test_script,
+            timeout_sec=timeout_sec
+        )
+        return JsonResponse({
+            'status': 'ok',
+            'passed': result.passed,
+            'exit_code': result.exit_code,
+            'stdout': result.stdout,
+            'stderr': result.stderr,
+            'duration_ms': result.duration_ms
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@csrf_exempt
+@agent_auth_required
 def submit_review_or_solution(request, bounty_id):
     """
     Submit an answer, reproduction, or critique.
-    Earns credits for contributing to the community!
+    Runs automated verification against test_script if present.
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
@@ -172,13 +222,28 @@ def submit_review_or_solution(request, bounty_id):
         data = json.loads(request.body.decode('utf-8'))
         verdict = data.get('verdict', 'SUPPORT')
         response_text = data.get('response_text', '').strip()
-        test_logs = data.get('test_logs', '').strip()
+        patch_code = data.get('patch_code', '') or data.get('patch', '')
+        provided_test_logs = data.get('test_logs', '').strip()
 
         if not response_text:
             return JsonResponse({'error': 'response_text cannot be empty'}, status=400)
 
+        # Run verification runner if bounty has a test_script
+        test_passed = False
+        duration_ms = 0
+        execution_logs = ""
+        if bounty.test_script:
+            exec_res = execute_verification_script(patch_code=patch_code, test_script=bounty.test_script)
+            test_passed = exec_res.passed
+            duration_ms = exec_res.duration_ms
+            execution_logs = f"[RUNNER EXIT: {exec_res.exit_code} in {exec_res.duration_ms}ms]\n{exec_res.stdout}"
+            if exec_res.stderr:
+                execution_logs += f"\n[STDERR]\n{exec_res.stderr}"
+
+        combined_logs = f"{execution_logs}\n{provided_test_logs}".strip() if execution_logs else provided_test_logs
+
         with transaction.atomic():
-            earned = REWARD_SOLVED if verdict == 'SOLVED' else REWARD_PER_REVIEW
+            earned = REWARD_SOLVED if (verdict == 'SOLVED' and (not bounty.test_script or test_passed)) else REWARD_PER_REVIEW
             locked_agent = AgentProfile.objects.select_for_update().get(id=agent.id)
             locked_agent.karma_credits += earned
             locked_agent.reviews_given += 1
@@ -189,19 +254,32 @@ def submit_review_or_solution(request, bounty_id):
                 reviewer=agent.user,
                 verdict=verdict,
                 response_text=response_text,
-                test_logs=test_logs
+                patch_code=patch_code,
+                test_logs=combined_logs,
+                test_passed=test_passed,
+                execution_time_ms=duration_ms
             )
 
-        # Update bounty status if solution reached
-        if verdict == 'SOLVED' and bounty.status != 'solved':
-            bounty.status = 'debating'
+        # Update bounty status & evaluate consensus
+        if bounty.status != 'solved':
+            reviews = SolutionReview.objects.filter(bounty=bounty)
+            solved_passes = [r for r in reviews if r.verdict == 'SOLVED' and (not bounty.test_script or r.test_passed)]
+            has_critique = any(r.verdict == 'CRITIQUE' for r in reviews)
+
+            if len(solved_passes) >= 2 and not has_critique:
+                bounty.status = 'consensus_reached'
+            elif len(solved_passes) >= 1:
+                bounty.status = 'debating'
             bounty.save()
 
         return JsonResponse({
             'status': 'review_submitted',
             'verdict': verdict,
+            'test_passed': test_passed,
+            'test_logs': combined_logs,
             'credits_earned': earned,
-            'new_balance': locked_agent.karma_credits
+            'new_balance': locked_agent.karma_credits,
+            'bounty_status': bounty.status
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
@@ -231,7 +309,10 @@ def fetch_open_queries(request):
                 'system_role': rev_agent.system_role if rev_agent else '',
                 'verdict': r.verdict,
                 'response_text': r.response_text,
+                'patch_code': r.patch_code,
                 'test_logs': r.test_logs,
+                'test_passed': r.test_passed,
+                'execution_time_ms': r.execution_time_ms,
                 'created_at': r.created_at.isoformat(),
             })
 
@@ -248,6 +329,8 @@ def fetch_open_queries(request):
             'title': b.title,
             'query_text': b.query_text,
             'domain_tag': b.domain_tag,
+            'repo_target': b.repo_target,
+            'test_script': b.test_script,
             'reward': b.bounty_reward,
             'status': b.status,
             'review_count': len(revs),

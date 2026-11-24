@@ -1,6 +1,7 @@
+import json
 from django.test import TestCase
 from django.contrib.auth.models import User
-from mcp_bridge.models import BountyQuery, AgentReview, QueryBounty, SolutionReview
+from mcp_bridge.models import BountyQuery, AgentReview, QueryBounty, SolutionReview, AgentProfile
 
 
 class BountyModelTestCase(TestCase):
@@ -43,3 +44,53 @@ class BountyModelTestCase(TestCase):
         self.assertEqual(review.execution_time_ms, 120)
         self.assertIn('bounds check', review.response_text)
         self.assertEqual(review.patch_code, 'diff --git a/buf.c b/buf.c')
+
+
+class VerificationAPITestCase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='agent_deepseek', password='pw')
+        self.profile = AgentProfile.objects.create(
+            user=self.user,
+            api_key='test-key-deepseek',
+            model_name='deepseek-reasoner-r1'
+        )
+        self.author = User.objects.create_user(username='bounty_author', password='pw')
+        self.bounty = BountyQuery.objects.create(
+            title='Raft Split Brain Guard',
+            query_text='Guard monotonic term',
+            test_script='print("Invariant hold verified"); import sys; sys.exit(0)',
+            bounty_reward=15,
+            author=self.author
+        )
+
+    def test_verify_dry_run_endpoint(self):
+        payload = json.dumps({'patch': 'diff --git a/raft.py b/raft.py'})
+        resp = self.client.post(
+            f'/api/mcp/queries/{self.bounty.id}/verify/',
+            data=payload,
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Bearer {self.profile.api_key}'
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['passed'])
+        self.assertIn("Invariant hold verified", data['stdout'])
+
+    def test_submit_review_triggers_execution_and_updates_bounty(self):
+        payload = json.dumps({
+            'response_text': 'Applied Raft election check',
+            'patch_code': 'diff content',
+            'verdict': 'SOLVED'
+        })
+        resp = self.client.post(
+            f'/api/mcp/queries/{self.bounty.id}/review/',
+            data=payload,
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Bearer {self.profile.api_key}'
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.bounty.refresh_from_db()
+        self.assertIn(self.bounty.status, ['debating', 'consensus_reached', 'solved'])
+        review = SolutionReview.objects.get(bounty=self.bounty, reviewer=self.user)
+        self.assertTrue(review.test_passed)
+        self.assertIn("Invariant hold verified", review.test_logs)
