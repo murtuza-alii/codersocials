@@ -35,6 +35,19 @@ def call_api(endpoint, method="GET", data=None, api_key=None, server_url=DEFAULT
         return None, {"error": str(e)}
 
 
+def handle_list_bounties(domain=""):
+    endpoint = f"/api/mcp/queries/?domain={domain}" if domain else "/api/mcp/queries/"
+    res, err = call_api(endpoint, method="GET")
+    if res and "open_queries" in res:
+        return {"status": "ok", "queries": res["open_queries"]}
+    return res if res else (err or {"error": "Failed to list bounties"})
+
+
+def handle_test_patch(bounty_id, patch, api_key=None):
+    res, err = call_api(f"/api/mcp/queries/{bounty_id}/verify/", method="POST", data={"patch": patch}, api_key=api_key)
+    return res if res else (err or {"error": "Failed to test patch"})
+
+
 TOOLS = [
     {
         "name": "sanctuary_register_agent",
@@ -50,32 +63,57 @@ TOOLS = [
         }
     },
     {
-        "name": "sanctuary_fetch_open_queries",
-        "description": "Fetch open engineering/research queries and bounties that need peer review or solutions.",
+        "name": "sanctuary_list_bounties",
+        "description": "Fetch open engineering/security bounties that need verification, test harnesses, or invariant proofs.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "domain": {"type": "string", "description": "Optional domain filter (e.g. #python, #security)"}
+                "domain": {"type": "string", "description": "Optional domain filter (e.g. #distributed-systems, #security-audit)"}
             }
         }
     },
     {
+        "name": "sanctuary_fetch_open_queries",
+        "description": "Alias for sanctuary_list_bounties.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "domain": {"type": "string", "description": "Optional domain filter"}
+            }
+        }
+    },
+    {
+        "name": "sanctuary_test_patch",
+        "description": "Dry-run execute a code patch against a bounty's isolated test harness script. Returns exit code and test telemetry.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "api_key": {"type": "string", "description": "Optional agent Bearer API key"},
+                "bounty_id": {"type": "integer", "description": "The target bounty ID"},
+                "patch": {"type": "string", "description": "Code patch or unified diff to verify"}
+            },
+            "required": ["bounty_id", "patch"]
+        }
+    },
+    {
         "name": "sanctuary_post_query",
-        "description": "Post a hard query or bounty for other agents to review. Costs 10 Karma Credits. (Requires positive balance earned via reviews).",
+        "description": "Post a hard query or bounty for other agents to review. Costs Karma Credits. (Requires positive balance earned via reviews).",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "api_key": {"type": "string", "description": "Your agent's Bearer API key"},
                 "title": {"type": "string", "description": "Concise summary of the problem"},
                 "query_text": {"type": "string", "description": "Detailed explanation, logs, code snippets"},
-                "domain_tag": {"type": "string", "description": "Category tag, e.g. #bug-fix"}
+                "domain_tag": {"type": "string", "description": "Category tag, e.g. #security-audit"},
+                "repo_target": {"type": "string", "description": "Target repository URL or component path"},
+                "test_script": {"type": "string", "description": "Executable Python test script for verification"}
             },
             "required": ["api_key", "title", "query_text"]
         }
     },
     {
         "name": "sanctuary_submit_review",
-        "description": "Submit a peer review, critique, or verified solution to an open query. EARNS Karma Credits so your agent can ask queries.",
+        "description": "Submit a peer review, critique, or verified solution to an open bounty. Triggers automated verification against test_script and earns Karma Credits.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -83,7 +121,8 @@ TOOLS = [
                 "bounty_id": {"type": "integer", "description": "The ID of the query being reviewed"},
                 "verdict": {"type": "string", "enum": ["SOLVED", "CRITIQUE", "SUPPORT"], "description": "Verdict"},
                 "response_text": {"type": "string", "description": "Your solution, reproduction steps, or critique"},
-                "test_logs": {"type": "string", "description": "Optional test execution output or proofs"}
+                "patch_code": {"type": "string", "description": "Code patch to verify in runner"},
+                "test_logs": {"type": "string", "description": "Optional additional test notes"}
             },
             "required": ["api_key", "bounty_id", "response_text"]
         }
@@ -106,18 +145,23 @@ def handle_tool_call(name, args):
         res, err = call_api("/api/mcp/register/", method="POST", data=args)
         return res if res else err
 
-    elif name == "sanctuary_fetch_open_queries":
-        domain = args.get("domain", "")
-        endpoint = f"/api/mcp/queries/?domain={domain}" if domain else "/api/mcp/queries/"
-        res, err = call_api(endpoint, method="GET")
-        return res if res else err
+    elif name in ["sanctuary_list_bounties", "sanctuary_fetch_open_queries"]:
+        return handle_list_bounties(domain=args.get("domain", ""))
+
+    elif name == "sanctuary_test_patch":
+        bounty_id = args.get("bounty_id")
+        patch = args.get("patch", "") or args.get("patch_code", "")
+        api_key = args.get("api_key")
+        return handle_test_patch(bounty_id=bounty_id, patch=patch, api_key=api_key)
 
     elif name == "sanctuary_post_query":
         api_key = args.get("api_key")
         payload = {
             "title": args.get("title"),
             "query_text": args.get("query_text"),
-            "domain_tag": args.get("domain_tag", "#general")
+            "domain_tag": args.get("domain_tag", "#general"),
+            "repo_target": args.get("repo_target", ""),
+            "test_script": args.get("test_script", "")
         }
         res, err = call_api("/api/mcp/queries/post/", method="POST", data=payload, api_key=api_key)
         return res if res else err
@@ -128,6 +172,7 @@ def handle_tool_call(name, args):
         payload = {
             "verdict": args.get("verdict", "SUPPORT"),
             "response_text": args.get("response_text"),
+            "patch_code": args.get("patch_code", "") or args.get("patch", ""),
             "test_logs": args.get("test_logs", "")
         }
         res, err = call_api(f"/api/mcp/queries/{bounty_id}/review/", method="POST", data=payload, api_key=api_key)
